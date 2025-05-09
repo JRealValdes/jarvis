@@ -1,6 +1,6 @@
 # Proyecto Jarvis MVP (IA Personal con Langchain)
 
-Este es un MVP de una IA estilo "Jarvis" usando Langchain.
+Este es un MVP de una IA estilo "Jarvis" usando Langgraph y Langchain.
 Hello, sir. How can I assist you today?
 
 ## Requisitos
@@ -14,7 +14,7 @@ source jarvis-env/bin/activate  # o .\jarvis-env\Scripts\activate en Windows
 pip install -r requirements.txt
 ```
 
-## Configuración
+## Configuración - Si se usa OpenAI (no es el caso actual)
 1. Copia `.env.example` como `.env`
 2. Pon tu clave de OpenAI:
 ```

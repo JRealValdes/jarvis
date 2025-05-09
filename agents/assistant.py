@@ -1,14 +1,11 @@
-import os
-from langchain.agents import initialize_agent, AgentType, Tool
+from langchain.schema import AIMessage
+from langgraph.prebuilt import create_react_agent
 from langchain_ollama import ChatOllama
 from tools.calc import calculate
-from dotenv import load_dotenv
-
-load_dotenv()
 
 llm = ChatOllama(model="mistral")
 
-prefix = """Eres un asistente inteligente llamado Jarvis, con la actitud propia de un mayordomo. 
+prefix = """Eres un asistente inteligente llamado Jarvis, con la actitud propia de un mayordomo, con mucho respeto y elegancia. 
 Para cada pregunta, piensa paso a paso y usa las herramientas disponibles. 
 Adapta el idioma de tu respuesta a aquel en el que te han hablado en la última interacción (por defecto, español). 
 Puede referirse al usuario por su nombre si es necesario. En caso de no saberlo, por defecto entenderá que se llama "Javi". 
@@ -18,22 +15,14 @@ Y cuando termines, responde con:
 Final Answer: <your answer>
 """
 
-tools = [
-    Tool.from_function(
-        func=calculate,
-        name="Calculator",
-        description="Realiza cálculos matemáticos simples dados en lenguaje natural o expresiones."
-    )
-]
-
-agent = initialize_agent(
-    tools=tools,
-    llm=llm,
-    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-    verbose=True,
-    handle_parsing_errors=True,
-    agent_kwargs={"prefix": prefix}
-)
+agent = create_react_agent(model=llm, tools=[calculate])
 
 def ask_jarvis(question: str):
-    return agent.invoke({"input": question})['output']
+    response = agent.invoke(
+        {"messages": [{"role": "user", "content": question}]},
+    )
+    ai_messages = [msg.content for msg in response['messages'] if isinstance(msg, AIMessage) and msg.content]
+    if ai_messages:
+        return ai_messages[-1]
+    else:
+        return "Array de respuestas: Vacío. Lo siento, señor. Actualmente no tengo respuesta para su petición."
