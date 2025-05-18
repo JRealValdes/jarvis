@@ -1,5 +1,8 @@
+from langchain_core.tools import tool
+
+@tool
 def calculate(expression: str) -> str:
-    """Evalúa una expresión matemática en Python."""
+    """Evaluate a math expression in Python."""
     try:
         print(f"I'm entering calculate tool, sir. Expression under evaluation: {expression}.")
         return str(eval(expression))
