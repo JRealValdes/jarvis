@@ -1,3 +1,14 @@
+---
+title: Jarvis MVP
+emoji: 🤖
+colorFrom: blue
+colorTo: green
+sdk: gradio
+sdk_version: "4.16.0"
+app_file: app.py
+pinned: false
+---
+
 # Proyecto Jarvis MVP (IA Personal con Langchain)
 
 Este es un MVP de una IA estilo "Jarvis" usando Langgraph y Langchain.
