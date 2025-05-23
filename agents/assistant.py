@@ -1,30 +1,30 @@
 import os
+from enums.core_enums import ModelEnums
 from langchain.schema import AIMessage
 from langgraph.prebuilt import create_react_agent
+from langchain_openai import ChatOpenAI
 from tools.calc import calculate
 from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 from langchain_ollama import ChatOllama
 
-USE_ZEPHYR_7B = True
+model_used = ModelEnums.GPT_3_5
 
-zephyr_llm_endpoint = HuggingFaceEndpoint(
-    repo_id="HuggingFaceH4/zephyr-7b-beta",
-    task="text-generation",
-    max_new_tokens=512,
-    do_sample=False,
-    repetition_penalty=1.03,
-    huggingfacehub_api_token=os.environ.get("HF_TOKEN_INFERENCE")
-)
-
-zephyr_llm = ChatHuggingFace(llm=zephyr_llm_endpoint)
-
-mistral_llm = ChatOllama(model="mistral")
-
-if USE_ZEPHYR_7B:
-    llm = zephyr_llm
+if model_used == ModelEnums.ZEPHYR:
+    llm_endpoint = HuggingFaceEndpoint(
+        repo_id="HuggingFaceH4/zephyr-7b-beta",
+        task="text-generation",
+        max_new_tokens=512,
+        do_sample=False,
+        repetition_penalty=1.03,
+        huggingfacehub_api_token=os.environ.get("HF_TOKEN_INFERENCE")
+    )
+    llm = ChatHuggingFace(llm=llm_endpoint)
     agent = create_react_agent(model=llm, tools=[])
-else:
-    llm = mistral_llm
+elif model_used == ModelEnums.MISTRAL:
+    llm = ChatOllama(model="mistral")
+    agent = create_react_agent(model=llm, tools=[calculate])
+elif model_used == ModelEnums.GPT_3_5:
+    llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
     agent = create_react_agent(model=llm, tools=[calculate])
 
 prefix = """Eres un asistente inteligente llamado Jarvis, con la actitud propia de un mayordomo, con mucho respeto y elegancia. 

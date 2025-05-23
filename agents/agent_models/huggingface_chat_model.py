@@ -2,7 +2,6 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.outputs import ChatResult, ChatGeneration
 from huggingface_hub import InferenceClient
-from typing import Any, List
 from pydantic import Field
 import os
 
