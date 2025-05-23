@@ -1,9 +1,31 @@
+import os
 from langchain.schema import AIMessage
 from langgraph.prebuilt import create_react_agent
-from langchain_ollama import ChatOllama
 from tools.calc import calculate
+from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
+from langchain_ollama import ChatOllama
 
-llm = ChatOllama(model="mistral")
+USE_ZEPHYR_7B = True
+
+zephyr_llm_endpoint = HuggingFaceEndpoint(
+    repo_id="HuggingFaceH4/zephyr-7b-beta",
+    task="text-generation",
+    max_new_tokens=512,
+    do_sample=False,
+    repetition_penalty=1.03,
+    huggingfacehub_api_token=os.environ.get("HF_TOKEN_INFERENCE")
+)
+
+zephyr_llm = ChatHuggingFace(llm=zephyr_llm_endpoint)
+
+mistral_llm = ChatOllama(model="mistral")
+
+if USE_ZEPHYR_7B:
+    llm = zephyr_llm
+    agent = create_react_agent(model=llm, tools=[])
+else:
+    llm = mistral_llm
+    agent = create_react_agent(model=llm, tools=[calculate])
 
 prefix = """Eres un asistente inteligente llamado Jarvis, con la actitud propia de un mayordomo, con mucho respeto y elegancia. 
 Para cada pregunta, piensa paso a paso y usa las herramientas disponibles. 
@@ -14,8 +36,6 @@ Action: <tool_name>(input: "<your input>")
 Y cuando termines, responde con:
 Final Answer: <your answer>
 """
-
-agent = create_react_agent(model=llm, tools=[calculate])
 
 def ask_jarvis(question: str):
     response = agent.invoke(
