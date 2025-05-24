@@ -5,6 +5,10 @@ from config import DEFAULT_MODEL
 
 _agents_cache = {}
 
+def reset_agents_cache():
+    global _agents_cache
+    _agents_cache.clear()
+
 def get_agent(model_name: str):
     if model_name not in _agents_cache:
         try:
