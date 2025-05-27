@@ -2,7 +2,7 @@ import ast
 from langchain_core.tools import tool
 
 @tool
-def calculate(expression: str) -> float:
+def calculate_tool(expression: str) -> float:
     """
     Evaluate a math expression in Python securely.
     """

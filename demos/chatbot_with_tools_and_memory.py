@@ -10,10 +10,10 @@ from typing_extensions import TypedDict
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from tools.calc import calculate
+from tools.calc import calculate_tool
 
 llm = ChatOllama(model="mistral")
-tools = [calculate]
+tools = [calculate_tool]
 llm_with_tools = llm.bind_tools(tools)
 
 class State(TypedDict):

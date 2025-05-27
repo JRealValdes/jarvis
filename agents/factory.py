@@ -5,7 +5,8 @@ from enums.core_enums import ModelEnums
 from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
 from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
-from tools.calc import calculate
+from tools.calc import calculate_tool
+from tools.speech_to_text import speech_to_text_tool
 from langgraph.graph import StateGraph
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent, ToolNode, tools_condition
@@ -15,7 +16,7 @@ class State(TypedDict):
     messages: Annotated[list, add_messages]
 
 def create_gpt_3_5_agent_with_memory():
-    tools = [calculate]
+    tools = [calculate_tool, speech_to_text_tool]
     llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
     graph_builder = StateGraph(State)
     llm_with_tools = llm.bind_tools(tools)
@@ -53,12 +54,9 @@ def build_agent(model_used: ModelEnums):
         return create_react_agent(model=llm, tools=tools)
     elif model_used == ModelEnums.MISTRAL:
         llm = ChatOllama(model="mistral")
-        tools = [calculate]
+        tools = [calculate_tool]
         return create_react_agent(model=llm, tools=tools)
     elif model_used == ModelEnums.GPT_3_5:
-        # llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
-        # tools = [calculate]
-        # return create_react_agent(model=llm, tools=tools)
         return create_gpt_3_5_agent_with_memory()
     else:
         raise ValueError("Modelo no soportado.")
