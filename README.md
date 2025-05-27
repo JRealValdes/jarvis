@@ -1,5 +1,5 @@
 ---
-title: Jarvis MVP
+title: Jarvis
 emoji: 🤖
 colorFrom: blue
 colorTo: green
@@ -11,7 +11,7 @@ pinned: false
 
 # Proyecto Jarvis MVP (IA Personal con Langchain)
 
-Este es un MVP de una IA estilo "Jarvis" usando Langgraph y Langchain.
+IA estilo "Jarvis" usando Langgraph y Langchain.
 Hello, sir. How can I assist you today?
 
 ## Requisitos
