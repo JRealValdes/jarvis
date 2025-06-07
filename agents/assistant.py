@@ -4,6 +4,7 @@ from agents.factory import build_agent
 from config import DEFAULT_MODEL
 
 _agents_cache = {}
+agents_with_memory = [ModelEnums.GPT_3_5.name]
 
 def reset_agents_cache():
     global _agents_cache
@@ -25,14 +26,11 @@ def ask_jarvis(question: str, model_name: str = DEFAULT_MODEL.name):
     except ValueError as e:
         return str(e)
 
-    if model_name == ModelEnums.GPT_3_5.name:
-        config = {"configurable": {"thread_id": "1"}}
-        response = agent.invoke(
-            input={"messages": [{"role": "user", "content": question}]},
-            config=config
-        )
-    else:
-        response = agent.invoke({"messages": [{"role": "user", "content": question}]})
+    kwargs_model_invocation = {"input": {"messages": [{"role": "user", "content": question}]}}
+    if model_name in agents_with_memory:
+        kwargs_model_invocation["config"] = {"configurable": {"thread_id": "1"}}
+
+    response = agent.invoke(**kwargs_model_invocation)
 
     ai_messages = [msg.content for msg in response['messages'] if isinstance(msg, AIMessage) and msg.content]
     return ai_messages[-1] if ai_messages else "Lo siento, señor. No tengo respuesta para su petición."
