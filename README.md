@@ -78,7 +78,7 @@ jarvis/
 - [x] Gradio UI
 - [x] Speech-to-text tool
 - [x] Basic API endpoints
-- [ ] Prompt Engineering - Jarvis background
+- [x] Prompt Engineering - Jarvis background
 - [ ] Security layer: User ID
 - [ ] WhatsApp bot compatibility
 - [ ] WhatsApp audio transcription and summarization
@@ -89,6 +89,7 @@ jarvis/
 - [ ] Home devices control
 - [ ] Android app
 - [ ] CrewAI functionality
+- [ ] Prompt Engineering - Prompt injection detection
 - [ ] Raspberry Pi / Server version
 - [ ] Spech recognition
 - [ ] [Optional] Security layer: IP control
