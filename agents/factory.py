@@ -1,7 +1,7 @@
 import os
 from typing import Annotated
 from typing_extensions import TypedDict
-from enums.core_enums import ModelEnums
+from enums.core_enums import ModelEnum
 from langchain_openai import ChatOpenAI
 from langchain_ollama import ChatOllama
 from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
@@ -39,8 +39,8 @@ def create_gpt_3_5_agent_with_memory():
     graph = graph_builder.compile(checkpointer=memory)
     return graph
 
-def build_agent(model_used: ModelEnums):
-    if model_used == ModelEnums.ZEPHYR:
+def build_agent(model_used: ModelEnum):
+    if model_used == ModelEnum.ZEPHYR:
         llm_endpoint = HuggingFaceEndpoint(
             repo_id="HuggingFaceH4/zephyr-7b-beta",
             task="text-generation",
@@ -52,11 +52,11 @@ def build_agent(model_used: ModelEnums):
         llm = ChatHuggingFace(llm=llm_endpoint)
         tools = []
         return create_react_agent(model=llm, tools=tools)
-    elif model_used == ModelEnums.MISTRAL:
+    elif model_used == ModelEnum.MISTRAL:
         llm = ChatOllama(model="mistral")
         tools = [calculate_tool]
         return create_react_agent(model=llm, tools=tools)
-    elif model_used == ModelEnums.GPT_3_5:
+    elif model_used == ModelEnum.GPT_3_5:
         return create_gpt_3_5_agent_with_memory()
     else:
         raise ValueError("Modelo no soportado.")

@@ -1,9 +1,9 @@
 import gradio as gr
 from agents.assistant import ask_jarvis, reset_agents_cache
-from enums.core_enums import ModelEnums
+from enums.core_enums import ModelEnum
 from tools.speech_to_text import speech_to_text_tool
 
-model_options = list(ModelEnums.__members__.keys())
+model_options = list(ModelEnum.__members__.keys())
 default_model = "GPT_3_5"
 
 def respond(message, chat_history, model_name):

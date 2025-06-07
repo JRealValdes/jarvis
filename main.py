@@ -1,7 +1,7 @@
-from enums.core_enums import ModelEnums
+from enums.core_enums import ModelEnum
 from agents.assistant import ask_jarvis
 
-model_used = ModelEnums.GPT_3_5
+model_used = ModelEnum.GPT_3_5
 
 while True:
     query = input("Hola, señor. ¿Con qué puedo ayudarle hoy? ")
