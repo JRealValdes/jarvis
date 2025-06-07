@@ -47,10 +47,14 @@ jarvis/
 ├── api/
 │   ├── __init__.py
 │   └── main_api.py
+├── db/
+│   ├── __init__.py
+│   └── users_db.py
 ├── demos/
 │   ├── __init__.py
 │   ├── chatbot_with_tools_and_memory.py
-│   └── chatbot_with_tools.py
+│   ├── chatbot_with_tools.py
+│   └── users_db_playground.ipynb
 ├── enums/
 │   ├── __init__.py
 │   └── core_enums.py
@@ -79,7 +83,9 @@ jarvis/
 - [x] Speech-to-text tool
 - [x] Basic API endpoints
 - [x] Prompt Engineering - Jarvis background
-- [ ] Security layer: User ID
+- [ ] User ID pt 1 - DB and secret DB
+- [ ] User ID pt 2 - Session wrapper class
+- [ ] Thread conversation management
 - [ ] WhatsApp bot compatibility
 - [ ] WhatsApp audio transcription and summarization
 - [ ] Tool to read PDFs or files

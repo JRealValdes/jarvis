@@ -3,6 +3,12 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Secret notes
+my_notes.txt
+
+# Secret databases
+*secret*.db
+
 # C extensions
 *.so
 
