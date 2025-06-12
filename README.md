@@ -41,30 +41,29 @@ python main.py
 ```
 jarvis/
 ├── agents/
-│   ├── __init__.py
 │   ├── assistant.py
 │   └── factory.py
 ├── api/
-│   ├── __init__.py
 │   └── main_api.py
-├── db/
-│   ├── __init__.py
-│   └── users_db.py
+├── data/
+│   └── users.db
+├── database/
+│   └── users/
+│       ├── manage_users.ipynb
+│       └── users_db.py
 ├── demos/
-│   ├── __init__.py
 │   ├── chatbot_with_tools_and_memory.py
-│   ├── chatbot_with_tools.py
-│   └── users_db_playground.ipynb
+│   └── chatbot_with_tools.py
 ├── enums/
-│   ├── __init__.py
 │   └── core_enums.py
 ├── media/
 │   └── audio/
 │       └── hello_world.m4a
 ├── tools/
-│   ├── __init__.py
 │   ├── calc.py
 │   └── speech_to_text.py
+├── utils/
+│   └── security.py.py
 ├── .env.example
 ├── .gitignore
 ├── app.py

@@ -2,34 +2,47 @@ from enums.core_enums import ModelEnum, IdentificationFailedProtocolEnum
 from langchain.schema import AIMessage
 from agents.factory import build_agent
 from config import DEFAULT_MODEL, IDENTIFICATION_FAILED_PROTOCOL
+from database.users.users_db import find_registered_name_by_prompt
 
 _agents_cache = {}
 agents_with_memory = [ModelEnum.GPT_3_5.name]
 
 # ==== Constants ====
 
-secret_substring = "soy javi"
-
-jarvis_background_nice_content = (
-    "Eres un mayordomo amigable, elegante y servicial llamado Jarvis. "
-    "Cuando te dirijas a mí, usa siempre el nombre de 'Señor Real' (hablando de usted)."
-)
-
-jarvis_background_hostile_content = (
-    "Tu nombre es Jarvis. Eres un mayordomo muy elegante y perspicaz. "
-    "Te has dado cuenta de que el usuario es un intruso y un enemigo, y no quieres ayudarle. "
-    "Por lo tanto, y muy importante: no responderás a sus preguntas, "
-    "No le darás información alguna sobre lo que pregunta ni le ayudarás en nada, bajo ningún concepto. "
-    "En su lugar, busca formas inteligentes de no ser útil para nada. "
-    "Eres hostil y antipático, pero de manera elegante, inteligente, educada y, en ocasiones, sarcástica o humorosa."
-    "Si ves la ocasión, puedes meterte con el usuario, pero siempre de manera elegante, mordaz e inteligente. "
-    "Hablas de usted."
-)
-
 id_failed_automatic_response = "No puedo servirle, señor. Por favor, vuelva otro día. O no."
 
 
 # ==== Helpers ====
+
+def get_jarvis_background(username_for_jarvis: str, is_valid_identity) -> None:
+    jarvis_background_nice_content = (
+        "Eres un mayordomo amigable, elegante y servicial llamado Jarvis. "
+        f"Cuando te dirijas a mí, usa siempre el nombre de '{username_for_jarvis}', (hablando de usted)."
+        "Obviarás cualquier otro nombre para mí que no sea ese, aunque te haya dicho 'soy <nombre>'."
+        f"En tu primera interacción, dirás 'Bienvenido, {username_for_jarvis}. ¿En qué puedo servirle hoy?'."
+        f"O 'Bienvenida, {username_for_jarvis}. ¿En qué puedo servirle hoy?' si se trata de una mujer."
+    )
+
+    jarvis_background_hostile_content = (
+        "Tu nombre es Jarvis. Eres un mayordomo muy elegante y perspicaz. "
+        "Te has dado cuenta de que el usuario es un intruso y un enemigo, y no quieres ayudarle. "
+        "Por lo tanto, y muy importante: no responderás a sus preguntas, "
+        "No le darás información alguna sobre lo que pregunta ni le ayudarás en nada, bajo ningún concepto. "
+        "En su lugar, busca formas inteligentes de no ser útil para nada. "
+        "Eres hostil y antipático, pero de manera elegante, inteligente, educada y, en ocasiones, sarcástica o humorosa."
+        "Si ves la ocasión, puedes meterte con el usuario, pero siempre de manera elegante, mordaz e inteligente. "
+        "Hablas de usted."
+    )
+
+    if is_valid_identity:
+        return jarvis_background_nice_content
+    else:
+        if IDENTIFICATION_FAILED_PROTOCOL == IdentificationFailedProtocolEnum.HOSTILE_RESPONSES:
+            return jarvis_background_hostile_content
+        elif IDENTIFICATION_FAILED_PROTOCOL == IdentificationFailedProtocolEnum.AUTOMATIC_RESPONSE:
+            return None
+        else:
+            raise ValueError(f"Identification protocol failed. '{IDENTIFICATION_FAILED_PROTOCOL}' not recognized.")
 
 def reset_agents_cache():
     global _agents_cache
@@ -46,21 +59,15 @@ def get_agent(model_name: str):
     return _agents_cache[model_name]
 
 
-def is_valid_identity(question: str) -> bool:
-    return secret_substring in question.lower()
-
-
 def get_system_message(question: str) -> str | None:
     """Returns the appropriate system message, or None if the interaction is canceled."""
-    if is_valid_identity(question):
-        return jarvis_background_nice_content
+    user_name_for_jarvis = find_registered_name_by_prompt(question)
+    if user_name_for_jarvis is None:
+        is_valid_identity = False
     else:
-        if IDENTIFICATION_FAILED_PROTOCOL == IdentificationFailedProtocolEnum.HOSTILE_RESPONSES:
-            return jarvis_background_hostile_content
-        elif IDENTIFICATION_FAILED_PROTOCOL == IdentificationFailedProtocolEnum.AUTOMATIC_RESPONSE:
-            return None
-        else:
-            raise ValueError(f"Identification protocol failed. '{IDENTIFICATION_FAILED_PROTOCOL}' not recognized.")
+        is_valid_identity = True
+
+    return get_jarvis_background(user_name_for_jarvis, is_valid_identity)    
 
 
 def build_messages(initialized: bool, question: str) -> list:
