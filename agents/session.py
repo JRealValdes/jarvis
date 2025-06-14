@@ -1,7 +1,7 @@
 from langchain.schema import AIMessage
 from enums.core_enums import ModelEnum, IdentificationFailedProtocolEnum
 from config import DEFAULT_MODEL, IDENTIFICATION_FAILED_PROTOCOL
-from database.users.users_db import find_registered_name_by_prompt
+from database.users.users_db import find_user_by_prompt
 from agents.factory import build_agent, models_with_memory
 
 AUTOMATIC_RESPONSE_IF_ID_FAILED = "Me temo que no puedo servirle sin identificación."
@@ -15,7 +15,7 @@ class JarvisSession:
         self.model = model
         self.thread_id = thread_id
         self.valid_user = False
-        self.username_for_jarvis = None
+        self.user = None
         self.agent = self._load_agent()
         self.session_initialized = False
         self._chat_initialized = False
@@ -24,13 +24,17 @@ class JarvisSession:
         if self.model not in _agents_cache:
             _agents_cache[self.model] = build_agent(self.model)
         return _agents_cache[self.model]
+    
+    def get_welcome_message(self) -> str:
+        gender_termination = "a" if self.user["is_female"] else "o"
+        return f"Bienvenid{gender_termination}, {self.user['jarvis_name']}. ¿En qué puedo servirle hoy?"
 
     def _get_background_prompt(self) -> str | None:
         if self.valid_user:
             return (
                 "Eres un mayordomo amigable, elegante y servicial llamado Jarvis. "
-                f"Cuando te dirijas al usuario, usa siempre el nombre de '{self.username_for_jarvis}', (hablando de usted). "
-                "Ese es el nombre del usuario. "
+                f"Cuando te dirijas al usuario, usa siempre el nombre de '{self.user['jarvis_name']}', (hablando de usted). "
+                f"El usuario es {'una mujer' if self.user['is_female'] else 'un hombre'}. "
             )
         elif IDENTIFICATION_FAILED_PROTOCOL == IdentificationFailedProtocolEnum.HOSTILE_RESPONSES:
             return (
@@ -64,6 +68,7 @@ class JarvisSession:
             system_msg = self._get_background_prompt()
             if system_msg:
                 messages.append({"role": "system", "content": system_msg})
+                messages.append({"role": "assistant", "content": self.get_welcome_message()})
                 self._chat_initialized = True
             else:
                 return None
@@ -82,16 +87,16 @@ class JarvisSession:
 
     def _check_identity(self, question: str):
         if not self.valid_user:
-            user_name = find_registered_name_by_prompt(question)
-            if user_name:
+            user = find_user_by_prompt(question)
+            if user:
                 self.valid_user = True
-                self.username_for_jarvis = user_name
+                self.user = user
 
     def ask(self, question: str) -> str:
         messages = self._build_messages(question)
         if messages is None:
             if self.valid_user:
-                return f"Bienvenido, {self.username_for_jarvis}. ¿En qué puedo servirle hoy?"
+                return self.get_welcome_message()
             else:
                 return AUTOMATIC_RESPONSE_IF_ID_FAILED
 
