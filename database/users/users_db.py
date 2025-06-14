@@ -51,6 +51,30 @@ def insert_user(
     except sqlite3.IntegrityError:
         print(f"[Warning] IntegrityError: User with real_name '{real_name}' or access_name '{access_name}' already exists.")
 
+def insert_user_list(user_list: list[dict]):
+    """
+    Insert multiple users into the database using the insert_user function.
+
+    Each dictionary in the list must contain the keys:
+    - real_name (str)
+    - access_name (str)
+    - jarvis_name (str)
+    - is_female (bool)
+    - admin (bool, optional)
+    """
+    for user in user_list:
+        try:
+            insert_user(
+                real_name=user["real_name"],
+                access_name=user["access_name"],
+                jarvis_name=user["jarvis_name"],
+                is_female=user["is_female"],
+                admin=user.get("admin", False)
+            )
+        except KeyError as e:
+            print(f"[Error] Missing required field: {e} in user data: {user}")
+
+
 def get_user_by_field(field: str, value: str, is_sensitive: bool = False) -> dict | None:
     """
     Returns a user record as a dictionary based on the given field.
