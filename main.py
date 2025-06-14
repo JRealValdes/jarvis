@@ -1,11 +1,13 @@
 from enums.core_enums import ModelEnum
-from agents.assistant import ask_jarvis
+from config import DEFAULT_MODEL
+from agents.session import ask_jarvis
 
-model_used = ModelEnum.GPT_3_5
+model_used = DEFAULT_MODEL
+thread_id = "1" # Parameterize this in the future
 
 while True:
-    query = input("Hola, señor. ¿Con qué puedo ayudarle hoy? ")
-    if query.lower() in ["salir", "exit", "quit"] or ("eso es todo" in query.lower() and "jarvis" in query.lower()):
+    question = input("Hola, señor. ¿Con qué puedo ayudarle hoy? ")
+    if question.lower() in ["salir", "exit", "quit"] or ("eso es todo" in question.lower() and "jarvis" in question.lower()):
         break
-    response = ask_jarvis(query, model_used.name)
+    response = ask_jarvis(question, model_used, thread_id=thread_id)
     print("Jarvis:", response)

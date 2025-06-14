@@ -1,13 +1,18 @@
 import gradio as gr
-from agents.assistant import ask_jarvis, reset_agents_cache
+from agents.session import ask_jarvis, reset_cache
 from enums.core_enums import ModelEnum
+from config import DEFAULT_MODEL
 from tools.speech_to_text import speech_to_text_tool
 
 model_options = list(ModelEnum.__members__.keys())
-default_model = "GPT_3_5"
+model_used = DEFAULT_MODEL
+thread_id = "1" # Parameterize this in the future
 
-def respond(message, chat_history, model_name):
-    response = ask_jarvis(message, model_name)
+def respond(message, chat_history, model_used):
+    if isinstance(model_used, str):
+        model_used = ModelEnum[model_used]  # Convertir de str a enum
+    
+    response = ask_jarvis(message, model_used, thread_id=thread_id)
     chat_history = chat_history or []
     chat_history.append({"role": "user", "content": message})
     chat_history.append({"role": "assistant", "content": response})
@@ -27,13 +32,12 @@ def respond_audio(audio_file, chat_history, model_name):
     # Use transcribed text to get Jarvis response
     return respond(text, chat_history, model_name)
 
-def reset_cache():
-    reset_agents_cache()
-    return "Agents cache resetted."
+def reset_chat():
+    reset_cache()
+    return "Chat cache resetted.", []
 
 with gr.Blocks() as demo:
     chatbot = gr.Chatbot(height=500, type='messages')
-    model_dropdown = gr.Dropdown(choices=model_options, value=default_model, label="Select the model")
 
     with gr.Row():
         message = gr.Textbox(placeholder="Write your message to Jarvis here...")
@@ -43,18 +47,21 @@ with gr.Blocks() as demo:
         audio_input = gr.Audio(label="Speak to Jarvis", type="filepath", format="wav")
         voice_btn = gr.Button("Send Voice")
 
+    model_dropdown = gr.Dropdown(choices=model_options, value=model_used.name, label="Select the model")
+
     reset_btn = gr.Button("Reset memory")
     status = gr.Textbox(label="Status", interactive=False)
 
-    # Text input
     send_btn.click(fn=respond, inputs=[message, chatbot, model_dropdown], outputs=[chatbot, message])
     message.submit(fn=respond, inputs=[message, chatbot, model_dropdown], outputs=[chatbot, message])
 
-    # Audio input
     voice_btn.click(fn=respond_audio, inputs=[audio_input, chatbot, model_dropdown], outputs=[chatbot, status])
+    reset_btn.click(
+        fn=reset_chat,
+        inputs=None,
+        outputs=[status, chatbot]
+    )
 
-    # Reset cache
-    reset_btn.click(fn=reset_cache, inputs=None, outputs=status)
 
 if __name__ == "__main__":
     demo.launch()

@@ -41,8 +41,8 @@ python main.py
 ```
 jarvis/
 ├── agents/
-│   ├── assistant.py
-│   └── factory.py
+│   ├── factory.py
+│   └── session.py
 ├── api/
 │   └── main_api.py
 ├── data/
@@ -95,6 +95,8 @@ jarvis/
 - [ ] Android app
 - [ ] CrewAI functionality
 - [ ] Prompt Engineering - Prompt injection detection
+- [ ] Simultaneous conversations
+- [ ] API backend multi-client
 - [ ] Raspberry Pi / Server version
 - [ ] Spech recognition
 - [ ] [Optional] Security layer: IP control

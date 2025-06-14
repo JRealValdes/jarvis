@@ -12,6 +12,8 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent, ToolNode, tools_condition
 from langgraph.graph.message import add_messages
 
+models_with_memory = [ModelEnum.GPT_3_5]
+
 class State(TypedDict):
     messages: Annotated[list, add_messages]
 
