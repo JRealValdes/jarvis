@@ -39,7 +39,7 @@ def create_gpt_3_5_agent_with_memory():
     graph_builder.set_entry_point("chatbot")
     memory = MemorySaver()
     graph = graph_builder.compile(checkpointer=memory)
-    return graph
+    return graph, memory
 
 def build_agent(model_used: ModelEnum):
     if model_used == ModelEnum.ZEPHYR:
@@ -53,11 +53,11 @@ def build_agent(model_used: ModelEnum):
         )
         llm = ChatHuggingFace(llm=llm_endpoint)
         tools = []
-        return create_react_agent(model=llm, tools=tools)
+        return create_react_agent(model=llm, tools=tools), None
     elif model_used == ModelEnum.MISTRAL:
         llm = ChatOllama(model="mistral")
         tools = [calculate_tool]
-        return create_react_agent(model=llm, tools=tools)
+        return create_react_agent(model=llm, tools=tools), None
     elif model_used == ModelEnum.GPT_3_5:
         return create_gpt_3_5_agent_with_memory()
     else:

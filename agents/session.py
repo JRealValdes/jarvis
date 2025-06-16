@@ -3,40 +3,65 @@ from enums.core_enums import ModelEnum, IdentificationFailedProtocolEnum
 from config import DEFAULT_MODEL, IDENTIFICATION_FAILED_PROTOCOL
 from database.users.users_db import find_user_by_prompt
 from agents.factory import build_agent, models_with_memory
+from enum import Enum
 
 AUTOMATIC_RESPONSE_IF_ID_FAILED = "Me temo que no puedo servirle sin identificación."
 
-# === Caches globales ===
+
+class ChatState(Enum):
+    NOT_INITIALIZED = "NOT_INITIALIZED"
+    JARVIS_WELCOME_MESSAGE = "JARVIS_WELCOME_MESSAGE"
+    STARTING_CHAT = "STARTING_CHAT"
+    INITIALIZED = "INITIALIZED"
+
+
+# === Global caches ===
 _sessions_cache: dict[tuple[ModelEnum, str], "JarvisSession"] = {}
 _agents_cache: dict[ModelEnum, object] = {}
 
+
 class JarvisSession:
+    """
+    Manages a conversational session with Jarvis, including user identification,
+    state transitions, and message processing via an LLM agent.
+    """
+
     def __init__(self, model: ModelEnum = DEFAULT_MODEL, thread_id: str = "1"):
         self.model = model
         self.thread_id = thread_id
         self.valid_user = False
         self.user = None
-        self.agent = self._load_agent()
-        self.session_initialized = False
-        self._chat_initialized = False
+        self.agent, self.memory = self._load_or_build_agent()
+        self._chat_state = ChatState.NOT_INITIALIZED
 
-    def _load_agent(self):
+    def _load_or_build_agent(self):
+        """
+        Retrieves the agent and its memory from cache or builds them if missing.
+        """
         if self.model not in _agents_cache:
-            _agents_cache[self.model] = build_agent(self.model)
-        return _agents_cache[self.model]
-    
-    def get_welcome_message(self) -> str:
-        gender_termination = "a" if self.user["is_female"] else "o"
-        return f"Bienvenid{gender_termination}, {self.user['jarvis_name']}. ¿En qué puedo servirle hoy?"
+            _agents_cache[self.model], memory = build_agent(self.model)
+        else:
+            memory = None
+        return _agents_cache[self.model], memory
 
-    def _get_background_prompt(self) -> str | None:
+    def _get_welcome_message(self) -> str:
+        """
+        Returns the personalized welcome message for an identified user.
+        """
+        gender_suffix = "a" if self.user["is_female"] else "o"
+        return f"Bienvenid{gender_suffix}, {self.user['jarvis_name']}. ¿En qué puedo servirle hoy?"
+
+    def _build_background_prompt(self) -> str:
+        """
+        Constructs the system message to define Jarvis's behavior based on user identity.
+        """
         if self.valid_user:
             return (
                 "Eres un mayordomo amigable, elegante y servicial llamado Jarvis. "
                 f"Cuando te dirijas al usuario, usa siempre el nombre de '{self.user['jarvis_name']}', (hablando de usted). "
-                f"El usuario es {'una mujer' if self.user['is_female'] else 'un hombre'}. "
+                f"El usuario es {'una mujer' if self.user['is_female'] else 'un hombre'}."
             )
-        elif IDENTIFICATION_FAILED_PROTOCOL == IdentificationFailedProtocolEnum.HOSTILE_RESPONSES:
+        else:
             return (
                 "Tu nombre es Jarvis. Eres un mayordomo muy elegante y perspicaz. "
                 "Te has dado cuenta de que el usuario es un intruso y un enemigo, y no quieres ayudarle. "
@@ -47,76 +72,108 @@ class JarvisSession:
                 "Si ves la ocasión, puedes meterte con el usuario, pero siempre de manera elegante, mordaz e inteligente. "
                 "Hablas de usted."
             )
-        elif IDENTIFICATION_FAILED_PROTOCOL == IdentificationFailedProtocolEnum.AUTOMATIC_RESPONSE:
-            return None
-        else:
-            raise ValueError(f"Identification protocol '{IDENTIFICATION_FAILED_PROTOCOL}' not recognized.")
 
-    def _build_messages(self, question: str) -> list | None:
+    def _check_user_identity(self, prompt: str):
         """
-        Builds the messages to be sent to the agent based on the question.
-        If it returns None, the response will later be automatically generated: Welcome message or get-out message.
+        Checks if the user can be identified based on the prompt.
         """
-        messages = []
-        if not self.session_initialized:
-            self._check_identity(question)
+        user = find_user_by_prompt(prompt)
+        if user:
+            self.valid_user = True
+            self.user = user
+
+    def _update_chat_state(self, prompt: str):
+        """
+        Updates internal state based on identification and current chat stage.
+        """
+        was_previously_invalid = not self.valid_user
+        if was_previously_invalid:
+            self._check_user_identity(prompt)
+
+        if self._chat_state == ChatState.NOT_INITIALIZED:
             if self.valid_user:
-                self.session_initialized = True   # If user did not identify, they can still retry on next iteration
-            return None
-        
-        if not self._chat_initialized:
-            system_msg = self._get_background_prompt()
-            if system_msg:
-                messages.append({"role": "system", "content": system_msg})
-                messages.append({"role": "assistant", "content": self.get_welcome_message()})
-                self._chat_initialized = True
-            else:
-                return None
+                self._chat_state = ChatState.JARVIS_WELCOME_MESSAGE
+            elif IDENTIFICATION_FAILED_PROTOCOL == IdentificationFailedProtocolEnum.HOSTILE_RESPONSES:
+                self._chat_state = ChatState.STARTING_CHAT
 
-        if self.valid_user or IDENTIFICATION_FAILED_PROTOCOL == IdentificationFailedProtocolEnum.HOSTILE_RESPONSES:
-            messages.append({"role": "user", "content": question})
-        else:
-            return None
-        return messages
+        elif self._chat_state == ChatState.JARVIS_WELCOME_MESSAGE:
+            self._chat_state = ChatState.STARTING_CHAT
 
-    def _build_kwargs(self, messages: list) -> dict:
+        elif self._chat_state == ChatState.STARTING_CHAT:
+            self._chat_state = ChatState.INITIALIZED
+
+        elif self._chat_state == ChatState.INITIALIZED:
+            if was_previously_invalid and self.valid_user:
+                if self.memory:
+                    self.memory.delete_thread(self.thread_id)
+                self._chat_state = ChatState.JARVIS_WELCOME_MESSAGE
+
+    def _build_message(self, role: str, content: str) -> dict:
+        return {"role": role, "content": content}
+
+    def _build_agent_kwargs(self, messages: list) -> dict:
         kwargs = {"input": {"messages": messages}}
         if self.model in models_with_memory:
             kwargs["config"] = {"configurable": {"thread_id": self.thread_id}}
         return kwargs
 
-    def _check_identity(self, question: str):
-        if not self.valid_user:
-            user = find_user_by_prompt(question)
-            if user:
-                self.valid_user = True
-                self.user = user
+    def _process_messages(self, messages: list) -> str:
+        """
+        Sends messages to the agent and retrieves the last AI response.
+        """
+        try:
+            kwargs = self._build_agent_kwargs(messages)
+            response = self.agent.invoke(**kwargs)
+            ai_messages = [
+                msg.content for msg in response.get("messages", [])
+                if isinstance(msg, AIMessage) and msg.content
+            ]
+            return ai_messages[-1] if ai_messages else "Lo siento, señor. No tengo respuesta para su petición."
+        except Exception as e:
+            # Optional: log the error
+            return "Ha habido un error procesando su petición, señor."
 
-    def ask(self, question: str) -> str:
-        messages = self._build_messages(question)
-        if messages is None:
+    def ask(self, prompt: str) -> str:
+        """
+        Main interaction method. Updates state and returns Jarvis's response.
+        """
+        self._update_chat_state(prompt)
+
+        if self._chat_state == ChatState.NOT_INITIALIZED:
+            return AUTOMATIC_RESPONSE_IF_ID_FAILED
+
+        elif self._chat_state == ChatState.JARVIS_WELCOME_MESSAGE:
+            return self._get_welcome_message()
+
+        elif self._chat_state == ChatState.STARTING_CHAT:
+            messages = [
+                self._build_message("system", self._build_background_prompt())
+            ]
             if self.valid_user:
-                return self.get_welcome_message()
-            else:
-                return AUTOMATIC_RESPONSE_IF_ID_FAILED
+                messages.append(self._build_message("assistant", self._get_welcome_message()))
+            messages.append(self._build_message("user", prompt))
+            return self._process_messages(messages)
 
-        kwargs = self._build_kwargs(messages)
-        response = self.agent.invoke(**kwargs)
-        ai_messages = [
-            msg.content for msg in response['messages']
-            if isinstance(msg, AIMessage) and msg.content
-        ]
-        return ai_messages[-1] if ai_messages else "Lo siento, señor. No tengo respuesta para su petición."
+        elif self._chat_state == ChatState.INITIALIZED:
+            messages = [self._build_message("user", prompt)]
+            return self._process_messages(messages)
 
-def ask_jarvis(question: str, model: ModelEnum = DEFAULT_MODEL, thread_id: str = "1") -> str:
+
+def ask_jarvis(prompt: str, model: ModelEnum = DEFAULT_MODEL, thread_id: str = "1") -> str:
+    """
+    Entry point for interacting with Jarvis via session cache.
+    """
     session_key = (model, thread_id)
     if session_key not in _sessions_cache:
         _sessions_cache[session_key] = JarvisSession(model, thread_id)
-    return _sessions_cache[session_key].ask(question)
+    return _sessions_cache[session_key].ask(prompt)
+
 
 def reset_cache():
-    """Resets agents and sessions cache."""
+    """
+    Clears the cached agents and sessions.
+    """
     global _agents_cache
     global _sessions_cache
-    _agents_cache = {}
-    _sessions_cache = {}
+    _agents_cache.clear()
+    _sessions_cache.clear()

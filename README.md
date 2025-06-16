@@ -82,15 +82,17 @@ jarvis/
 - [x] Speech-to-text tool
 - [x] Basic API endpoints
 - [x] Prompt Engineering - Jarvis background
-- [ ] User ID pt 1 - DB and secret DB
-- [ ] User ID pt 2 - Session wrapper class
+- [x] User ID pt 1 - DB and secret DB
+- [x] User ID pt 2 - Session wrapper class
+- [ ] MCP - Warlock protocol and Calendar communication
 - [ ] Thread conversation management
 - [ ] WhatsApp bot compatibility
 - [ ] WhatsApp audio transcription and summarization
 - [ ] Tool to read PDFs or files
-- [ ] RAG system
+- [ ] RAG system. Vector DB
+- [ ] Extra security layer
 - [ ] Database implementation and interaction via LLM
-- [ ] Fine-tuning functionality
+- [ ] Fine-tuning functionality - Copy writting style
 - [ ] Home devices control
 - [ ] Android app
 - [ ] CrewAI functionality
