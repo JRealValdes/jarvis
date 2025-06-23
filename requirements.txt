@@ -6,3 +6,5 @@ langgraph
 openai
 cryptography
 python-dotenv
+langchain-mcp-adapters
+mcp
