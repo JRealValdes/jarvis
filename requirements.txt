@@ -4,3 +4,5 @@ langchain-openai
 langchain-huggingface
 langgraph
 openai
+cryptography
+python-dotenv

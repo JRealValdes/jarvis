@@ -13,8 +13,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from tools.calc import calculate_tool
 
 llm = ChatOllama(model="mistral")
-
-llm = ChatOllama(model="mistral")
 tools = [calculate_tool]
 llm_with_tools = llm.bind_tools(tools)
 
