@@ -42,6 +42,9 @@ python main.py
 jarvis/
 ├── agents/
 │   ├── factory.py
+│   ├── jarvis_basic_agent.py
+│   ├── jarvis_mcp_memory_agent.py
+│   ├── jarvis_memory_agent.py
 │   └── session.py
 ├── api/
 │   └── main_api.py
@@ -52,10 +55,14 @@ jarvis/
 │       ├── manage_users.ipynb
 │       └── users_db.py
 ├── demos/
+│   ├── basic_mcp_test.py
 │   ├── chatbot_with_tools_and_memory.py
 │   └── chatbot_with_tools.py
 ├── enums/
 │   └── core_enums.py
+├── mcp/
+│   └── servers/
+│       └── math_server.py
 ├── media/
 │   └── audio/
 │       └── hello_world.m4a

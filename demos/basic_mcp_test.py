@@ -22,8 +22,6 @@ from contextlib import AsyncExitStack
 
 local_tools = [calculate_tool, speech_to_text_tool]
 
-models_with_memory = [ModelEnum.GPT_3_5]
-
 class State(TypedDict):
     messages: Annotated[list, add_messages]
 

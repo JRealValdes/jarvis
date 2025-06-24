@@ -26,23 +26,21 @@ class JarvisSession:
     state transitions, and message processing via an LLM agent.
     """
 
-    def __init__(self, model: ModelEnum = DEFAULT_MODEL, thread_id: str = "1"):
-        self.model = model
+    def __init__(self, model_enum: ModelEnum = DEFAULT_MODEL, thread_id: str = "1"):
+        self.model_enum = model_enum
         self.thread_id = thread_id
         self.valid_user = False
         self.user = None
-        self.agent, self.memory = self._load_or_build_agent()
+        self.agent = self._load_or_build_agent()
         self._chat_state = ChatState.NOT_INITIALIZED
 
     def _load_or_build_agent(self):
         """
         Retrieves the agent and its memory from cache or builds them if missing.
         """
-        if self.model not in _agents_cache:
-            _agents_cache[self.model], memory = build_agent(self.model)
-        else:
-            memory = None
-        return _agents_cache[self.model], memory
+        if self.model_enum not in _agents_cache:
+            _agents_cache[self.model_enum] = build_agent(self.model_enum)
+        return _agents_cache[self.model_enum]
 
     def _get_welcome_message(self) -> str:
         """
@@ -104,8 +102,8 @@ class JarvisSession:
 
         elif self._chat_state == ChatState.INITIALIZED:
             if was_previously_invalid and self.valid_user:
-                if self.memory:
-                    self.memory.delete_thread(self.thread_id)
+                if self.agent.memory:
+                    self.agent.memory.delete_thread(self.thread_id)
                 self._chat_state = ChatState.JARVIS_WELCOME_MESSAGE
 
     def _build_message(self, role: str, content: str) -> dict:
@@ -113,7 +111,7 @@ class JarvisSession:
 
     def _build_agent_kwargs(self, messages: list) -> dict:
         kwargs = {"input": {"messages": messages}}
-        if self.model in models_with_memory:
+        if self.model_enum in models_with_memory:
             kwargs["config"] = {"configurable": {"thread_id": self.thread_id}}
         return kwargs
 
