@@ -1,4 +1,3 @@
-from enums.core_enums import ModelEnum
 from config import DEFAULT_MODEL
 from agents.session import ask_jarvis
 

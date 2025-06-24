@@ -8,6 +8,6 @@ def build_agent(model_used: ModelEnum):
     if model_used in [ModelEnum.ZEPHYR, ModelEnum.MISTRAL]:
         return JarvisBasicAgent(model_used)
     elif model_used == ModelEnum.GPT_3_5:
-        return JarvisMemoryAgent(ModelEnum.GPT_3_5)
+        return JarvisMemoryAgent(model_used)
     else:
         raise ValueError("Modelo no soportado.")

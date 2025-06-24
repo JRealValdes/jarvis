@@ -1,4 +1,4 @@
-from langchain.schema import AIMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from enums.core_enums import ModelEnum, IdentificationFailedProtocolEnum
 from config import DEFAULT_MODEL, IDENTIFICATION_FAILED_PROTOCOL
 from database.users.users_db import find_user_by_prompt
@@ -129,7 +129,7 @@ class JarvisSession:
             return ai_messages[-1] if ai_messages else "Lo siento, señor. No tengo respuesta para su petición."
         except Exception as e:
             # Optional: log the error
-            return "Ha habido un error procesando su petición, señor."
+            return f"Ha habido un error procesando su petición, señor. Error: {e}"
 
     def ask(self, prompt: str) -> str:
         """
@@ -145,15 +145,15 @@ class JarvisSession:
 
         elif self._chat_state == ChatState.STARTING_CHAT:
             messages = [
-                self._build_message("system", self._build_background_prompt())
+                SystemMessage(content=self._build_background_prompt())
             ]
             if self.valid_user:
-                messages.append(self._build_message("assistant", self._get_welcome_message()))
-            messages.append(self._build_message("user", prompt))
+                messages.append(AIMessage(content=self._get_welcome_message()))
+            messages.append(HumanMessage(content=prompt))
             return self._process_messages(messages)
 
         elif self._chat_state == ChatState.INITIALIZED:
-            messages = [self._build_message("user", prompt)]
+            messages = [HumanMessage(content=prompt)]
             return self._process_messages(messages)
 
 
