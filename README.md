@@ -61,6 +61,7 @@ jarvis/
 ├── enums/
 │   └── core_enums.py
 ├── mcp/
+│   ├── server_config.json
 │   └── servers/
 │       └── math_server.py
 ├── media/
