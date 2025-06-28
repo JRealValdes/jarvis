@@ -92,17 +92,20 @@ jarvis/
 - [x] Prompt Engineering - Jarvis background
 - [x] User ID pt 1 - DB and secret DB
 - [x] User ID pt 2 - Session wrapper class
-- [ ] MCP - Warlock protocol and Calendar communication
+- [x] MCP - Jarvis MCP Memory Agent
+- [ ] Upload to Render and expose API
+- [ ] Android app
 - [ ] Thread conversation management
 - [ ] WhatsApp bot compatibility
 - [ ] WhatsApp audio transcription and summarization
+- [ ] Optimization: build LangGraph agent after identification
+- [ ] Functionality: send messages through users.
 - [ ] Tool to read PDFs or files
 - [ ] RAG system. Vector DB
 - [ ] Extra security layer
 - [ ] Database implementation and interaction via LLM
 - [ ] Fine-tuning functionality - Copy writting style
 - [ ] Home devices control
-- [ ] Android app
 - [ ] CrewAI functionality
 - [ ] Prompt Engineering - Prompt injection detection
 - [ ] Simultaneous conversations

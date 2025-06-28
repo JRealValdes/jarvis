@@ -128,8 +128,6 @@ class JarvisSession:
                 default=-1
             )
 
-
-
             result = []
             for msg in response_messages[last_human_index + 1:]:
                 if isinstance(msg, AIMessage) and 'tool_calls' in msg.additional_kwargs:
