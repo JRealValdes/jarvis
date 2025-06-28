@@ -1,4 +1,4 @@
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
 from enums.core_enums import ModelEnum, IdentificationFailedProtocolEnum
 from config import DEFAULT_MODEL, IDENTIFICATION_FAILED_PROTOCOL
 from database.users.users_db import find_user_by_prompt
@@ -122,11 +122,26 @@ class JarvisSession:
         try:
             kwargs = self._build_agent_kwargs(messages)
             response = self.agent.invoke(**kwargs)
-            ai_messages = [
-                msg.content for msg in response.get("messages", [])
-                if isinstance(msg, AIMessage) and msg.content
-            ]
-            return ai_messages[-1] if ai_messages else "Lo siento, señor. No tengo respuesta para su petición."
+            response_messages = response.get("messages", [])
+            last_human_index = max(
+                (i for i, msg in enumerate(response_messages) if isinstance(msg, HumanMessage)),
+                default=-1
+            )
+
+
+
+            result = []
+            for msg in response_messages[last_human_index + 1:]:
+                if isinstance(msg, AIMessage) and 'tool_calls' in msg.additional_kwargs:
+                    for tool_call in msg.additional_kwargs['tool_calls']:
+                        result.append(f"Llamando a la función: {tool_call['function']['name']}")
+                elif isinstance(msg, ToolMessage):
+                    result.append(f"Resultado de la función {msg.name}: {msg.content}")
+                else:
+                    result.append(msg.content)
+
+            return result if result else "Lo siento, señor. No tengo respuesta para su petición."
+
         except Exception as e:
             # Optional: log the error
             return f"Ha habido un error procesando su petición, señor. Error: {e}"
@@ -138,10 +153,10 @@ class JarvisSession:
         self._update_chat_state(prompt)
 
         if self._chat_state == ChatState.NOT_INITIALIZED:
-            return AUTOMATIC_RESPONSE_IF_ID_FAILED
+            return [AUTOMATIC_RESPONSE_IF_ID_FAILED]
 
         elif self._chat_state == ChatState.JARVIS_WELCOME_MESSAGE:
-            return self._get_welcome_message()
+            return [self._get_welcome_message()]
 
         elif self._chat_state == ChatState.STARTING_CHAT:
             messages = [

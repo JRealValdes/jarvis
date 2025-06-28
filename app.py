@@ -15,7 +15,10 @@ def respond(message, chat_history, model_used):
     response = ask_jarvis(message, model_used, thread_id=thread_id)
     chat_history = chat_history or []
     chat_history.append({"role": "user", "content": message})
-    chat_history.append({"role": "assistant", "content": response})
+
+    for response_msg in response:
+        chat_history.append({"role": "assistant", "content": response_msg})
+
     return chat_history, ""
 
 

@@ -60,7 +60,7 @@ def ask_jarvis(question: str):
         return "Array de respuestas: Vacío. Lo siento, señor. Actualmente no tengo respuesta para su petición."
 
 while True:
-    query = input("Hola, señor. ¿Con qué puedo ayudarle hoy? ")
+    query = input("Usuario: ")
     if query.lower() in ["salir", "exit", "quit", "q"] or ("eso es todo" in query.lower() and "jarvis" in query.lower()):
         break
     response = ask_jarvis(query)
