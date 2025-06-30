@@ -113,3 +113,10 @@ jarvis/
 - [ ] Raspberry Pi / Server version
 - [ ] Spech recognition
 - [ ] [Optional] Security layer: IP control
+
+Personal notes:
+1. Que un tools gather coja todas las tools de los demás scripts de tools y haga la lista local_tools
+2. Google Calendar API
+3. API, render
+4. APK
+5. Multiple session
