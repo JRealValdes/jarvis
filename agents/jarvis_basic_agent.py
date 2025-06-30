@@ -3,10 +3,7 @@ from enums.core_enums import ModelEnum
 from langchain_ollama import ChatOllama
 from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 from langgraph.prebuilt import create_react_agent
-from tools.calc import calculate_tool
-from tools.speech_to_text import speech_to_text_tool
-
-local_tools = [calculate_tool, speech_to_text_tool]
+from tools.tools_registry import local_tools
 
 class JarvisBasicAgent:
     def __init__(self, model_enum: ModelEnum):

@@ -11,12 +11,9 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
-from tools.calc import calculate_tool
-from tools.speech_to_text import speech_to_text_tool
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
-
-local_tools = [calculate_tool, speech_to_text_tool]
+from tools.tools_registry import local_tools
 
 class State(TypedDict):
     messages: Annotated[list, add_messages]
