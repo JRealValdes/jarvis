@@ -27,9 +27,11 @@ pip install -r requirements.txt
 
 ## Configuration - If using OpenAI
 1. Copy `.env.example` to `.env`
-2. Add your OpenAI key:
+2. Add your OpenAI key, HF token key and Fernet key:
 ```
 OPENAI_API_KEY=sk-...
+HF_TOKEN_INFERENCE=hf_...
+FERNET_KEY=...
 ```
 
 ## Usage
