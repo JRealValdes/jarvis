@@ -1,0 +1,13 @@
+{
+    "token": "<PUT_YOUR_TOKEN_HERE>",
+    "refresh_token": "<PUT_YOUR_REFRESH_TOKEN_HERE",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "client_id": "<PUT_YOUR_CLIENT_ID_HERE>",
+    "client_secret": "<PUT_YOUR_CLIENT_SECRET_HERE>",
+    "scopes": [
+        "<PUT_YOUR_SCOPE_HERE>"
+    ],
+    "universe_domain": "googleapis.com",
+    "account": "",
+    "expiry": "<PUT_YOUR_EXPIRY_DATE_HERE>"
+}

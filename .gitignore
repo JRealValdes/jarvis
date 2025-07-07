@@ -12,6 +12,9 @@ my_notes.txt
 # Secret CSV files
 *secret*.csv
 
+# Secret JSON files
+*secret*.json
+
 # C extensions
 *.so
 
