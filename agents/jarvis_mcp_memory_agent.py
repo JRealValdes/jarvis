@@ -17,6 +17,7 @@ from tools.tools_registry import local_tools
 
 class State(TypedDict):
     messages: Annotated[list, add_messages]
+    real_name: str  # Added to pass real_name to tools
 
 server_config_path = "mcp\server_config.json"
 

@@ -10,6 +10,7 @@ from tools.tools_registry import local_tools
 
 class State(TypedDict):
     messages: Annotated[list, add_messages]
+    real_name: str  # Added to pass real_name to tools
 
 class JarvisMemoryAgent:
     def __init__(self, model_enum: ModelEnum):

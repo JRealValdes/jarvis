@@ -14,6 +14,8 @@ class ChatState(Enum):
     STARTING_CHAT = "STARTING_CHAT"
     INITIALIZED = "INITIALIZED"
 
+not_verbosed_tools = ["get_upcoming_events_tool"]
+
 
 # === Global caches ===
 _sessions_cache: dict[tuple[ModelEnum, str], "JarvisSession"] = {}
@@ -110,7 +112,7 @@ class JarvisSession:
         return {"role": role, "content": content}
 
     def _build_agent_kwargs(self, messages: list) -> dict:
-        kwargs = {"input": {"messages": messages}}
+        kwargs = {"input": {"messages": messages, "real_name": self.user["real_name"]}}
         if self.model_enum in models_with_memory:
             kwargs["config"] = {"configurable": {"thread_id": self.thread_id}}
         return kwargs
@@ -134,7 +136,8 @@ class JarvisSession:
                     for tool_call in msg.additional_kwargs['tool_calls']:
                         result.append(f"Llamando a la función: {tool_call['function']['name']}")
                 elif isinstance(msg, ToolMessage):
-                    result.append(f"Resultado de la función {msg.name}: {msg.content}")
+                    if not msg.name in not_verbosed_tools:
+                        result.append(f"Resultado de la función {msg.name}: {msg.content}")
                 else:
                     result.append(msg.content)
 
@@ -177,7 +180,12 @@ def ask_jarvis(prompt: str, model: ModelEnum = DEFAULT_MODEL, thread_id: str = "
     session_key = (model, thread_id)
     if session_key not in _sessions_cache:
         _sessions_cache[session_key] = JarvisSession(model, thread_id)
-    return _sessions_cache[session_key].ask(prompt)
+    result = _sessions_cache[session_key].ask(prompt)
+
+    if isinstance(result, list):
+        return result
+    else:
+        return [result]
 
 
 def reset_cache():

@@ -15,6 +15,9 @@ GOOGLE_API_DIR = os.path.join(PROJECT_ROOT, "api", "google_api")
 
 def get_authentications_for_user(username, allow_logging_popup=False):
     authentications = {}
+    
+    if not os.path.isdir(os.path.join(GOOGLE_API_DIR, username)):
+        raise FileNotFoundError(f"No existe el directorio para el usuario '{username}'. Ruta comprobada: {os.path.join(GOOGLE_API_DIR, username)}")
     for account in os.listdir(os.path.join(GOOGLE_API_DIR, username)):
         for filename in os.listdir(os.path.join(GOOGLE_API_DIR, username, account)):
             if filename.endswith(".json") and not "example" in filename:
