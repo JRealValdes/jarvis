@@ -89,11 +89,11 @@ def get_upcoming_events_tool(
         return result.strip()
 
     except FileNotFoundError as fnf:
-        return f"No se encontró el directorio de autenticación para el usuario '{real_name}'. Ruta comprobada: {fnf.filename}"
+        return f"Error tipo FileNotFoundError. No se encontró el directorio de autenticación para el usuario '{real_name}'. Ruta comprobada: {fnf.filename}"
     except ValueError as ve:
-        return str(ve)
+        return f"Error tipo ValueError: {str(ve)}"
     except Exception as e:
-        return f"No fue posible obtener los eventos: {str(e)}"
+        return f"Error desconocido. No fue posible obtener los eventos: {str(e)}"
 
 
 @tool

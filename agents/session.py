@@ -142,7 +142,7 @@ class JarvisSession:
                         else:
                             result.append(f"Llamando a la función: {tool_call['function']['name']}. Sin argumentos.")
                 elif isinstance(msg, ToolMessage):
-                    if not msg.name in not_verbosed_tools:
+                    if not msg.name in not_verbosed_tools or "error" in msg.content.lower():
                         result.append(f"Resultado de la función {msg.name}: {msg.content}")
                 else:
                     result.append(msg.content)
