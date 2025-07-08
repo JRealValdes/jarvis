@@ -31,7 +31,7 @@ def get_upcoming_events_tool(
 
     Parameters:
     - real_name: user identifier
-    - num_events: maximum number of events to return
+    - num_events: optional maximum number of events to return
     - date_from: optional ISO8601 start datetime (e.g. "2025-07-10T00:00:00+02:00"). If left empty, defaults to now.
     - date_to: optional ISO8601 end datetime (e.g. "2025-07-11T00:00:00+02:00"). If left empty, defaults to no end date.
 
@@ -79,7 +79,15 @@ def get_upcoming_events_tool(
         )
         events = events[:num_events] if len(events) > num_events else events
 
-        result = ""
+        result = (
+            "Este es el resultado de la consulta de eventos.\n\n"
+            "📌 Nota para ti, agente: el campo 'ID del evento' es útil para el manejo interno, "
+            "pero normalmente no debe mostrarse al usuario a menos que lo solicite expresamente.\n\n"
+            "🔍 Revisa con atención el siguiente listado. Puede contener la información que necesitas "
+            "para responder correctamente a la petición del usuario.\n\n"
+            "📋 Formato:\n'Fecha y hora de inicio - Título del evento - ID del evento'\n\n"
+        )
+
         for event in events:
             start = event["start"].get("dateTime", event["start"].get("date"))
             summary = event.get("summary", "Sin título")
