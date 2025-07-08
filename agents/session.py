@@ -1,3 +1,4 @@
+import json
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
 from enums.core_enums import ModelEnum, IdentificationFailedProtocolEnum
 from config import DEFAULT_MODEL, IDENTIFICATION_FAILED_PROTOCOL
@@ -134,7 +135,12 @@ class JarvisSession:
             for msg in response_messages[last_human_index + 1:]:
                 if isinstance(msg, AIMessage) and 'tool_calls' in msg.additional_kwargs:
                     for tool_call in msg.additional_kwargs['tool_calls']:
-                        result.append(f"Llamando a la función: {tool_call['function']['name']}")
+                        args_dict = json.loads(tool_call["function"]["arguments"])
+                        args_str = ", ".join(f"{key}={value}" for key, value in args_dict.items())
+                        if args_str:
+                            result.append(f"Llamando a la función: {tool_call['function']['name']}. Argumentos: {args_str}")
+                        else:
+                            result.append(f"Llamando a la función: {tool_call['function']['name']}. Sin argumentos.")
                 elif isinstance(msg, ToolMessage):
                     if not msg.name in not_verbosed_tools:
                         result.append(f"Resultado de la función {msg.name}: {msg.content}")

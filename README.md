@@ -51,17 +51,27 @@ jarvis/
 │   ├── jarvis_memory_agent.py
 │   └── session.py
 ├── api/
-│   └── main_api.py
+│   ├── main_api.py
+│   └── google_api/
+│       ├── jarvis_google_authentication.py
+│       └── example_user/
+│           ├── jarvis_google_authentication.py
+│           └── example_account/
+│               ├── credentials_example.json
+│               └── token_example.json
 ├── data/
 │   └── users.db
 ├── database/
 │   └── users/
+│       ├── example_users_info.csv
 │       ├── manage_users.ipynb
 │       └── users_db.py
 ├── demos/
 │   ├── basic_mcp_test.py
 │   ├── chatbot_with_tools_and_memory.py
-│   └── chatbot_with_tools.py
+│   ├── chatbot_with_tools.py
+│   ├── generate_crypt_key.ipynb
+│   └── google_api_demo.ipynb
 ├── enums/
 │   └── core_enums.py
 ├── mcp/
@@ -73,7 +83,10 @@ jarvis/
 │       └── hello_world.m4a
 ├── tools/
 │   ├── calc.py
-│   └── speech_to_text.py
+│   ├── date_time.py
+│   ├── google_calendar.py
+│   ├── speech_to_text.py
+│   └── tools_registry.py
 ├── utils/
 │   └── security.py.py
 ├── .env.example
@@ -97,30 +110,23 @@ jarvis/
 - [x] User ID pt 1 - DB and secret DB
 - [x] User ID pt 2 - Session wrapper class
 - [x] MCP - Jarvis MCP Memory Agent
-- [ ] Upload to Render and expose API
+- [x] Upload to Render and expose API
+- [x] Google Calendar API
+- [ ] Raspberry Pi / Server version
 - [ ] Android app
+- [ ] Multi-client management
+- [ ] Security layer: MAC Address control
+- [ ] Security layer: IP control
 - [ ] Thread conversation management
 - [ ] WhatsApp bot compatibility
 - [ ] WhatsApp audio transcription and summarization
-- [ ] Optimization: build LangGraph agent after identification
-- [ ] Functionality: send messages through users.
+- [ ] Microphone - Audio prompting - Speech recognition
+- [ ] Messenger: send messages between users.
 - [ ] Tool to read PDFs or files
 - [ ] RAG system. Vector DB
-- [ ] Extra security layer
 - [ ] Database implementation and interaction via LLM
 - [ ] Fine-tuning functionality - Copy writting style
 - [ ] Home devices control
 - [ ] CrewAI functionality
 - [ ] Prompt Engineering - Prompt injection detection
-- [ ] Simultaneous conversations
-- [ ] API backend multi-client
-- [ ] Raspberry Pi / Server version
-- [ ] Spech recognition
-- [ ] [Optional] Security layer: IP control
-
-Personal notes:
-1. Que un tools gather coja todas las tools de los demás scripts de tools y haga la lista local_tools
-2. Google Calendar API
-3. API, render
-4. APK
-5. Multiple session
+- [ ] Optimization: build LangGraph agent after identification
