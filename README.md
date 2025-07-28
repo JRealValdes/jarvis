@@ -35,6 +35,7 @@ FERNET_KEY=...
 ```
 3. Define users if you want to stablish your own users database. Create a database/users/secret_users_info.csv file. You can find an example at database/users/example_users_info.csv. Use database/users/manage_users.ipynb to upload the data into a users database.
 4. Introduce your Google API Credentials in api/google/api as shown in the example_user. The demo at demos\google_api_demo.ipynb can help you define your authentication tokens.
+5. Install Cloudflared if you want to be able to expose your API
 
 ## Usage
 ```bash
