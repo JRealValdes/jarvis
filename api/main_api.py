@@ -13,6 +13,7 @@ from fastapi import Depends, HTTPException, status
 import jwt
 from datetime import datetime, timedelta, timezone
 import secrets
+from firebase_admin import credentials, db, initialize_app
 
 # Local dependencies
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -27,6 +28,9 @@ telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID")
 jwt_secret_key = os.getenv("JWT_SECRET_KEY")  # TODO: Change this in production
 main_auth_username = os.getenv("BASIC_MAIN_AUTH_USERNAME")
 main_auth_password = os.getenv("BASIC_MAIN_AUTH_PASSWORD")
+firebase_url = os.getenv("FIREBASE_DB_URL")
+firebase_path = os.getenv("FIREBASE_NODE_PATH", "jarvis/latest_url")
+firebase_private_key_path = "api/firebase_project_secret_private_key.json"
 
 # === JWT Authentication ===
 security_basic = HTTPBasic()
@@ -120,6 +124,30 @@ def expose_api_with_cloudflared():
         print(f"❌ Error al exponer con cloudflared: {e}")
     return public_url
 
+def save_url_to_firebase(url: str):
+    if not firebase_url:
+        print("❌ No está configurada la URL de Firebase.")
+        return
+    
+    payload = {
+        "url": url,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+    try:
+        cred = credentials.Certificate(firebase_private_key_path)
+        initialize_app(cred, {
+            'databaseURL': firebase_url,
+            'databaseAuthVariableOverride': {
+                'uid': 'jarvis-backend-server'
+            }
+        })
+        data_ref = db.reference(firebase_path)
+        data_ref.set(payload)
+        print("✅ URL guardada en Firebase.")
+    except Exception as e:
+        print(f"❌ Error al guardar en Firebase: {e}")
+
 # === Telegram Notifier ===
 def send_telegram_message(text: str):
     if not telegram_bot_token or not telegram_chat_id:
@@ -142,11 +170,11 @@ if __name__ == "__main__":
     if EXPOSE_API_WITH_CLOUDFLARED:
         url = expose_api_with_cloudflared()
         if url:
-            print(f"✅ API estará disponible públicamente en: {url}")
+            print(f"✅ La API estará disponible públicamente en: {url}")
             send_telegram_message(f"🌐 Tu API ya está expuesta en: {url}")
+            save_url_to_firebase(url)
         else:
             print("❌ No se pudo obtener URL pública.")
-        start_uvicorn()  # Blocking
     else:
         print("⚠️ Exposición de API desactivada")
-        start_uvicorn()  # Blocking
+    start_uvicorn()  # Blocking
