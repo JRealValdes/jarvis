@@ -100,7 +100,7 @@ def get_user_by_field(field: str, value: str, is_sensitive: bool = False) -> dic
 def find_user_by_prompt(prompt: str) -> str | None:
     """
     Searches for a valid identifier within the prompt 
-    (in Spanish: looks for phrases like 'soy Verkk')
+    (in Spanish: looks for phrases like 'soy Pepito')
     and returns the registered name for Jarvis if found.
     """
     match = re.search(r"\bsoy\s+([^\s,.!?]+)", prompt, re.IGNORECASE)
