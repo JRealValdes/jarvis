@@ -29,11 +29,11 @@ class JarvisSession:
     state transitions, and message processing via an LLM agent.
     """
 
-    def __init__(self, model_enum: ModelEnum = DEFAULT_MODEL, thread_id: str = "1"):
+    def __init__(self, model_enum: ModelEnum = DEFAULT_MODEL, thread_id: str = "1", user_info: dict = None):
         self.model_enum = model_enum
         self.thread_id = thread_id
-        self.valid_user = False
-        self.user = None
+        self.valid_user = bool(user_info)
+        self.user = user_info
         self.agent = self._load_or_build_agent()
         self._chat_state = ChatState.NOT_INITIALIZED
 
@@ -181,13 +181,11 @@ class JarvisSession:
             return self._process_messages(messages)
 
 
-def ask_jarvis(prompt: str, model: ModelEnum = DEFAULT_MODEL, thread_id: str = "1") -> str:
-    """
-    Entry point for interacting with Jarvis via session cache.
-    """
+def ask_jarvis(prompt: str, model: ModelEnum = DEFAULT_MODEL, thread_id: str = "1", user_info: dict = None) -> str:
     session_key = (model, thread_id)
     if session_key not in _sessions_cache:
-        _sessions_cache[session_key] = JarvisSession(model, thread_id)
+        _jarvis_session = JarvisSession(model, thread_id, user_info)
+        _sessions_cache[session_key] = _jarvis_session
     result = _sessions_cache[session_key].ask(prompt)
 
     if isinstance(result, list):

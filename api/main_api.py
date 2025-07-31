@@ -20,14 +20,14 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from agents.session import ask_jarvis, reset_cache
 from enums.core_enums import ModelEnum
 from config import DEFAULT_MODEL, EXPOSE_API_WITH_CLOUDFLARED, JWT_ALGORITHM, JWT_EXP_DELTA_SECONDS
+from database.users.users_db import get_user_by_field
+from utils.security import decode_symm_crypt_key
 
 # === CONFIG ===
 port = int(os.getenv("API_PORT", 8000))
 telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
 telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID")
 jwt_secret_key = os.getenv("JWT_SECRET_KEY")  # TODO: Change this in production
-main_auth_username = os.getenv("BASIC_MAIN_AUTH_USERNAME")
-main_auth_password = os.getenv("BASIC_MAIN_AUTH_PASSWORD")
 firebase_url = os.getenv("FIREBASE_DB_URL")
 firebase_path = os.getenv("FIREBASE_NODE_PATH", "jarvis/latest_url")
 firebase_private_key_path = "api/firebase_project_secret_private_key.json"
@@ -43,10 +43,10 @@ def create_jwt_token(username: str) -> str:
     }
     return jwt.encode(payload, jwt_secret_key, algorithm=JWT_ALGORITHM)
 
-def verify_jwt_token(credentials: HTTPAuthorizationCredentials = Depends(security_bearer)):
+def verify_jwt_token(credentials: HTTPAuthorizationCredentials = Depends(security_bearer)) -> dict:
     try:
         payload = jwt.decode(credentials.credentials, jwt_secret_key, algorithms=[JWT_ALGORITHM])
-        return payload["sub"]
+        return payload  # Contains sub, real_name, jarvis_name, is_female
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
@@ -62,27 +62,35 @@ app = FastAPI(
 class AskInput(BaseModel):
     message: str
     model_name: str = DEFAULT_MODEL.name
-    thread_id: str
+    thread_id: str | None = None
 
 @app.post("/token")
 def login_for_token(credentials: HTTPBasicCredentials = Depends(security_basic)):
-    correct_username = secrets.compare_digest(credentials.username, main_auth_username)
-    correct_password = secrets.compare_digest(credentials.password, main_auth_password)
+    user = get_user_by_field("access_name", credentials.username, is_sensitive=True)
 
-    if not (correct_username and correct_password):
+    if not user or not secrets.compare_digest(credentials.password, decode_symm_crypt_key(user["password"])):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
             headers={"WWW-Authenticate": "Basic"},
         )
 
-    token = create_jwt_token(credentials.username)
+    payload = {
+        "sub": user["access_name"],
+        "real_name": user["real_name"],
+        "jarvis_name": user["jarvis_name"],
+        "is_female": user["is_female"],
+        "exp": datetime.now(timezone.utc) + timedelta(seconds=JWT_EXP_DELTA_SECONDS)
+    }
+
+    token = jwt.encode(payload, jwt_secret_key, algorithm=JWT_ALGORITHM)
     return {"access_token": token, "token_type": "bearer"}
 
 @app.post("/ask")
 async def ask_json(input_data: AskInput, user=Depends(verify_jwt_token)):
     model_enum = ModelEnum[input_data.model_name]
-    answer = ask_jarvis(input_data.message, model_enum, input_data.thread_id)
+    thread_id = input_data.thread_id or user["real_name"]
+    answer = ask_jarvis(input_data.message, model_enum, thread_id, user_info=user)
     return {"response": answer}
 
 @app.post("/whatsapp")
@@ -93,7 +101,7 @@ async def whatsapp_webhook(
     ProfileName: str = Form(None),
     user=Depends(verify_jwt_token)
 ):
-    responses = ask_jarvis(Body, DEFAULT_MODEL, From)
+    responses = ask_jarvis(Body, DEFAULT_MODEL, From, user_info=user)
     return PlainTextResponse("\n".join(responses))
 
 @app.post("/reset")
