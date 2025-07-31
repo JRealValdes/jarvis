@@ -1,6 +1,6 @@
 import sqlite3
 import os
-from utils.security import hash_string
+from utils.security import encode_symm_crypt_key, decode_symm_crypt_key
 from config import DB_DEBUG_MODE
 from pathlib import Path
 import re
@@ -18,6 +18,7 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 real_name TEXT NOT NULL UNIQUE,
                 access_name TEXT NOT NULL UNIQUE,
+                password TEXT NOT NULL,
                 jarvis_name TEXT NOT NULL,
                 is_female BOOLEAN NOT NULL,
                 admin BOOLEAN NOT NULL DEFAULT 0
@@ -30,6 +31,7 @@ def insert_user(
     access_name: str,
     jarvis_name: str,
     is_female: bool,
+    password: str,
     admin: bool = False
 ):
     """Insert a new user into the database."""
@@ -38,11 +40,12 @@ def insert_user(
             cursor = conn.cursor()
             cursor.execute("""
                 INSERT INTO users (
-                    real_name, access_name, jarvis_name, is_female, admin
-                ) VALUES (?, ?, ?, ?, ?)
+                    real_name, access_name, password, jarvis_name, is_female, admin
+                ) VALUES (?, ?, ?, ?, ?, ?)
             """, (
                 real_name,
-                hash_string(access_name),
+                encode_symm_crypt_key(access_name),
+                encode_symm_crypt_key(password),
                 jarvis_name,
                 int(is_female),
                 int(admin)
@@ -58,6 +61,7 @@ def insert_user_list(user_list: list[dict]):
     Each dictionary in the list must contain the keys:
     - real_name (str)
     - access_name (str)
+    - password (str)
     - jarvis_name (str)
     - is_female (bool)
     - admin (bool, optional)
@@ -67,6 +71,7 @@ def insert_user_list(user_list: list[dict]):
             insert_user(
                 real_name=user["real_name"],
                 access_name=user["access_name"],
+                password=user["password"],
                 jarvis_name=user["jarvis_name"],
                 is_female=user["is_female"],
                 admin=user.get("admin", False)
@@ -81,21 +86,34 @@ def get_user_by_field(field: str, value: str, is_sensitive: bool = False) -> dic
     
     Parameters:
     - field: The column to query by ('real_name' or 'access_name').
-    - value: The value to match (plaintext; will be hashed if is_sensitive is True).
-    - is_sensitive: Whether to hash the value before querying (e.g., for access_name).
+    - value: The value to match (plaintext; will be decrypted and compared if is_sensitive is True).
+    - is_sensitive: Whether the field is encrypted in the database (e.g., 'access_name').
     """
     if field not in {"real_name", "access_name"}:
         raise ValueError(f"Field '{field}' is not allowed for querying.")
 
-    actual_value = hash_string(value) if is_sensitive else value
-
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        query = f"SELECT * FROM users WHERE {field} = ?"
-        cursor.execute(query, (actual_value,))
-        user = cursor.fetchone()
-        return dict(user) if user else None
+        
+        if is_sensitive:
+            # Fetch all records with the encrypted field
+            cursor.execute(f"SELECT * FROM users")
+            rows = cursor.fetchall()
+
+            # Try decrypting and matching
+            for row in rows:
+                try:
+                    decrypted_value = decode_symm_crypt_key(row[field])
+                    if decrypted_value == value:
+                        return dict(row)
+                except Exception as e:
+                    print(f"[Error] Decryption failed for {field}: {e}")
+            return None
+        else:
+            cursor.execute(f"SELECT * FROM users WHERE {field} = ?", (value,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
 
 def find_user_by_prompt(prompt: str) -> str | None:
     """
@@ -107,7 +125,7 @@ def find_user_by_prompt(prompt: str) -> str | None:
     if not match:
         return None
 
-    access_candidate = match.group(1).strip().lower()
+    access_candidate = match.group(1).strip()
     user = get_user_by_field("access_name", access_candidate, is_sensitive=True)
     return user
 
@@ -117,18 +135,21 @@ def delete_user_by_field(field: str, value: str, is_sensitive: bool = False) -> 
     
     Parameters:
     - field: The column to match ('real_name' or 'access_name').
-    - value: The value to match (plaintext; will be hashed if is_sensitive is True).
-    - is_sensitive: If True, the value will be hashed (e.g., for access_name).
+    - value: The value to match (plaintext; will be decrypted and compared if is_sensitive is True).
+    - is_sensitive: If True, the field is stored encrypted (e.g., 'access_name').
     """
     if field not in {"real_name", "access_name"}:
         raise ValueError(f"Field '{field}' not allowed for deletion.")
     
-    actual_value = hash_string(value) if is_sensitive else value
+    user = get_user_by_field(field, value, is_sensitive)
+    if not user:
+        return False
+
+    user_id = user["id"]
 
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
-        query = f"DELETE FROM users WHERE {field} = ?"
-        cursor.execute(query, (actual_value,))
+        cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
         conn.commit()
         return cursor.rowcount > 0
 
@@ -148,11 +169,9 @@ def get_all_users() -> list[tuple]:
         """)
         return cursor.fetchall()
 
-def is_user_admin(access_name: str) -> bool:
-    """Check if a user has admin privileges based on their plaintext access_name."""
-    hashed_name = hash_string(access_name)
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT admin FROM users WHERE access_name = ?", (hashed_name,))
-        result = cursor.fetchone()
-        return bool(result[0]) if result else False
+def is_user_admin(field: str, value: str, is_sensitive: bool = False) -> bool:
+    """Check if a user has admin privileges based on a field."""
+    user = get_user_by_field(field, value, is_sensitive)
+    if user is None:
+        return False
+    return user.get("admin", False)

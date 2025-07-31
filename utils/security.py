@@ -7,7 +7,7 @@ load_dotenv()
 FERNET_KEY = os.getenv("FERNET_KEY")
 fernet = Fernet(FERNET_KEY)
 
-def hash_string(input_string: str) -> str:
+def hash_string_sha256_lowered(input_string: str) -> str:
     """Returns a SHA-256 hash of the input string (lowercase)"""
     return hashlib.sha256(input_string.lower().encode()).hexdigest()
 
