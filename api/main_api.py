@@ -17,7 +17,7 @@ from firebase_admin import credentials, db, initialize_app
 
 # Local dependencies
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from agents.session import ask_jarvis, reset_cache
+from agents.session import ask_jarvis, reset_cache_global, reset_session, get_cache_status
 from enums.core_enums import ModelEnum
 from config import DEFAULT_MODEL, EXPOSE_API_WITH_CLOUDFLARED, JWT_ALGORITHM, JWT_EXP_DELTA_SECONDS
 from database.users.users_db import get_user_by_field
@@ -46,7 +46,7 @@ def create_jwt_token(username: str) -> str:
 def verify_jwt_token(credentials: HTTPAuthorizationCredentials = Depends(security_bearer)) -> dict:
     try:
         payload = jwt.decode(credentials.credentials, jwt_secret_key, algorithms=[JWT_ALGORITHM])
-        return payload  # Contains sub, real_name, jarvis_name, is_female
+        return payload  # Contains sub, real_name, jarvis_name, is_female, admin
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
@@ -80,6 +80,7 @@ def login_for_token(credentials: HTTPBasicCredentials = Depends(security_basic))
         "real_name": user["real_name"],
         "jarvis_name": user["jarvis_name"],
         "is_female": user["is_female"],
+        "admin": user["admin"],
         "exp": datetime.now(timezone.utc) + timedelta(seconds=JWT_EXP_DELTA_SECONDS)
     }
 
@@ -104,10 +105,32 @@ async def whatsapp_webhook(
     responses = ask_jarvis(Body, DEFAULT_MODEL, From, user_info=user)
     return PlainTextResponse("\n".join(responses))
 
-@app.post("/reset")
-async def reset_memory(user=Depends(verify_jwt_token)):
-    reset_cache()
+@app.post("/reset-memory")
+async def reset_chat_memory_for_user(user=Depends(verify_jwt_token)):
+    thread_id = user["real_name"]
+    reset_session(thread_id)
     return {"status": "ok", "message": "Memory reset"}
+
+@app.post("/admin/reset-global-memory")
+async def reset_memory_global(user=Depends(verify_jwt_token)):
+    if not user.get("admin", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to perform this action.",
+        )
+
+    reset_cache_global()
+    return {"status": "ok", "message": "Global memory reset"}
+
+@app.get("/admin/cache-status")
+async def cache_status(user=Depends(verify_jwt_token)):
+    if not user.get("admin", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to perform this action.",
+        )
+    
+    return get_cache_status()
 
 # === Cloudflared Exposure ===
 def expose_api_with_cloudflared():

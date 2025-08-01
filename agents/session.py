@@ -23,6 +23,58 @@ _sessions_cache: dict[tuple[ModelEnum, str], "JarvisSession"] = {}
 _agents_cache: dict[ModelEnum, object] = {}
 
 
+def get_cache_status():
+    """
+    Returns a dictionary summarizing the state of agent and session caches.
+    """
+    sessions = [(key[0].name, key[1]) for key in _sessions_cache.keys()]
+    return {
+        "agents_cache_count": len(_agents_cache),
+        "sessions_cache_count": len(_sessions_cache),
+        "agent_models": [model.name for model in _agents_cache.keys()],
+        "sessions": list(map(str, sessions)),
+    }
+
+
+def ask_jarvis(prompt: str, model: ModelEnum = DEFAULT_MODEL, thread_id: str = "1", user_info: dict = None) -> list:
+    """
+    Main function to interact with Jarvis. It manages the session and returns the response.
+    """
+    session_key = (model, thread_id)
+    if session_key not in _sessions_cache:
+        _jarvis_session = JarvisSession(model, thread_id, user_info)
+        _sessions_cache[session_key] = _jarvis_session
+    result = _sessions_cache[session_key].ask(prompt)
+
+    if isinstance(result, list):
+        return result
+    else:
+        return [result]
+
+
+def reset_session(thread_id: str, model: ModelEnum = DEFAULT_MODEL):
+    """
+    Clears the memory and session for a specific user thread.
+    """
+    session_key = (model, thread_id)
+
+    agent = _agents_cache.get(model)
+    if agent and hasattr(agent, 'memory') and agent.memory:
+        agent.memory.delete_thread(thread_id)
+
+    _sessions_cache.pop(session_key, None)
+
+
+def reset_cache_global():
+    """
+    Clears the cached agents and sessions.
+    """
+    global _agents_cache
+    global _sessions_cache
+    _agents_cache.clear()
+    _sessions_cache.clear()
+
+
 class JarvisSession:
     """
     Manages a conversational session with Jarvis, including user identification,
@@ -179,26 +231,3 @@ class JarvisSession:
         elif self._chat_state == ChatState.INITIALIZED:
             messages = [HumanMessage(content=prompt)]
             return self._process_messages(messages)
-
-
-def ask_jarvis(prompt: str, model: ModelEnum = DEFAULT_MODEL, thread_id: str = "1", user_info: dict = None) -> str:
-    session_key = (model, thread_id)
-    if session_key not in _sessions_cache:
-        _jarvis_session = JarvisSession(model, thread_id, user_info)
-        _sessions_cache[session_key] = _jarvis_session
-    result = _sessions_cache[session_key].ask(prompt)
-
-    if isinstance(result, list):
-        return result
-    else:
-        return [result]
-
-
-def reset_cache():
-    """
-    Clears the cached agents and sessions.
-    """
-    global _agents_cache
-    global _sessions_cache
-    _agents_cache.clear()
-    _sessions_cache.clear()
