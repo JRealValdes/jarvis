@@ -17,7 +17,7 @@ from firebase_admin import credentials, db, initialize_app
 
 # Local dependencies
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from agents.session import ask_jarvis, reset_cache_global, reset_session, get_cache_status
+from agents.session import ask_jarvis, reset_cache_global, reset_session, get_cache_status, get_message_history
 from enums.core_enums import ModelEnum
 from config import DEFAULT_MODEL, EXPOSE_API_WITH_CLOUDFLARED, JWT_ALGORITHM, JWT_EXP_DELTA_SECONDS
 from database.users.users_db import get_user_by_field
@@ -105,9 +105,16 @@ async def whatsapp_webhook(
     responses = ask_jarvis(Body, DEFAULT_MODEL, From, user_info=user)
     return PlainTextResponse("\n".join(responses))
 
-@app.post("/reset-memory")
-async def reset_chat_memory_for_user(user=Depends(verify_jwt_token)):
-    thread_id = user["real_name"]
+@app.post("/reset-session")
+async def reset_session(thread_id = None, user=Depends(verify_jwt_token)):
+    if thread_id:
+        if not user.get("admin", False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to reset memory for other users.",
+            )
+    else:
+        thread_id = user["real_name"]
     reset_session(thread_id)
     return {"status": "ok", "message": "Memory reset"}
 
@@ -131,6 +138,20 @@ async def cache_status(user=Depends(verify_jwt_token)):
         )
     
     return get_cache_status()
+
+@app.get("/message-history")
+async def message_history(thread_id: str = None, user=Depends(verify_jwt_token)):
+    if thread_id:
+        if not user.get("admin", False):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to reset memory for other users.",
+            )
+    else:
+        thread_id = user["real_name"]
+    
+    history = get_message_history(thread_id)
+    return {"thread_id": thread_id, "messages": history}
 
 # === Cloudflared Exposure ===
 def expose_api_with_cloudflared():

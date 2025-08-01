@@ -75,6 +75,72 @@ def reset_cache_global():
     _sessions_cache.clear()
 
 
+def _parse_message_list(messages: list) -> list:
+        """
+        Parses a list of messages and returns a formatted list of dicts.
+        """
+        result = []
+        for msg in messages:
+            if isinstance(msg, SystemMessage):
+                result.append({
+                    "role": "system",
+                    "content": msg.content
+                })
+            elif isinstance(msg, HumanMessage):
+                result.append({
+                    "role": "user",
+                    "content": msg.content
+                })
+            elif isinstance(msg, AIMessage):
+                if 'tool_calls' in msg.additional_kwargs:
+                    for tool_call in msg.additional_kwargs['tool_calls']:
+                        args_dict = json.loads(tool_call["function"]["arguments"])
+                        args_str = ", ".join(f"{key}={value}" for key, value in args_dict.items())
+                        if args_str:
+                            result.append({
+                                "role": "assistant",
+                                "content": f"Llamando a la función: {tool_call['function']['name']}. Argumentos: {args_str}"
+                            })
+                        else:
+                            result.append({
+                                "role": "assistant",
+                                "content": f"Llamando a la función: {tool_call['function']['name']}. Sin argumentos."
+                            })
+                else:
+                    result.append({
+                        "role": "assistant",
+                        "content": msg.content
+                    })
+            elif isinstance(msg, ToolMessage):
+                if not msg.name in not_verbosed_tools or "error" in msg.content.lower():
+                    result.append({
+                        "role": "assistant",
+                        "content": f"Resultado de la función {msg.name}: {msg.content}"
+                    })
+        return result
+
+
+def get_message_history(thread_id: str, model: ModelEnum = DEFAULT_MODEL) -> list:
+    """
+    Retrieves the message history for a specific thread.
+    """
+    print(f"Sessions cache: {_sessions_cache}")
+    session_key = (model, thread_id)
+    if session_key in _sessions_cache:
+        try:
+            agent = _sessions_cache[session_key].agent
+            last_snapshot = list(agent.graph.get_state_history({"configurable": {"thread_id": thread_id}}))[0]
+            messages = last_snapshot.values.get("messages", [])
+            parsed_messages = _parse_message_list(messages)
+            return parsed_messages
+        except Exception as e:
+            print(f"[Error] Failed to retrieve message history for thread {thread_id}: {e}")
+            return []
+    else:
+        print(f"[Warning] No session found for thread {thread_id} with model {model.name}.")
+        return []
+
+
 class JarvisSession:
     """
     Manages a conversational session with Jarvis, including user identification,
@@ -185,22 +251,8 @@ class JarvisSession:
                 default=-1
             )
 
-            result = []
-            for msg in response_messages[last_human_index + 1:]:
-                if isinstance(msg, AIMessage) and 'tool_calls' in msg.additional_kwargs:
-                    for tool_call in msg.additional_kwargs['tool_calls']:
-                        args_dict = json.loads(tool_call["function"]["arguments"])
-                        args_str = ", ".join(f"{key}={value}" for key, value in args_dict.items())
-                        if args_str:
-                            result.append(f"Llamando a la función: {tool_call['function']['name']}. Argumentos: {args_str}")
-                        else:
-                            result.append(f"Llamando a la función: {tool_call['function']['name']}. Sin argumentos.")
-                elif isinstance(msg, ToolMessage):
-                    if not msg.name in not_verbosed_tools or "error" in msg.content.lower():
-                        result.append(f"Resultado de la función {msg.name}: {msg.content}")
-                else:
-                    result.append(msg.content)
-
+            msg_dict_list = _parse_message_list(response_messages[last_human_index + 1:])
+            result = [msg['content'] for msg in msg_dict_list]
             return result if result else "Lo siento, señor. No tengo respuesta para su petición."
 
         except Exception as e:
