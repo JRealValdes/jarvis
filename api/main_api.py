@@ -106,7 +106,7 @@ async def whatsapp_webhook(
     return PlainTextResponse("\n".join(responses))
 
 @app.post("/reset-session")
-async def reset_session(thread_id = None, user=Depends(verify_jwt_token)):
+async def reset_session_individual(thread_id = None, user=Depends(verify_jwt_token)):
     if thread_id:
         if not user.get("admin", False):
             raise HTTPException(
@@ -116,6 +116,7 @@ async def reset_session(thread_id = None, user=Depends(verify_jwt_token)):
     else:
         thread_id = user["real_name"]
     reset_session(thread_id)
+    print("Limpieza exitosa")
     return {"status": "ok", "message": "Memory reset"}
 
 @app.post("/admin/reset-global-memory")
@@ -127,6 +128,7 @@ async def reset_memory_global(user=Depends(verify_jwt_token)):
         )
 
     reset_cache_global()
+    print("Limpieza exitosa")
     return {"status": "ok", "message": "Global memory reset"}
 
 @app.get("/admin/cache-status")
