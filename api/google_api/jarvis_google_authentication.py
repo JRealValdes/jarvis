@@ -31,7 +31,16 @@ def get_authentications_for_user(username, allow_logging_popup=False):
                     print(f"Unknown file type: {filepath}")
         if not authentication or not authentication.valid:
             if authentication and authentication.expired and authentication.refresh_token:
-                authentication.refresh(Request())
+                try:
+                    authentication.refresh(Request())
+                except Exception as e:
+                    print(f"Exception: {e}")
+                    if allow_logging_popup:
+                        flow = InstalledAppFlow.from_client_secrets_file(credential_path, SCOPES)
+                        authentication = flow.run_local_server(port=0)
+                    else:
+                        print(f"Unable to authenticate {account}. Logging pop-up not allowed. Please run the authentication flow.")
+                        return None
             else:
                 if allow_logging_popup:
                     flow = InstalledAppFlow.from_client_secrets_file(credential_path, SCOPES)
