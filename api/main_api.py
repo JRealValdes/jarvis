@@ -9,11 +9,12 @@ from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 import uvicorn
 from fastapi.security import HTTPBasic, HTTPBasicCredentials, HTTPBearer, HTTPAuthorizationCredentials
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Body
 import jwt
 from datetime import datetime, timedelta, timezone
 import secrets
 from firebase_admin import credentials, db, initialize_app
+from typing import Optional
 
 # Local dependencies
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -64,6 +65,9 @@ class AskInput(BaseModel):
     model_name: str = DEFAULT_MODEL.name
     thread_id: str | None = None
 
+class ThreadIdPayload(BaseModel):
+    thread_id: Optional[str] = None
+
 @app.post("/token")
 def login_for_token(credentials: HTTPBasicCredentials = Depends(security_basic)):
     user = get_user_by_field("access_name", credentials.username, is_sensitive=True)
@@ -106,7 +110,12 @@ async def whatsapp_webhook(
     return PlainTextResponse("\n".join(responses))
 
 @app.post("/reset-session")
-async def reset_session_individual(thread_id = None, user=Depends(verify_jwt_token)):
+async def reset_session_individual(
+    payload: Optional[ThreadIdPayload] = Body(default=None),
+    user=Depends(verify_jwt_token),
+):
+    thread_id = payload.thread_id if payload else None
+    print(f"Realizando reset session con thread_id: {thread_id}")
     if thread_id:
         if not user.get("admin", False):
             raise HTTPException(
@@ -116,7 +125,7 @@ async def reset_session_individual(thread_id = None, user=Depends(verify_jwt_tok
     else:
         thread_id = user["real_name"]
     reset_session(thread_id)
-    print("Limpieza exitosa")
+    print(f"Limpieza exitosa del thread id: {thread_id}")
     return {"status": "ok", "message": "Memory reset"}
 
 @app.post("/admin/reset-global-memory")
