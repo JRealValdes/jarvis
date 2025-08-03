@@ -36,6 +36,13 @@ def get_cache_status():
     }
 
 
+def check_individual_session_cache_exists(thread_id: str, model: ModelEnum = DEFAULT_MODEL):
+    """
+    Returns a bool that expresses whether a cache for the individual user does exist or not.
+    """
+    return (model, thread_id) in _sessions_cache.keys()
+
+
 def ask_jarvis(prompt: str, model: ModelEnum = DEFAULT_MODEL, thread_id: str = "1", user_info: dict = None) -> list:
     """
     Main function to interact with Jarvis. It manages the session and returns the response.
