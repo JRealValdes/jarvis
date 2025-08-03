@@ -164,6 +164,14 @@ async def message_history(thread_id: str = None, user=Depends(verify_jwt_token))
     history = get_message_history(thread_id)
     return {"thread_id": thread_id, "messages": history}
 
+@app.get("/validate-token")
+async def validate_token(user=Depends(verify_jwt_token)):
+    return {
+        "status": "ok",
+        "message": "Token is valid",
+        "user": user
+    }
+
 # === Cloudflared Exposure ===
 def expose_api_with_cloudflared():
     process = subprocess.Popen(
