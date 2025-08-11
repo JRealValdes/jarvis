@@ -61,7 +61,9 @@ jarvis/
 │               ├── credentials_example.json
 │               └── token_example.json
 ├── data/
-│   └── users.db
+│   ├── users.db
+│   └── docs/
+│       └── attention_is_all_you_need.pdf
 ├── database/
 │   └── users/
 │       ├── example_users_info.csv
@@ -72,7 +74,8 @@ jarvis/
 │   ├── chatbot_with_tools_and_memory.py
 │   ├── chatbot_with_tools.py
 │   ├── generate_crypt_key.ipynb
-│   └── google_api_demo.ipynb
+│   ├── google_api_demo.ipynb
+│   └── graphrag_demo.ipynb
 ├── enums/
 │   └── core_enums.py
 ├── mcp/

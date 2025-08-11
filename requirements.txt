@@ -16,3 +16,6 @@ pandas
 python-dateutil
 PyJWT
 firebase-admin
+llama-index
+llama-index-graph-stores-neo4j
+neo4j
