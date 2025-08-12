@@ -18,6 +18,9 @@ my_notes.txt
 # C extensions
 *.so
 
+# GraphRAG Workspace
+demos/graphrag_ws/
+
 # Distribution / packaging
 .Python
 build/
