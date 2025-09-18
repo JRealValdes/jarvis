@@ -29,7 +29,6 @@ class JarvisMcpMemoryAgent:
         self.graph = None
         self.memory = None
         self._is_connected = False
-        self.sessions_to_tools = {}
 
     def _create_langgraph_agent(self, model_enum: ModelEnum, tools, memory=None):
         if model_enum == ModelEnum.GPT_3_5:
@@ -62,7 +61,6 @@ class JarvisMcpMemoryAgent:
         session = await self.exit_stack.enter_async_context(ClientSession(read, write))
         await session.initialize()
         mcp_tools = await load_mcp_tools(session)
-        self.sessions_to_tools[session] = mcp_tools
         self.tools.extend(mcp_tools)
 
 
