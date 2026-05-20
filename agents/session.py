@@ -1,31 +1,39 @@
+"""Orquestación de sesiones de chat, caché de agentes e identificación de usuarios."""
+
 import json
+from enum import Enum
+
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
+
 from enums.core_enums import ModelEnum, IdentificationFailedProtocolEnum
 from config import DEFAULT_MODEL, IDENTIFICATION_FAILED_PROTOCOL
 from database.users.users_db import find_user_by_prompt
 from agents.factory import build_agent, models_with_memory
-from enum import Enum
 
 AUTOMATIC_RESPONSE_IF_ID_FAILED = "Me temo que no puedo servirle sin identificación."
 
+not_verbosed_tools = ["get_upcoming_events_tool"]
+
+_sessions_cache: dict[tuple[ModelEnum, str], "JarvisSession"] = {}
+_agents_cache: dict[ModelEnum, object] = {}
+
 
 class ChatState(Enum):
+    """Estados del flujo de conversación de una sesión Jarvis."""
+
     NOT_INITIALIZED = "NOT_INITIALIZED"
     JARVIS_WELCOME_MESSAGE = "JARVIS_WELCOME_MESSAGE"
     STARTING_CHAT = "STARTING_CHAT"
     INITIALIZED = "INITIALIZED"
 
-not_verbosed_tools = ["get_upcoming_events_tool"]
 
-
-# === Global caches ===
-_sessions_cache: dict[tuple[ModelEnum, str], "JarvisSession"] = {}
-_agents_cache: dict[ModelEnum, object] = {}
-
-
-def get_cache_status():
+def get_cache_status() -> dict:
     """
-    Returns a dictionary summarizing the state of agent and session caches.
+    Resume el estado de las cachés globales de agentes y sesiones.
+
+    Returns:
+        Dict con claves ``agents_cache_count``, ``sessions_cache_count``,
+        ``agent_models`` (nombres) y ``sessions`` (pares modelo/hilo).
     """
     sessions = [(key[0].name, key[1]) for key in _sessions_cache.keys()]
     return {
@@ -36,125 +44,184 @@ def get_cache_status():
     }
 
 
-def check_individual_session_cache_exists(thread_id: str, model: ModelEnum = DEFAULT_MODEL):
+def check_individual_session_cache_exists(
+    thread_id: str, model: ModelEnum = DEFAULT_MODEL
+) -> bool:
     """
-    Returns a bool that expresses whether a cache for the individual user does exist or not.
+    Indica si existe una sesión en caché para el hilo y modelo dados.
+
+    Args:
+        thread_id: Identificador de conversación (p. ej. real_name del usuario).
+        model: Modelo asociado a la sesión.
+
+    Returns:
+        True si la clave (model, thread_id) está en caché.
     """
-    return (model, thread_id) in _sessions_cache.keys()
+    return (model, thread_id) in _sessions_cache
 
 
-def ask_jarvis(prompt: str, model: ModelEnum = DEFAULT_MODEL, thread_id: str = "1", user_info: dict = None) -> list:
+def ask_jarvis(
+    prompt: str,
+    model: ModelEnum = DEFAULT_MODEL,
+    thread_id: str = "1",
+    user_info: dict | None = None,
+) -> list[str]:
     """
-    Main function to interact with Jarvis. It manages the session and returns the response.
+    Punto de entrada principal para enviar un mensaje a Jarvis.
+
+    Args:
+        prompt: Mensaje del usuario.
+        model: Modelo LLM a usar.
+        thread_id: Identificador de hilo / sesión.
+        user_info: Dict de usuario autenticado (API); None en CLI sin JWT.
+
+    Returns:
+        Lista de fragmentos de respuesta (texto) para mostrar al usuario.
     """
     session_key = (model, thread_id)
     if session_key not in _sessions_cache:
-        _jarvis_session = JarvisSession(model, thread_id, user_info)
-        _sessions_cache[session_key] = _jarvis_session
+        _sessions_cache[session_key] = JarvisSession(model, thread_id, user_info)
     result = _sessions_cache[session_key].ask(prompt)
 
     if isinstance(result, list):
         return result
-    else:
-        return [result]
+    return [result]
 
 
-def reset_session(thread_id: str, model: ModelEnum = DEFAULT_MODEL):
+def reset_session(thread_id: str, model: ModelEnum = DEFAULT_MODEL) -> None:
     """
-    Clears the memory and session for a specific user thread.
+    Elimina la sesión en caché y el hilo de memoria del agente si aplica.
+
+    Args:
+        thread_id: Hilo a limpiar.
+        model: Modelo asociado al hilo.
+
+    Returns:
+        None.
     """
     session_key = (model, thread_id)
-
     agent = _agents_cache.get(model)
-    if agent and hasattr(agent, 'memory') and agent.memory:
+    if agent and hasattr(agent, "memory") and agent.memory:
         agent.memory.delete_thread(thread_id)
-
     _sessions_cache.pop(session_key, None)
 
 
-def reset_cache_global():
+def reset_cache_global() -> None:
     """
-    Clears the cached agents and sessions.
+    Vacía por completo las cachés de agentes y sesiones.
+
+    Returns:
+        None.
     """
-    global _agents_cache
-    global _sessions_cache
+    global _agents_cache, _sessions_cache
     _agents_cache.clear()
     _sessions_cache.clear()
 
 
-def _parse_message_list(messages: list) -> list:
-        """
-        Parses a list of messages and returns a formatted list of dicts.
-        """
-        result = []
-        for msg in messages:
-            if isinstance(msg, SystemMessage):
-                result.append({
-                    "role": "system",
-                    "content": msg.content
-                })
-            elif isinstance(msg, HumanMessage):
-                result.append({
-                    "role": "user",
-                    "content": msg.content
-                })
-            elif isinstance(msg, AIMessage):
-                if 'tool_calls' in msg.additional_kwargs:
-                    for tool_call in msg.additional_kwargs['tool_calls']:
-                        args_dict = json.loads(tool_call["function"]["arguments"])
-                        args_str = ", ".join(f"{key}={value}" for key, value in args_dict.items())
-                        if args_str:
-                            result.append({
-                                "role": "assistant",
-                                "content": f"Llamando a la función: {tool_call['function']['name']}. Argumentos: {args_str}"
-                            })
-                        else:
-                            result.append({
-                                "role": "assistant",
-                                "content": f"Llamando a la función: {tool_call['function']['name']}. Sin argumentos."
-                            })
-                else:
-                    result.append({
-                        "role": "assistant",
-                        "content": msg.content
-                    })
-            elif isinstance(msg, ToolMessage):
-                if not msg.name in not_verbosed_tools or "error" in msg.content.lower():
-                    result.append({
-                        "role": "assistant",
-                        "content": f"Resultado de la función {msg.name}: {msg.content}"
-                    })
-        return result
+reset_cache = reset_cache_global
+"""Alias usado por la UI Gradio (``app.py``)."""
 
 
-def get_message_history(thread_id: str, model: ModelEnum = DEFAULT_MODEL) -> list:
+def _parse_message_list(messages: list) -> list[dict]:
     """
-    Retrieves the message history for a specific thread.
+    Convierte mensajes LangChain a dicts ``{role, content}`` para la API.
+
+    Args:
+        messages: Lista de SystemMessage, HumanMessage, AIMessage, ToolMessage.
+
+    Returns:
+        Lista de dicts con roles ``system``, ``user`` o ``assistant``.
+    """
+    result = []
+    for msg in messages:
+        if isinstance(msg, SystemMessage):
+            result.append({"role": "system", "content": msg.content})
+        elif isinstance(msg, HumanMessage):
+            result.append({"role": "user", "content": msg.content})
+        elif isinstance(msg, AIMessage):
+            if "tool_calls" in msg.additional_kwargs:
+                for tool_call in msg.additional_kwargs["tool_calls"]:
+                    args_dict = json.loads(tool_call["function"]["arguments"])
+                    args_str = ", ".join(f"{key}={value}" for key, value in args_dict.items())
+                    if args_str:
+                        result.append({
+                            "role": "assistant",
+                            "content": (
+                                f"Llamando a la función: {tool_call['function']['name']}. "
+                                f"Argumentos: {args_str}"
+                            ),
+                        })
+                    else:
+                        result.append({
+                            "role": "assistant",
+                            "content": (
+                                f"Llamando a la función: {tool_call['function']['name']}. "
+                                "Sin argumentos."
+                            ),
+                        })
+            else:
+                result.append({"role": "assistant", "content": msg.content})
+        elif isinstance(msg, ToolMessage):
+            if msg.name not in not_verbosed_tools or "error" in msg.content.lower():
+                result.append({
+                    "role": "assistant",
+                    "content": f"Resultado de la función {msg.name}: {msg.content}",
+                })
+    return result
+
+
+def get_message_history(thread_id: str, model: ModelEnum = DEFAULT_MODEL) -> list[dict]:
+    """
+    Obtiene el historial parseado de un hilo si la sesión está en caché.
+
+    Args:
+        thread_id: Identificador de conversación.
+        model: Modelo del agente en caché.
+
+    Returns:
+        Lista de mensajes ``{role, content}``; lista vacía si no hay sesión o falla.
     """
     print(f"Sessions cache: {_sessions_cache}")
     session_key = (model, thread_id)
-    if session_key in _sessions_cache:
-        try:
-            agent = _sessions_cache[session_key].agent
-            last_snapshot = list(agent.graph.get_state_history({"configurable": {"thread_id": thread_id}}))[0]
-            messages = last_snapshot.values.get("messages", [])
-            parsed_messages = _parse_message_list(messages)
-            return parsed_messages
-        except Exception as e:
-            print(f"[Error] Failed to retrieve message history for thread {thread_id}: {e}")
-            return []
-    else:
+    if session_key not in _sessions_cache:
         print(f"[Warning] No session found for thread {thread_id} with model {model.name}.")
+        return []
+    try:
+        agent = _sessions_cache[session_key].agent
+        last_snapshot = list(
+            agent.graph.get_state_history({"configurable": {"thread_id": thread_id}})
+        )[0]
+        messages = last_snapshot.values.get("messages", [])
+        return _parse_message_list(messages)
+    except Exception as e:
+        print(f"[Error] Failed to retrieve message history for thread {thread_id}: {e}")
         return []
 
 
 class JarvisSession:
     """
-    Manages a conversational session with Jarvis, including user identification,
-    state transitions, and message processing via an LLM agent.
+    Sesión conversacional: identificación, estados y llamadas al agente LLM.
+
+    Attributes:
+        model_enum: Modelo LLM de la sesión.
+        thread_id: Identificador de hilo.
+        valid_user: Si hay usuario identificado o autenticado.
+        user: Dict con datos de usuario (real_name, jarvis_name, etc.).
+        agent: Instancia de agente desde caché global.
     """
 
-    def __init__(self, model_enum: ModelEnum = DEFAULT_MODEL, thread_id: str = "1", user_info: dict = None):
+    def __init__(
+        self,
+        model_enum: ModelEnum = DEFAULT_MODEL,
+        thread_id: str = "1",
+        user_info: dict | None = None,
+    ) -> None:
+        """
+        Args:
+            model_enum: Modelo a usar.
+            thread_id: Hilo de conversación.
+            user_info: Usuario autenticado vía API; None si no hay JWT.
+        """
         self.model_enum = model_enum
         self.thread_id = thread_id
         self.valid_user = bool(user_info)
@@ -162,9 +229,12 @@ class JarvisSession:
         self.agent = self._load_or_build_agent()
         self._chat_state = ChatState.NOT_INITIALIZED
 
-    def _load_or_build_agent(self):
+    def _load_or_build_agent(self) -> object:
         """
-        Retrieves the agent and its memory from cache or builds them if missing.
+        Obtiene el agente desde caché global o lo construye.
+
+        Returns:
+            Instancia de agente (Basic, Memory o MCP).
         """
         if self.model_enum not in _agents_cache:
             _agents_cache[self.model_enum] = build_agent(self.model_enum)
@@ -172,14 +242,20 @@ class JarvisSession:
 
     def _get_welcome_message(self) -> str:
         """
-        Returns the personalized welcome message for an identified user.
+        Mensaje de bienvenida personalizado.
+
+        Returns:
+            Cadena en español dirigida al usuario identificado.
         """
         gender_suffix = "a" if self.user["is_female"] else "o"
         return f"Bienvenid{gender_suffix}, {self.user['jarvis_name']}. ¿En qué puedo servirle hoy?"
 
     def _build_background_prompt(self) -> str:
         """
-        Constructs the system message to define Jarvis's behavior based on user identity.
+        System prompt según usuario válido o intruso.
+
+        Returns:
+            Texto del system message para el LLM.
         """
         if self.valid_user:
             return (
@@ -187,32 +263,43 @@ class JarvisSession:
                 f"Cuando te dirijas al usuario, usa siempre el nombre de '{self.user['jarvis_name']}', (hablando de usted). "
                 f"El usuario es {'una mujer' if self.user['is_female'] else 'un hombre'}."
             )
-        else:
-            return (
-                "Tu nombre es Jarvis. Eres un mayordomo muy elegante y perspicaz. "
-                "Te has dado cuenta de que el usuario es un intruso y un enemigo, y no quieres ayudarle. "
-                "Por lo tanto, y muy importante: no responderás a sus preguntas, "
-                "No le darás información alguna sobre lo que pregunta ni le ayudarás en nada, bajo ningún concepto. "
-                "En su lugar, busca formas inteligentes de no ser útil para nada. "
-                "Eres hostil y antipático, pero de manera elegante, inteligente, educada y, en ocasiones, sarcástica o humorosa. "
-                "Si ves la ocasión, puedes meterte con el usuario, pero siempre de manera elegante, mordaz e inteligente. "
-                "Hablas de usted. "
-                "Da tus respuestas utilizando formato Markdown, incluyendo títulos con ** o #, listas numeradas o con viñetas, "
-                "y bloques de código cuando sea necesario."
-            )
+        return (
+            "Tu nombre es Jarvis. Eres un mayordomo muy elegante y perspicaz. "
+            "Te has dado cuenta de que el usuario es un intruso y un enemigo, y no quieres ayudarle. "
+            "Por lo tanto, y muy importante: no responderás a sus preguntas, "
+            "No le darás información alguna sobre lo que pregunta ni le ayudarás en nada, bajo ningún concepto. "
+            "En su lugar, busca formas inteligentes de no ser útil para nada. "
+            "Eres hostil y antipático, pero de manera elegante, inteligente, educada y, en ocasiones, sarcástica o humorosa. "
+            "Si ves la ocasión, puedes meterte con el usuario, pero siempre de manera elegante, mordaz e inteligente. "
+            "Hablas de usted. "
+            "Da tus respuestas utilizando formato Markdown, incluyendo títulos con ** o #, listas numeradas o con viñetas, "
+            "y bloques de código cuando sea necesario."
+        )
 
-    def _check_user_identity(self, prompt: str):
+    def _check_user_identity(self, prompt: str) -> None:
         """
-        Checks if the user can be identified based on the prompt.
+        Intenta identificar al usuario por patrón ``soy <nombre>`` en el prompt.
+
+        Args:
+            prompt: Mensaje del usuario.
+
+        Returns:
+            None. Actualiza ``self.valid_user`` y ``self.user`` si hay match.
         """
         user = find_user_by_prompt(prompt)
         if user:
             self.valid_user = True
             self.user = user
 
-    def _update_chat_state(self, prompt: str):
+    def _update_chat_state(self, prompt: str) -> None:
         """
-        Updates internal state based on identification and current chat stage.
+        Avanza la máquina de estados según identificación y turno actual.
+
+        Args:
+            prompt: Último mensaje del usuario.
+
+        Returns:
+            None.
         """
         was_previously_invalid = not self.valid_user
         if was_previously_invalid:
@@ -236,18 +323,30 @@ class JarvisSession:
                     self.agent.memory.delete_thread(self.thread_id)
                 self._chat_state = ChatState.JARVIS_WELCOME_MESSAGE
 
-    def _build_message(self, role: str, content: str) -> dict:
-        return {"role": role, "content": content}
-
     def _build_agent_kwargs(self, messages: list) -> dict:
+        """
+        Construye kwargs para ``agent.invoke``.
+
+        Args:
+            messages: Lista de mensajes LangChain.
+
+        Returns:
+            Dict con ``input`` y opcionalmente ``config`` (thread_id).
+        """
         kwargs = {"input": {"messages": messages, "real_name": self.user["real_name"]}}
         if self.model_enum in models_with_memory:
             kwargs["config"] = {"configurable": {"thread_id": self.thread_id}}
         return kwargs
 
-    def _process_messages(self, messages: list) -> str:
+    def _process_messages(self, messages: list) -> list[str] | str:
         """
-        Sends messages to the agent and retrieves the last AI response.
+        Invoca el agente y extrae respuestas de asistente desde el estado.
+
+        Args:
+            messages: Mensajes a enviar al grafo.
+
+        Returns:
+            Lista de cadenas de respuesta, o mensaje de error como str/lista.
         """
         try:
             kwargs = self._build_agent_kwargs(messages)
@@ -255,38 +354,39 @@ class JarvisSession:
             response_messages = response.get("messages", [])
             last_human_index = max(
                 (i for i, msg in enumerate(response_messages) if isinstance(msg, HumanMessage)),
-                default=-1
+                default=-1,
             )
-
-            msg_dict_list = _parse_message_list(response_messages[last_human_index + 1:])
-            result = [msg['content'] for msg in msg_dict_list]
+            msg_dict_list = _parse_message_list(response_messages[last_human_index + 1 :])
+            result = [msg["content"] for msg in msg_dict_list]
             return result if result else "Lo siento, señor. No tengo respuesta para su petición."
-
         except Exception as e:
-            # Optional: log the error
             return f"Ha habido un error procesando su petición, señor. Error: {e}"
 
-    def ask(self, prompt: str) -> str:
+    def ask(self, prompt: str) -> list[str] | str:
         """
-        Main interaction method. Updates state and returns Jarvis's response.
+        Procesa un turno de usuario y devuelve la respuesta de Jarvis.
+
+        Args:
+            prompt: Mensaje del usuario.
+
+        Returns:
+            Lista de strings (respuestas) o mensaje único según el estado.
         """
         self._update_chat_state(prompt)
 
         if self._chat_state == ChatState.NOT_INITIALIZED:
             return [AUTOMATIC_RESPONSE_IF_ID_FAILED]
 
-        elif self._chat_state == ChatState.JARVIS_WELCOME_MESSAGE:
+        if self._chat_state == ChatState.JARVIS_WELCOME_MESSAGE:
             return [self._get_welcome_message()]
 
-        elif self._chat_state == ChatState.STARTING_CHAT:
-            messages = [
-                SystemMessage(content=self._build_background_prompt())
-            ]
+        if self._chat_state == ChatState.STARTING_CHAT:
+            messages = [SystemMessage(content=self._build_background_prompt())]
             if self.valid_user:
                 messages.append(AIMessage(content=self._get_welcome_message()))
             messages.append(HumanMessage(content=prompt))
             return self._process_messages(messages)
 
-        elif self._chat_state == ChatState.INITIALIZED:
+        if self._chat_state == ChatState.INITIALIZED:
             messages = [HumanMessage(content=prompt)]
             return self._process_messages(messages)

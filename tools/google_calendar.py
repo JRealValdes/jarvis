@@ -1,3 +1,5 @@
+"""Herramientas LangChain para leer y modificar Google Calendar por usuario."""
+
 import datetime
 from langchain_core.tools import tool
 from googleapiclient.discovery import build
@@ -10,6 +12,19 @@ from api.google_api.jarvis_google_authentication import get_authentications_for_
 
 
 def ensure_timezone(dt_string: str, fallback_tz: str = "+00:00") -> str:
+    """
+    Normaliza una fecha ISO 8601 añadiendo zona horaria si falta.
+
+    Args:
+        dt_string: Fecha/hora en formato ISO.
+        fallback_tz: Sufijo de zona si no viene en la cadena (ej. ``+00:00``).
+
+    Returns:
+        Cadena ISO con zona horaria.
+
+    Raises:
+        ValueError: Si el formato no es parseable.
+    """
     try:
         dt = parser.isoparse(dt_string)
         if dt.tzinfo is None:

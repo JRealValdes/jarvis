@@ -1,10 +1,20 @@
-from langchain.tools import tool
+"""Herramienta de fecha y hora actual para el agente."""
+
 from datetime import datetime
 
+from langchain_core.tools import tool
+
+
 @tool
-def current_date_time_tool():
+def current_date_time_tool() -> str:
     """
-    Returns the current date and time with second-level precision, including the day of the week.
+    Devuelve la fecha y hora actuales con día de la semana.
+
+    Args:
+        Ninguno.
+
+    Returns:
+        Cadena en español con día de la semana y timestamp ``YYYY-MM-DD HH:MM:SS``.
     """
     now = datetime.now()
     weekday = now.strftime("%A")

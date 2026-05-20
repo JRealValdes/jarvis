@@ -11,7 +11,7 @@ pinned: false
 
 # Jarvis Project (Personal AI with Langchain)
 
-"Jarvis"-style AI using Langgraph and Langchain.
+"Jarvis"-style AI using LangGraph and Langchain.
 Hello, sir. How can I assist you today?
 
 ## Requirements
@@ -19,11 +19,38 @@ Hello, sir. How can I assist you today?
 - OpenAI API key (optional)
 
 ## Installation
+
+Requisito: [uv](https://docs.astral.sh/uv/) (`pip install uv` o instalador oficial).
+
 ```bash
-python -m venv jarvis-env  
-source jarvis-env/bin/activate  # or .\jarvis-env\Scripts\activate on Windows  
-pip install -r requirements.txt
+uv sync --all-groups    # crea .venv e instala dependencias + dev (pytest)
 ```
+
+Para despliegues que solo lean `requirements.txt` (p. ej. Hugging Face Spaces):
+
+```bash
+uv export --no-dev -o requirements.txt
+```
+
+Instalación clásica sin uv (alternativa):
+
+```bash
+pip install -r requirements.txt
+pip install -e .
+```
+
+## Development
+
+Desde la raíz del proyecto:
+
+```bash
+uv run pytest
+uv run python main.py
+uv run python app.py
+uv run python api/main_api.py
+```
+
+Convención de docstrings en código de producción: módulo + **Args** / **Returns** / **Raises** (ver [docs/REFACTOR_PLAN.md](docs/REFACTOR_PLAN.md)).
 
 ## Configuration - If using OpenAI
 1. Copy `.env.example` to `.env`
@@ -41,6 +68,10 @@ FERNET_KEY=...
 ```bash
 python main.py
 ```
+
+## Architecture
+
+Target layout and phased refactor (without breaking `ask_jarvis` or existing API routes): [docs/REFACTOR_PLAN.md](docs/REFACTOR_PLAN.md).
 
 ## Structure
 ```
@@ -91,8 +122,16 @@ jarvis/
 │   ├── google_calendar.py
 │   ├── speech_to_text.py
 │   └── tools_registry.py
+├── docs/
+│   └── REFACTOR_PLAN.md
+├── tests/
+│   ├── conftest.py
+│   ├── test_smoke_imports.py
+│   └── test_api_routes.py
+├── pyproject.toml
+├── requirements-dev.txt
 ├── utils/
-│   └── security.py.py
+│   └── security.py
 ├── .env.example
 ├── .gitignore
 ├── app.py
