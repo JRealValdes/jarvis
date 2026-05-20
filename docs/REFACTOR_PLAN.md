@@ -165,15 +165,17 @@ check_individual_session_cache_exists(thread_id, model=DEFAULT_MODEL)
 
 | Tarea | Detalle |
 |-------|---------|
+| Migrar a **uv** | `pyproject.toml` con dependencias, `uv.lock`, `.python-version`, `uv sync`; `requirements.txt` generado con `uv export` (Hugging Face / Render) |
+| Docstrings y contratos | Módulos de producción: docstring de módulo/clase/función con **Args** y **Returns** (y **Raises** si aplica) |
 | Crear `docs/REFACTOR_PLAN.md` | Hecho |
-| Crear `tests/` + `pytest` en `requirements-dev.txt` | Tests de humo: import `ask_jarvis`, factory, enums |
-| Corregir README | `security.py` (no `.py.py`), enlace a este doc |
-| Renombrar endpoint duplicado | En `main_api.py`: `individual-cache-status` handler → nombre de función único |
-| Eliminar `sys.path.append` | Convertir proyecto en paquete instalable (`pip install -e .`) o `PYTHONPATH=.` documentado |
+| Crear `tests/` + pytest (grupo dev uv) | Tests de humo: import `ask_jarvis`, factory, enums, rutas API |
+| Corregir README | Instalación con `uv`, sección Development, enlace a este doc |
+| Renombrar endpoint duplicado | `admin_cache_status` / `individual_cache_status` |
+| Eliminar `sys.path.append` | Paquete editable: `uv sync` instala `jarvis` en el entorno |
 
-**Criterio de done:** CI/local `pytest` verde; comportamiento idéntico.
+**Criterio de done:** `uv run pytest` verde; comportamiento idéntico; docstrings en código de producción.
 
-**Estado:** completada — `tests/` (12 tests), `pyproject.toml`, `requirements-dev.txt`, handlers `admin_cache_status` / `individual_cache_status`, sin `sys.path` en `api/main_api.py`, fix menor en `JarvisBasicAgent._build_agent` (tupla graph/memory/tools).
+**Estado:** completada (incl. uv, docstrings, compat LangChain 1.x en tools, alias `reset_cache`, fix `JarvisBasicAgent`).
 
 ---
 
@@ -332,7 +334,7 @@ flowchart LR
 ## 5. Orden recomendado de PRs (checklist)
 
 ```
-[x] Fase 0: tests/, README, fix cache_status duplicate, pyproject.toml + pip install -e .
+[x] Fase 0: uv, docstrings, tests/, README, cache_status, pyproject.toml + uv sync
 [ ] Fase 1.1: api/schemas + api/dependencies
 [ ] Fase 1.2: api/routers (auth, chat, webhooks, admin)
 [ ] Fase 1.3: api/services + api/main.py + shim main_api.py

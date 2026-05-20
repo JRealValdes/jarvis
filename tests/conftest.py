@@ -1,4 +1,8 @@
-"""Shared pytest fixtures and environment for Jarvis tests."""
+"""
+Fixtures compartidos de pytest para Jarvis.
+
+Configura variables de entorno mínimas antes de importar módulos con Fernet/JWT.
+"""
 
 import os
 

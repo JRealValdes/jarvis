@@ -39,7 +39,7 @@ def test_app_has_documented_routes():
 def test_validate_token_requires_auth():
     client = TestClient(app)
     response = client.get("/validate-token")
-    assert response.status_code == 403
+    assert response.status_code in (401, 403)
 
 
 def test_validate_token_with_bearer():

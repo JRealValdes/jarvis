@@ -1,3 +1,5 @@
+"""API HTTP FastAPI de Jarvis: auth JWT, chat, webhooks y utilidades de despliegue."""
+
 import os
 import subprocess
 import re
@@ -36,13 +38,36 @@ security_basic = HTTPBasic()
 security_bearer = HTTPBearer()
 
 def create_jwt_token(username: str) -> str:
+    """
+    Genera un JWT mínimo con subject y expiración.
+
+    Args:
+        username: Identificador (sub) del usuario.
+
+    Returns:
+        Token JWT firmado como cadena.
+    """
     payload = {
         "sub": username,
         "exp": datetime.now(timezone.utc) + timedelta(seconds=JWT_EXP_DELTA_SECONDS)
     }
     return jwt.encode(payload, jwt_secret_key, algorithm=JWT_ALGORITHM)
 
-def verify_jwt_token(credentials: HTTPAuthorizationCredentials = Depends(security_bearer)) -> dict:
+def verify_jwt_token(
+    credentials: HTTPAuthorizationCredentials = Depends(security_bearer),
+) -> dict:
+    """
+    Dependencia FastAPI que valida el Bearer JWT.
+
+    Args:
+        credentials: Cabecera Authorization Bearer.
+
+    Returns:
+        Payload decodificado (sub, real_name, jarvis_name, is_female, admin, exp).
+
+    Raises:
+        HTTPException: 401 si el token expiró o es inválido.
+    """
     try:
         payload = jwt.decode(credentials.credentials, jwt_secret_key, algorithms=[JWT_ALGORITHM])
         return payload  # Contains sub, real_name, jarvis_name, is_female, admin
@@ -59,11 +84,16 @@ app = FastAPI(
 )
 
 class AskInput(BaseModel):
+    """Cuerpo JSON para POST /ask."""
+
     message: str
     model_name: str = DEFAULT_MODEL.name
     thread_id: str | None = None
 
+
 class ThreadIdPayload(BaseModel):
+    """Cuerpo opcional para reset de sesión con thread_id explícito."""
+
     thread_id: Optional[str] = None
 
 @app.post("/token")
@@ -175,7 +205,13 @@ async def validate_token(user=Depends(verify_jwt_token)):
     }
 
 # === Cloudflared Exposure ===
-def expose_api_with_cloudflared():
+def expose_api_with_cloudflared() -> str | None:
+    """
+    Arranca un túnel cloudflared hacia localhost:API_PORT.
+
+    Returns:
+        URL pública ``https://*.trycloudflare.com`` o None si no se detecta a tiempo.
+    """
     process = subprocess.Popen(
         ["cloudflared", "tunnel", "--url", f"http://localhost:{port}"],
         stdout=subprocess.PIPE,
@@ -197,7 +233,16 @@ def expose_api_with_cloudflared():
         print(f"❌ Error al exponer con cloudflared: {e}")
     return public_url
 
-def save_url_to_firebase(url: str):
+def save_url_to_firebase(url: str) -> None:
+    """
+    Publica la URL del túnel en Firebase Realtime Database.
+
+    Args:
+        url: URL pública del túnel.
+
+    Returns:
+        None. Imprime error si falta configuración o falla la escritura.
+    """
     if not firebase_url:
         print("❌ No está configurada la URL de Firebase.")
         return
@@ -222,7 +267,16 @@ def save_url_to_firebase(url: str):
         print(f"❌ Error al guardar en Firebase: {e}")
 
 # === Telegram Notifier ===
-def send_telegram_message(text: str):
+def send_telegram_message(text: str) -> None:
+    """
+    Envía un mensaje al chat de Telegram configurado en entorno.
+
+    Args:
+        text: Contenido del mensaje.
+
+    Returns:
+        None.
+    """
     if not telegram_bot_token or not telegram_chat_id:
         print("⚠️ Falta configuración de Telegram.")
         return
@@ -235,7 +289,8 @@ def send_telegram_message(text: str):
         print(f"❌ Error al enviar mensaje Telegram: {e}")
 
 # === Start API and tunnel ===
-def start_uvicorn():
+def start_uvicorn() -> None:
+    """Arranca el servidor ASGI en 0.0.0.0:API_PORT (bloqueante)."""
     uvicorn.run(app, host="0.0.0.0", port=port)
 
 
