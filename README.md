@@ -47,7 +47,8 @@ Desde la raíz del proyecto:
 uv run pytest
 uv run python main.py
 uv run python app.py
-uv run python api/main_api.py
+uv run python -m api.main
+# o shim: uv run python api/main_api.py
 ```
 
 Convención de docstrings en código de producción: módulo + **Args** / **Returns** / **Raises** (ver [docs/REFACTOR_PLAN.md](docs/REFACTOR_PLAN.md)).
@@ -83,7 +84,22 @@ jarvis/
 │   ├── jarvis_memory_agent.py
 │   └── session.py
 ├── api/
-│   ├── main_api.py
+│   ├── main.py              # bootstrap FastAPI (preferido)
+│   ├── main_api.py          # shim compatibilidad
+│   ├── deployment.py
+│   ├── dependencies.py
+│   ├── services/
+│   │   ├── auth_service.py
+│   │   ├── chat_service.py
+│   │   └── admin_service.py
+│   ├── schemas/
+│   │   ├── auth.py
+│   │   └── chat.py
+│   ├── routers/
+│   │   ├── auth.py
+│   │   ├── chat.py
+│   │   ├── webhooks.py
+│   │   └── admin.py
 │   └── google_api/
 │       ├── jarvis_google_authentication.py
 │       └── example_user/

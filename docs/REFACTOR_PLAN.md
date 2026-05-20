@@ -183,36 +183,32 @@ check_individual_session_cache_exists(thread_id, model=DEFAULT_MODEL)
 
 **Objetivo:** Partir el monolito `api/main_api.py` sin cambiar contratos.
 
-**PR 1.1 — Schemas y dependencias**
+**PR 1.1 — Schemas y dependencias** ✅
 
 ```
-api/schemas/auth.py      → AskInput no; TokenResponse, LoginRequest
+api/schemas/auth.py      → TokenResponse
 api/schemas/chat.py      → AskInput, ThreadIdPayload
-api/dependencies.py      → verify_jwt_token, security schemes
+api/dependencies.py      → verify_jwt_token, security schemes, encode_jwt, build_token_payload*
 ```
 
-**PR 1.2 — Routers**
+**PR 1.2 — Routers** ✅
 
 ```
 api/routers/auth.py      → /token, /validate-token
-api/routers/chat.py      → /ask, /message-history, /reset-session
+api/routers/chat.py      → /ask, /message-history, /reset-session, /individual-cache-status
 api/routers/webhooks.py  → /whatsapp
 api/routers/admin.py     → /admin/*
 ```
 
-**PR 1.3 — Services + bootstrap**
+**PR 1.3 — Services + bootstrap** ✅
 
 ```
-api/services/auth_service.py   → login, build JWT payload
-api/services/chat_service.py   → ask, history, reset (llama session)
-api/main.py                    → FastAPI app, include_router, uvicorn
-```
-
-Mantener `api/main_api.py` como:
-
-```python
-# Deprecation shim — eliminar en fase 4
-from api.main import app, start_uvicorn
+api/services/auth_service.py   → login, validate response
+api/services/chat_service.py   → ask, history, reset, whatsapp
+api/services/admin_service.py  → reset global, cache status
+api/deployment.py              → cloudflared, Firebase, Telegram
+api/main.py                    → create_app(), main(), uvicorn
+api/main_api.py                → shim de compatibilidad
 ```
 
 **Criterio de done:** Mismas respuestas JSON; tests de integración con `TestClient` para rutas críticas.
@@ -335,9 +331,9 @@ flowchart LR
 
 ```
 [x] Fase 0: uv, docstrings, tests/, README, cache_status, pyproject.toml + uv sync
-[ ] Fase 1.1: api/schemas + api/dependencies
-[ ] Fase 1.2: api/routers (auth, chat, webhooks, admin)
-[ ] Fase 1.3: api/services + api/main.py + shim main_api.py
+[x] Fase 1.1: api/schemas + api/dependencies
+[x] Fase 1.2: api/routers (auth, chat, webhooks, admin)
+[x] Fase 1.3: api/services + api/main.py + shim main_api.py
 [ ] Fase 2.1: users repository
 [ ] Fase 2.2: domain/chat + domain/users + slim JarvisSession
 [ ] Fase 3: interfaces/ + core/ + shims raíz
