@@ -8,7 +8,39 @@ version = "0.1.0"
 description = "Personal AI assistant with LangGraph and LangChain"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = []  # runtime deps: see requirements.txt
+dependencies = [
+    "langchain>=0.1.0",
+    "langchain-ollama",
+    "langchain-openai",
+    "langchain-huggingface",
+    "langchain-mcp-adapters",
+    "langgraph",
+    "openai",
+    "cryptography",
+    "python-dotenv",
+    "mcp",
+    "fastapi",
+    "uvicorn[standard]",
+    "requests",
+    "google-api-python-client",
+    "google-auth-httplib2",
+    "google-auth-oauthlib",
+    "pandas",
+    "python-dateutil",
+    "PyJWT",
+    "firebase-admin",
+    "llama-index",
+    "llama-index-graph-stores-neo4j",
+    "neo4j",
+    "graphrag",
+    "gradio>=5.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "httpx>=0.27",
+]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "httpx>=0.27"]
@@ -20,3 +52,6 @@ include = ["agents*", "api*", "database*", "enums*", "tools*", "utils*", "mcp*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.uv]
+package = true
