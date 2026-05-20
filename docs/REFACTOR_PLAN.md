@@ -191,11 +191,11 @@ api/schemas/chat.py      → AskInput, ThreadIdPayload
 api/dependencies.py      → verify_jwt_token, security schemes, encode_jwt, build_token_payload*
 ```
 
-**PR 1.2 — Routers**
+**PR 1.2 — Routers** ✅
 
 ```
 api/routers/auth.py      → /token, /validate-token
-api/routers/chat.py      → /ask, /message-history, /reset-session
+api/routers/chat.py      → /ask, /message-history, /reset-session, /individual-cache-status
 api/routers/webhooks.py  → /whatsapp
 api/routers/admin.py     → /admin/*
 ```
@@ -336,7 +336,7 @@ flowchart LR
 ```
 [x] Fase 0: uv, docstrings, tests/, README, cache_status, pyproject.toml + uv sync
 [x] Fase 1.1: api/schemas + api/dependencies
-[ ] Fase 1.2: api/routers (auth, chat, webhooks, admin)
+[x] Fase 1.2: api/routers (auth, chat, webhooks, admin)
 [ ] Fase 1.3: api/services + api/main.py + shim main_api.py
 [ ] Fase 2.1: users repository
 [ ] Fase 2.2: domain/chat + domain/users + slim JarvisSession
