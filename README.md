@@ -111,6 +111,16 @@ jarvis/
 │   ├── users.db
 │   └── docs/
 │       └── attention_is_all_you_need.pdf
+├── domain/
+│   ├── chat/
+│   │   └── chat_state.py
+│   └── users/
+│       ├── identification.py
+│       └── prompts.py
+├── infrastructure/
+│   └── persistence/
+│       └── users/
+│           └── repository.py
 ├── database/
 │   └── users/
 │       ├── example_users_info.csv
