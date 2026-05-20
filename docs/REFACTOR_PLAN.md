@@ -183,12 +183,12 @@ check_individual_session_cache_exists(thread_id, model=DEFAULT_MODEL)
 
 **Objetivo:** Partir el monolito `api/main_api.py` sin cambiar contratos.
 
-**PR 1.1 — Schemas y dependencias**
+**PR 1.1 — Schemas y dependencias** ✅
 
 ```
-api/schemas/auth.py      → AskInput no; TokenResponse, LoginRequest
+api/schemas/auth.py      → TokenResponse
 api/schemas/chat.py      → AskInput, ThreadIdPayload
-api/dependencies.py      → verify_jwt_token, security schemes
+api/dependencies.py      → verify_jwt_token, security schemes, encode_jwt, build_token_payload*
 ```
 
 **PR 1.2 — Routers**
@@ -335,7 +335,7 @@ flowchart LR
 
 ```
 [x] Fase 0: uv, docstrings, tests/, README, cache_status, pyproject.toml + uv sync
-[ ] Fase 1.1: api/schemas + api/dependencies
+[x] Fase 1.1: api/schemas + api/dependencies
 [ ] Fase 1.2: api/routers (auth, chat, webhooks, admin)
 [ ] Fase 1.3: api/services + api/main.py + shim main_api.py
 [ ] Fase 2.1: users repository

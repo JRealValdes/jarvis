@@ -84,6 +84,10 @@ jarvis/
 │   └── session.py
 ├── api/
 │   ├── main_api.py
+│   ├── dependencies.py
+│   ├── schemas/
+│   │   ├── auth.py
+│   │   └── chat.py
 │   └── google_api/
 │       ├── jarvis_google_authentication.py
 │       └── example_user/
