@@ -26,7 +26,8 @@ class JarvisBasicAgent:
             llm = ChatOllama(model="mistral")
         else:
             raise ValueError("Modelo no soportado.")
-        return create_react_agent(model=llm, tools=tools)
+        graph = create_react_agent(model=llm, tools=tools)
+        return graph, None, tools
 
     def invoke(self, **kwargs) -> str:
         return self.graph.invoke(**kwargs)

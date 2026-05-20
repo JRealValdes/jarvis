@@ -1,5 +1,4 @@
 import os
-import sys
 import subprocess
 import re
 import time
@@ -17,8 +16,6 @@ from firebase_admin import credentials, db, initialize_app
 from typing import Optional
 from fastapi.responses import JSONResponse
 
-# Local dependencies
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from agents.session import ask_jarvis, reset_cache_global, reset_session, get_cache_status, get_message_history, check_individual_session_cache_exists
 from enums.core_enums import ModelEnum
 from config import DEFAULT_MODEL, EXPOSE_API_WITH_CLOUDFLARED, JWT_ALGORITHM, JWT_EXP_DELTA_SECONDS
@@ -142,7 +139,7 @@ async def reset_memory_global(user=Depends(verify_jwt_token)):
     return {"status": "ok", "message": "Global memory reset"}
 
 @app.get("/admin/cache-status")
-async def cache_status(user=Depends(verify_jwt_token)):
+async def admin_cache_status(user=Depends(verify_jwt_token)):
     if not user.get("admin", False):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -151,7 +148,7 @@ async def cache_status(user=Depends(verify_jwt_token)):
     return get_cache_status()
 
 @app.get("/individual-cache-status")
-async def cache_status(user=Depends(verify_jwt_token)):
+async def individual_cache_status(user=Depends(verify_jwt_token)):
     exists = check_individual_session_cache_exists(user["real_name"])
     return JSONResponse(content={"exists": exists})
 

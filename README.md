@@ -11,7 +11,7 @@ pinned: false
 
 # Jarvis Project (Personal AI with Langchain)
 
-"Jarvis"-style AI using Langgraph and Langchain.
+"Jarvis"-style AI using LangGraph and Langchain.
 Hello, sir. How can I assist you today?
 
 ## Requirements
@@ -23,6 +23,23 @@ Hello, sir. How can I assist you today?
 python -m venv jarvis-env  
 source jarvis-env/bin/activate  # or .\jarvis-env\Scripts\activate on Windows  
 pip install -r requirements.txt
+pip install -e ".[dev]"   # editable install + pytest (recommended for API and tests)
+```
+
+## Development
+
+From the project root (after `pip install -e ".[dev]"`):
+
+```bash
+pytest
+```
+
+Run the API without `sys.path` hacks — the editable install exposes `agents`, `api`, `config`, etc. on `PYTHONPATH`:
+
+```bash
+python api/main_api.py
+# or
+python -m api.main_api
 ```
 
 ## Configuration - If using OpenAI
@@ -41,6 +58,10 @@ FERNET_KEY=...
 ```bash
 python main.py
 ```
+
+## Architecture
+
+Target layout and phased refactor (without breaking `ask_jarvis` or existing API routes): [docs/REFACTOR_PLAN.md](docs/REFACTOR_PLAN.md).
 
 ## Structure
 ```
@@ -91,8 +112,16 @@ jarvis/
 │   ├── google_calendar.py
 │   ├── speech_to_text.py
 │   └── tools_registry.py
+├── docs/
+│   └── REFACTOR_PLAN.md
+├── tests/
+│   ├── conftest.py
+│   ├── test_smoke_imports.py
+│   └── test_api_routes.py
+├── pyproject.toml
+├── requirements-dev.txt
 ├── utils/
-│   └── security.py.py
+│   └── security.py
 ├── .env.example
 ├── .gitignore
 ├── app.py
