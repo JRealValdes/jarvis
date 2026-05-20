@@ -139,3 +139,24 @@ def verify_jwt_token(
         raise HTTPException(status_code=401, detail="Token expired") from None
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token") from None
+
+
+def require_admin(user: dict = Depends(verify_jwt_token)) -> dict:
+    """
+    Dependencia que exige usuario admin en el JWT.
+
+    Args:
+        user: Payload decodificado de verify_jwt_token.
+
+    Returns:
+        Mismo dict user si es admin.
+
+    Raises:
+        HTTPException: 403 si no tiene privilegio admin.
+    """
+    if not user.get("admin", False):
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to perform this action.",
+        )
+    return user

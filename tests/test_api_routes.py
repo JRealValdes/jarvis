@@ -3,7 +3,7 @@
 import jwt
 from fastapi.testclient import TestClient
 
-from api.main_api import app
+from api.main import app
 from config import JWT_ALGORITHM
 
 

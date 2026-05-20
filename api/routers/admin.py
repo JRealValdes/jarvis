@@ -1,63 +1,36 @@
 """Rutas administrativas (caché global, resets)."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 
-from agents.session import get_cache_status, reset_cache_global
-from api.dependencies import verify_jwt_token
+from api.dependencies import require_admin
+from api.services.admin_service import admin_service
 
 router = APIRouter(tags=["admin"])
 
 
-def _require_admin(user: dict) -> None:
-    """
-    Comprueba privilegio admin en el payload JWT.
-
-    Args:
-        user: Claims decodificados.
-
-    Raises:
-        HTTPException: 403 si admin es falso o ausente.
-    """
-    if not user.get("admin", False):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to perform this action.",
-        )
-
-
 @router.post("/admin/reset-global-memory")
-async def reset_memory_global(user: dict = Depends(verify_jwt_token)) -> dict:
+async def reset_memory_global(user: dict = Depends(require_admin)) -> dict:
     """
     Vacía todas las cachés de agentes y sesiones (solo admin).
 
     Args:
-        user: Payload JWT.
+        user: Payload JWT (debe ser admin).
 
     Returns:
         Dict ``{status, message}``.
-
-    Raises:
-        HTTPException: 403 si el usuario no es admin.
     """
-    _require_admin(user)
-    reset_cache_global()
-    print("Limpieza exitosa")
-    return {"status": "ok", "message": "Global memory reset"}
+    return admin_service.reset_global_memory()
 
 
 @router.get("/admin/cache-status")
-async def admin_cache_status(user: dict = Depends(verify_jwt_token)) -> dict:
+async def admin_cache_status(user: dict = Depends(require_admin)) -> dict:
     """
     Estado de cachés globales (solo admin).
 
     Args:
-        user: Payload JWT.
+        user: Payload JWT (debe ser admin).
 
     Returns:
-        Dict de ``get_cache_status()``.
-
-    Raises:
-        HTTPException: 403 si no es admin.
+        Dict de contadores y sesiones en caché.
     """
-    _require_admin(user)
-    return get_cache_status()
+    return admin_service.get_cache_status()

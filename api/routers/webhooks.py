@@ -3,9 +3,8 @@
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import PlainTextResponse
 
-from agents.session import ask_jarvis
 from api.dependencies import verify_jwt_token
-from config import DEFAULT_MODEL
+from api.services.chat_service import chat_service
 
 router = APIRouter(tags=["webhooks"])
 
@@ -31,5 +30,5 @@ async def whatsapp_webhook(
     Returns:
         PlainTextResponse con respuestas unidas por saltos de línea.
     """
-    responses = ask_jarvis(Body, DEFAULT_MODEL, From, user_info=user)
-    return PlainTextResponse("\n".join(responses))
+    text = chat_service.whatsapp_reply(Body, From, user)
+    return PlainTextResponse(text)
