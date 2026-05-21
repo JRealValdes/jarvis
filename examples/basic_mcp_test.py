@@ -1,14 +1,9 @@
-import sys
-import os
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))  # Adjust the path to include the parent directory
-
 from typing import Annotated
 from typing_extensions import TypedDict
-from core.enums import ModelEnum
+from jarvis.core.enums import ModelEnum
 from langchain_openai import ChatOpenAI
-from tools.calc import calculate_tool
-from tools.speech_to_text import speech_to_text_tool
+from jarvis.tools.calc import calculate_tool
+from jarvis.tools.speech_to_text import speech_to_text_tool
 from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.graph import StateGraph
 from langgraph.checkpoint.memory import MemorySaver
