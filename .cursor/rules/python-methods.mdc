@@ -1,0 +1,56 @@
+---
+description: Type hints and docstrings for every new Python method or function
+globs: **/*.py
+alwaysApply: false
+---
+
+# Python methods and functions
+
+When adding or modifying a **function or method**, define:
+
+1. **Typed inputs** — annotate every parameter (use `X | None` or `Optional[X]` for optional values).
+2. **Typed output** — annotate the return type (`-> None` for procedures).
+3. **Docstring** — in **English** (see language conventions); describe purpose, parameters, return value, and raised exceptions when non-obvious.
+
+Prefer built-in generics (`list[str]`, `dict[str, Any]`) over untyped collections. Reuse project schemas (`AskInput`, Pydantic models) instead of bare `dict` when the shape is known.
+
+## Examples
+
+```python
+# ❌ BAD
+def get_thread(user, thread_id=None):
+    """Obtiene el hilo."""
+    ...
+
+# ✅ GOOD
+def get_thread(user: dict[str, Any], thread_id: str | None = None) -> ChatState:
+    """Return the chat state for the user and optional thread id.
+
+    Args:
+        user: Decoded JWT payload.
+        thread_id: Optional conversation thread; defaults to the user's id.
+
+    Returns:
+        Cached or newly created chat state.
+
+    Raises:
+        KeyError: If the thread does not exist and cannot be created.
+    """
+    ...
+```
+
+```python
+# ❌ BAD — missing return type and docstring
+async def ask_json(input_data: AskInput, user: dict = Depends(verify_jwt_token)):
+    return chat_service.ask(input_data, user)
+
+# ✅ GOOD
+async def ask_json(
+    input_data: AskInput,
+    user: dict[str, Any] = Depends(verify_jwt_token),
+) -> dict[str, list[str]]:
+    """Handle POST /ask and return the model reply."""
+    return chat_service.ask(input_data, user)
+```
+
+Apply the same rules to `async def`, `@staticmethod`, and `@classmethod`.

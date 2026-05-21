@@ -1,0 +1,46 @@
+---
+description: Spanish for user-facing text; English for code, comments, and docstrings
+alwaysApply: true
+---
+
+# Language conventions
+
+## User-facing → Spanish
+
+Write in Spanish anything the end user sees or reads:
+
+- API response bodies and `detail` / error messages returned to clients
+- UI copy (Gradio labels, placeholders, buttons, tooltips)
+- User-oriented documentation (README sections aimed at operators or end users)
+- Prompts or messages shown in chat interfaces
+
+## Everything else → English
+
+Write in English:
+
+- Source code (identifiers, string keys used only internally)
+- Comments and inline notes
+- Docstrings (module, class, function)
+- Commit messages and developer-facing docs under `docs/`
+
+## Examples
+
+```python
+# ❌ BAD — Spanish docstring
+def ask(input_data: AskInput) -> dict:
+    """Envía un mensaje a Jarvis."""
+
+# ✅ GOOD — English docstring, Spanish user message
+def ask(input_data: AskInput) -> dict:
+    """Send a message to Jarvis and return the assistant reply."""
+    if not input_data.message:
+        raise HTTPException(status_code=400, detail="El mensaje no puede estar vacío.")
+```
+
+```python
+# ❌ BAD — English shown to the user in the UI
+gr.Textbox(label="Your message")
+
+# ✅ GOOD
+gr.Textbox(label="Tu mensaje")
+```
