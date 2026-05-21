@@ -5,7 +5,7 @@ import os
 from core.enums import ModelEnum
 from langchain_ollama import ChatOllama
 from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_agent
 from tools.tools_registry import local_tools
 
 
@@ -61,7 +61,7 @@ class JarvisBasicAgent:
             llm = ChatOllama(model="mistral")
         else:
             raise ValueError("Modelo no soportado.")
-        graph = create_react_agent(model=llm, tools=tools)
+        graph = create_agent(model=llm, tools=tools)
         return graph, None, tools
 
     def invoke(self, **kwargs) -> dict:
