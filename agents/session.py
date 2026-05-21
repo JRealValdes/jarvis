@@ -1,30 +1,28 @@
-"""Orquestación de sesiones de chat, caché de agentes e identificación de usuarios."""
+"""Orquestación de sesiones de chat, caché de agentes e invocación del LLM."""
 
 import json
-from enum import Enum
 
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, ToolMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
-from enums.core_enums import ModelEnum, IdentificationFailedProtocolEnum
-from config import DEFAULT_MODEL, IDENTIFICATION_FAILED_PROTOCOL
-from database.users.users_db import find_user_by_prompt
 from agents.factory import build_agent, models_with_memory
-
-AUTOMATIC_RESPONSE_IF_ID_FAILED = "Me temo que no puedo servirle sin identificación."
+from config import DEFAULT_MODEL, IDENTIFICATION_FAILED_PROTOCOL
+from domain.chat.chat_state import (
+    ChatState,
+    compute_next_chat_state,
+    should_clear_agent_thread_on_identification,
+)
+from domain.users.identification import find_user_by_prompt
+from domain.users.prompts import (
+    AUTOMATIC_RESPONSE_IF_ID_FAILED,
+    build_background_prompt,
+    get_welcome_message,
+)
+from enums.core_enums import ModelEnum
 
 not_verbosed_tools = ["get_upcoming_events_tool"]
 
 _sessions_cache: dict[tuple[ModelEnum, str], "JarvisSession"] = {}
 _agents_cache: dict[ModelEnum, object] = {}
-
-
-class ChatState(Enum):
-    """Estados del flujo de conversación de una sesión Jarvis."""
-
-    NOT_INITIALIZED = "NOT_INITIALIZED"
-    JARVIS_WELCOME_MESSAGE = "JARVIS_WELCOME_MESSAGE"
-    STARTING_CHAT = "STARTING_CHAT"
-    INITIALIZED = "INITIALIZED"
 
 
 def get_cache_status() -> dict:
@@ -200,7 +198,7 @@ def get_message_history(thread_id: str, model: ModelEnum = DEFAULT_MODEL) -> lis
 
 class JarvisSession:
     """
-    Sesión conversacional: identificación, estados y llamadas al agente LLM.
+    Orquesta un turno de conversación: estado, prompts y agente LLM.
 
     Attributes:
         model_enum: Modelo LLM de la sesión.
@@ -240,51 +238,15 @@ class JarvisSession:
             _agents_cache[self.model_enum] = build_agent(self.model_enum)
         return _agents_cache[self.model_enum]
 
-    def _get_welcome_message(self) -> str:
+    def _try_identify_user(self, prompt: str) -> None:
         """
-        Mensaje de bienvenida personalizado.
-
-        Returns:
-            Cadena en español dirigida al usuario identificado.
-        """
-        gender_suffix = "a" if self.user["is_female"] else "o"
-        return f"Bienvenid{gender_suffix}, {self.user['jarvis_name']}. ¿En qué puedo servirle hoy?"
-
-    def _build_background_prompt(self) -> str:
-        """
-        System prompt según usuario válido o intruso.
-
-        Returns:
-            Texto del system message para el LLM.
-        """
-        if self.valid_user:
-            return (
-                "Eres un mayordomo amigable, elegante y servicial llamado Jarvis. "
-                f"Cuando te dirijas al usuario, usa siempre el nombre de '{self.user['jarvis_name']}', (hablando de usted). "
-                f"El usuario es {'una mujer' if self.user['is_female'] else 'un hombre'}."
-            )
-        return (
-            "Tu nombre es Jarvis. Eres un mayordomo muy elegante y perspicaz. "
-            "Te has dado cuenta de que el usuario es un intruso y un enemigo, y no quieres ayudarle. "
-            "Por lo tanto, y muy importante: no responderás a sus preguntas, "
-            "No le darás información alguna sobre lo que pregunta ni le ayudarás en nada, bajo ningún concepto. "
-            "En su lugar, busca formas inteligentes de no ser útil para nada. "
-            "Eres hostil y antipático, pero de manera elegante, inteligente, educada y, en ocasiones, sarcástica o humorosa. "
-            "Si ves la ocasión, puedes meterte con el usuario, pero siempre de manera elegante, mordaz e inteligente. "
-            "Hablas de usted. "
-            "Da tus respuestas utilizando formato Markdown, incluyendo títulos con ** o #, listas numeradas o con viñetas, "
-            "y bloques de código cuando sea necesario."
-        )
-
-    def _check_user_identity(self, prompt: str) -> None:
-        """
-        Intenta identificar al usuario por patrón ``soy <nombre>`` en el prompt.
+        Intenta identificar al usuario por patrón en el prompt.
 
         Args:
             prompt: Mensaje del usuario.
 
         Returns:
-            None. Actualiza ``self.valid_user`` y ``self.user`` si hay match.
+            None. Actualiza ``valid_user`` y ``user`` si hay match.
         """
         user = find_user_by_prompt(prompt)
         if user:
@@ -293,7 +255,7 @@ class JarvisSession:
 
     def _update_chat_state(self, prompt: str) -> None:
         """
-        Avanza la máquina de estados según identificación y turno actual.
+        Avanza la máquina de estados y aplica efectos de memoria si aplica.
 
         Args:
             prompt: Último mensaje del usuario.
@@ -303,25 +265,23 @@ class JarvisSession:
         """
         was_previously_invalid = not self.valid_user
         if was_previously_invalid:
-            self._check_user_identity(prompt)
+            self._try_identify_user(prompt)
 
-        if self._chat_state == ChatState.NOT_INITIALIZED:
-            if self.valid_user:
-                self._chat_state = ChatState.JARVIS_WELCOME_MESSAGE
-            elif IDENTIFICATION_FAILED_PROTOCOL == IdentificationFailedProtocolEnum.HOSTILE_RESPONSES:
-                self._chat_state = ChatState.STARTING_CHAT
+        previous_state = self._chat_state
+        if should_clear_agent_thread_on_identification(
+            previous_state,
+            was_previously_invalid=was_previously_invalid,
+            valid_user=self.valid_user,
+        ):
+            if self.agent.memory:
+                self.agent.memory.delete_thread(self.thread_id)
 
-        elif self._chat_state == ChatState.JARVIS_WELCOME_MESSAGE:
-            self._chat_state = ChatState.STARTING_CHAT
-
-        elif self._chat_state == ChatState.STARTING_CHAT:
-            self._chat_state = ChatState.INITIALIZED
-
-        elif self._chat_state == ChatState.INITIALIZED:
-            if was_previously_invalid and self.valid_user:
-                if self.agent.memory:
-                    self.agent.memory.delete_thread(self.thread_id)
-                self._chat_state = ChatState.JARVIS_WELCOME_MESSAGE
+        self._chat_state = compute_next_chat_state(
+            previous_state,
+            valid_user=self.valid_user,
+            was_previously_invalid=was_previously_invalid,
+            identification_protocol=IDENTIFICATION_FAILED_PROTOCOL,
+        )
 
     def _build_agent_kwargs(self, messages: list) -> dict:
         """
@@ -333,7 +293,8 @@ class JarvisSession:
         Returns:
             Dict con ``input`` y opcionalmente ``config`` (thread_id).
         """
-        kwargs = {"input": {"messages": messages, "real_name": self.user["real_name"]}}
+        real_name = self.user["real_name"] if self.user else ""
+        kwargs = {"input": {"messages": messages, "real_name": real_name}}
         if self.model_enum in models_with_memory:
             kwargs["config"] = {"configurable": {"thread_id": self.thread_id}}
         return kwargs
@@ -378,12 +339,14 @@ class JarvisSession:
             return [AUTOMATIC_RESPONSE_IF_ID_FAILED]
 
         if self._chat_state == ChatState.JARVIS_WELCOME_MESSAGE:
-            return [self._get_welcome_message()]
+            return [get_welcome_message(self.user)]
 
         if self._chat_state == ChatState.STARTING_CHAT:
-            messages = [SystemMessage(content=self._build_background_prompt())]
+            messages = [
+                SystemMessage(content=build_background_prompt(self.valid_user, self.user))
+            ]
             if self.valid_user:
-                messages.append(AIMessage(content=self._get_welcome_message()))
+                messages.append(AIMessage(content=get_welcome_message(self.user)))
             messages.append(HumanMessage(content=prompt))
             return self._process_messages(messages)
 

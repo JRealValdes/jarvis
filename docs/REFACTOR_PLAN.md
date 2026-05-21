@@ -219,16 +219,16 @@ api/main_api.py                → shim de compatibilidad
 
 **Objetivo:** Sacar reglas de `JarvisSession` y SQL mezclado.
 
-**PR 2.1 — Repositorio de usuarios**
+**PR 2.1 — Repositorio de usuarios** ✅
 
-- `infrastructure/persistence/users/repository.py`: `get_by_field`, `insert`, `delete`, `get_all` (solo SQL + row mapping).
-- `database/users/users_db.py` → re-exporta funciones del repository (compat).
+- `infrastructure/persistence/users/repository.py`: SQL CRUD (sin `find_user_by_prompt`).
+- `database/users/users_db.py` → re-exporta repository + `find_user_by_prompt` desde domain.
 
-**PR 2.2 — Dominio chat/usuarios**
+**PR 2.2 — Dominio chat/usuarios** ✅
 
 - `domain/users/identification.py` ← `find_user_by_prompt`
-- `domain/users/prompts.py` ← `_build_background_prompt`, `_get_welcome_message`
-- `domain/chat/chat_state.py` ← `ChatState`, `_update_chat_state`
+- `domain/users/prompts.py` ← welcome / background / respuesta sin ID
+- `domain/chat/chat_state.py` ← `ChatState`, `compute_next_chat_state`, `should_clear_agent_thread_on_identification`
 - `agents/session.py` → `JarvisSession` delega en domain; **misma firma** `ask_jarvis`.
 
 **Criterio de done:** Tests unitarios de identificación y transiciones de estado sin LLM.
@@ -334,8 +334,8 @@ flowchart LR
 [x] Fase 1.1: api/schemas + api/dependencies
 [x] Fase 1.2: api/routers (auth, chat, webhooks, admin)
 [x] Fase 1.3: api/services + api/main.py + shim main_api.py
-[ ] Fase 2.1: users repository
-[ ] Fase 2.2: domain/chat + domain/users + slim JarvisSession
+[x] Fase 2.1: users repository
+[x] Fase 2.2: domain/chat + domain/users + slim JarvisSession
 [ ] Fase 3: interfaces/ + core/ + shims raíz
 [ ] Fase 4+: una feature del roadmap por PR
 [ ] Fase 5: quitar shims, cache abstraction, settings validation
