@@ -1,4 +1,4 @@
-"""Tests de utilidades JWT en api.dependencies."""
+"""Tests for JWT utilities in api.dependencies."""
 
 import jwt
 

@@ -1,1 +1,1 @@
-"""Puntos de entrada de usuario: CLI y Gradio."""
+"""User entry points: CLI and Gradio."""

@@ -1,4 +1,4 @@
-"""Repositorio SQLite de usuarios (solo acceso a datos, sin reglas de negocio)."""
+"""SQLite user repository (data access only, no business rules)."""
 
 import os
 import sqlite3
@@ -15,7 +15,7 @@ _ALLOWED_QUERY_FIELDS = frozenset({"real_name", "access_name"})
 
 def init_db() -> None:
     """
-    Crea la base de datos y la tabla ``users`` si no existen.
+    Create the database and ``users`` table if they do not exist.
 
     Returns:
         None.
@@ -45,18 +45,18 @@ def insert_user(
     admin: bool = False,
 ) -> None:
     """
-    Inserta un usuario; cifra access_name y password.
+    Insert a user; encrypt access_name and password.
 
     Args:
-        real_name: Nombre real único.
-        access_name: Nombre de acceso (se cifra en BD).
-        jarvis_name: Nombre con el que Jarvis se dirige al usuario.
-        is_female: True si el usuario es mujer.
-        password: Contraseña en claro (se cifra en BD).
-        admin: Privilegios de administrador.
+        real_name: Unique real name.
+        access_name: Login name (stored encrypted).
+        jarvis_name: Name Jarvis uses when addressing the user.
+        is_female: True if the user is female.
+        password: Plain-text password (stored encrypted).
+        admin: Administrator privileges.
 
     Returns:
-        None. Imprime aviso si hay IntegrityError (duplicado).
+        None. Prints a warning on IntegrityError (duplicate).
     """
     try:
         with sqlite3.connect(DB_PATH) as conn:
@@ -83,11 +83,11 @@ def insert_user(
 
 def insert_user_list(user_list: list[dict]) -> None:
     """
-    Inserta varios usuarios llamando a ``insert_user`` por cada dict.
+    Insert multiple users by calling ``insert_user`` for each dict.
 
     Args:
-        user_list: Lista de dicts con claves real_name, access_name, password,
-            jarvis_name, is_female y opcionalmente admin.
+        user_list: List of dicts with keys real_name, access_name, password,
+            jarvis_name, is_female, and optionally admin.
 
     Returns:
         None.
@@ -108,18 +108,18 @@ def insert_user_list(user_list: list[dict]) -> None:
 
 def get_user_by_field(field: str, value: str, is_sensitive: bool = False) -> dict | None:
     """
-    Busca un usuario por columna.
+    Look up a user by column.
 
     Args:
-        field: ``real_name`` o ``access_name``.
-        value: Valor a comparar (en claro; se descifra en BD si is_sensitive).
-        is_sensitive: Si True, recorre filas descifrando (p. ej. access_name).
+        field: ``real_name`` or ``access_name``.
+        value: Value to compare (plain text; decrypted in DB when is_sensitive).
+        is_sensitive: If True, scan rows decrypting (e.g. access_name).
 
     Returns:
-        Dict con fila de usuario o None si no hay coincidencia.
+        User row dict or None if no match.
 
     Raises:
-        ValueError: Si field no está permitido.
+        ValueError: If field is not allowed.
     """
     if field not in _ALLOWED_QUERY_FIELDS:
         raise ValueError(f"Field '{field}' is not allowed for querying.")
@@ -147,18 +147,18 @@ def get_user_by_field(field: str, value: str, is_sensitive: bool = False) -> dic
 
 def delete_user_by_field(field: str, value: str, is_sensitive: bool = False) -> bool:
     """
-    Elimina un usuario localizado por campo.
+    Delete a user located by field.
 
     Args:
-        field: ``real_name`` o ``access_name``.
-        value: Valor a buscar.
-        is_sensitive: Si el campo está cifrado en BD.
+        field: ``real_name`` or ``access_name``.
+        value: Value to search for.
+        is_sensitive: Whether the field is encrypted in the database.
 
     Returns:
-        True si se eliminó una fila; False si no se encontró usuario.
+        True if one row was deleted; False if user not found.
 
     Raises:
-        ValueError: Si field no está permitido.
+        ValueError: If field is not allowed.
     """
     if field not in _ALLOWED_QUERY_FIELDS:
         raise ValueError(f"Field '{field}' not allowed for deletion.")
@@ -177,13 +177,13 @@ def delete_user_by_field(field: str, value: str, is_sensitive: bool = False) -> 
 
 def get_all_users() -> list[tuple]:
     """
-    Lista todos los usuarios (solo si DB_DEBUG_MODE está activo).
+    List all users (only when DB_DEBUG_MODE is enabled).
 
     Returns:
-        Filas (id, real_name, access_name, jarvis_name, is_female, admin).
+        Rows (id, real_name, access_name, jarvis_name, is_female, admin).
 
     Raises:
-        PermissionError: Si DB_DEBUG_MODE es False.
+        PermissionError: If DB_DEBUG_MODE is False.
     """
     if not DB_DEBUG_MODE:
         raise PermissionError("Access to user list is disabled in production.")

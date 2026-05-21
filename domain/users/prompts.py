@@ -1,17 +1,17 @@
-"""Textos de sistema y bienvenida según identidad del usuario."""
+"""System and welcome text based on user identity."""
 
 AUTOMATIC_RESPONSE_IF_ID_FAILED = "Me temo que no puedo servirle sin identificación."
 
 
 def get_welcome_message(user: dict) -> str:
     """
-    Mensaje de bienvenida personalizado para un usuario identificado.
+    Personalized welcome message for an identified user.
 
     Args:
-        user: Dict con ``jarvis_name`` e ``is_female``.
+        user: Dict with ``jarvis_name`` and ``is_female``.
 
     Returns:
-        Cadena en español dirigida al usuario.
+        Spanish string shown to the user.
     """
     gender_suffix = "a" if user["is_female"] else "o"
     return f"Bienvenid{gender_suffix}, {user['jarvis_name']}. ¿En qué puedo servirle hoy?"
@@ -19,14 +19,14 @@ def get_welcome_message(user: dict) -> str:
 
 def build_background_prompt(valid_user: bool, user: dict | None) -> str:
     """
-    System prompt según usuario válido o intruso.
+    System prompt for a valid user or an intruder.
 
     Args:
-        valid_user: Si el usuario está identificado o autenticado.
-        user: Datos de usuario; requerido si valid_user es True.
+        valid_user: Whether the user is identified or authenticated.
+        user: User data; required when valid_user is True.
 
     Returns:
-        Texto del system message para el LLM.
+        System message text for the LLM (Spanish).
     """
     if valid_user and user:
         return (

@@ -1,4 +1,4 @@
-"""Herramienta de cálculo aritmético seguro para el agente."""
+"""Safe arithmetic calculator tool for the agent."""
 
 import ast
 

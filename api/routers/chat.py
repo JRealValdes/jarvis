@@ -1,4 +1,4 @@
-"""Rutas de conversación con Jarvis y gestión de sesión en caché."""
+"""Jarvis conversation routes and cached session management."""
 
 from fastapi import APIRouter, Body, Depends
 from fastapi.responses import JSONResponse
@@ -16,14 +16,14 @@ async def ask_json(
     user: dict = Depends(verify_jwt_token),
 ) -> dict:
     """
-    Envía un mensaje a Jarvis y devuelve la respuesta.
+    Send a message to Jarvis and return the reply.
 
     Args:
-        input_data: Mensaje, modelo y thread_id opcional.
-        user: Payload JWT (dependencia).
+        input_data: Message, model, and optional thread_id.
+        user: JWT payload (dependency).
 
     Returns:
-        Dict con clave ``response`` (lista de strings).
+        Dict with key ``response`` (list of strings).
     """
     return chat_service.ask(input_data, user)
 
@@ -34,17 +34,17 @@ async def reset_session_individual(
     user: dict = Depends(verify_jwt_token),
 ) -> dict:
     """
-    Reinicia la memoria de sesión del usuario (o de otro hilo si es admin).
+    Reset session memory for the user (or another thread if admin).
 
     Args:
-        payload: thread_id opcional.
-        user: Payload JWT.
+        payload: Optional thread_id.
+        user: JWT payload.
 
     Returns:
         Dict ``{status, message}``.
 
     Raises:
-        HTTPException: 403 si un no-admin intenta resetear otro hilo.
+        HTTPException: 403 if a non-admin tries to reset another thread.
     """
     return chat_service.reset_session_for_user(payload, user)
 
@@ -52,10 +52,10 @@ async def reset_session_individual(
 @router.get("/individual-cache-status")
 async def individual_cache_status(user: dict = Depends(verify_jwt_token)) -> JSONResponse:
     """
-    Indica si existe sesión en caché para el real_name del JWT.
+    Report whether a cached session exists for the JWT real_name.
 
     Args:
-        user: Payload JWT.
+        user: JWT payload.
 
     Returns:
         JSON ``{exists: bool}``.
@@ -70,16 +70,16 @@ async def message_history(
     user: dict = Depends(verify_jwt_token),
 ) -> dict:
     """
-    Historial de mensajes parseado para un hilo.
+    Parsed message history for a thread.
 
     Args:
-        thread_id: Hilo a consultar; por defecto real_name del JWT.
-        user: Payload JWT.
+        thread_id: Thread to query; defaults to JWT real_name.
+        user: JWT payload.
 
     Returns:
         Dict ``{thread_id, messages}``.
 
     Raises:
-        HTTPException: 403 si un no-admin consulta otro hilo.
+        HTTPException: 403 if a non-admin queries another thread.
     """
     return chat_service.get_history(thread_id, user)

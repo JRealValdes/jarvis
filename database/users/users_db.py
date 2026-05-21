@@ -1,9 +1,9 @@
 """
-Acceso a usuarios — capa de compatibilidad.
+User access — compatibility layer.
 
-El código nuevo debe usar:
-- ``infrastructure.persistence.users.repository`` para SQL
-- ``domain.users.identification`` para identificación por prompt
+New code should use:
+- ``infrastructure.persistence.users.repository`` for SQL
+- ``domain.users.identification`` for prompt-based identification
 """
 
 from domain.users.identification import find_user_by_prompt
@@ -20,15 +20,15 @@ from infrastructure.persistence.users.repository import (
 
 def is_user_admin(field: str, value: str, is_sensitive: bool = False) -> bool:
     """
-    Comprueba si el usuario tiene flag admin.
+    Check whether the user has the admin flag.
 
     Args:
-        field: Columna de búsqueda.
-        value: Valor a comparar.
-        is_sensitive: Si el campo está cifrado.
+        field: Lookup column.
+        value: Value to compare.
+        is_sensitive: Whether the field is encrypted in the database.
 
     Returns:
-        True si el usuario existe y admin=1; False en caso contrario.
+        True if the user exists and admin=1; False otherwise.
     """
     user = get_user_by_field(field, value, is_sensitive)
     if user is None:

@@ -1,4 +1,4 @@
-"""Rutas administrativas (caché global, resets)."""
+"""Administrative routes (global cache, resets)."""
 
 from fastapi import APIRouter, Depends
 
@@ -11,10 +11,10 @@ router = APIRouter(tags=["admin"])
 @router.post("/admin/reset-global-memory")
 async def reset_memory_global(user: dict = Depends(require_admin)) -> dict:
     """
-    Vacía todas las cachés de agentes y sesiones (solo admin).
+    Clear all agent and session caches (admin only).
 
     Args:
-        user: Payload JWT (debe ser admin).
+        user: JWT payload (must be admin).
 
     Returns:
         Dict ``{status, message}``.
@@ -25,12 +25,12 @@ async def reset_memory_global(user: dict = Depends(require_admin)) -> dict:
 @router.get("/admin/cache-status")
 async def admin_cache_status(user: dict = Depends(require_admin)) -> dict:
     """
-    Estado de cachés globales (solo admin).
+    Global cache status (admin only).
 
     Args:
-        user: Payload JWT (debe ser admin).
+        user: JWT payload (must be admin).
 
     Returns:
-        Dict de contadores y sesiones en caché.
+        Dict of counters and cached sessions.
     """
     return admin_service.get_cache_status()

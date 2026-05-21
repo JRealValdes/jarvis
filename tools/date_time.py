@@ -1,4 +1,4 @@
-"""Herramienta de fecha y hora actual para el agente."""
+"""Current date and time tool for the agent."""
 
 from datetime import datetime
 

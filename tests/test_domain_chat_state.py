@@ -1,4 +1,4 @@
-"""Tests unitarios de la máquina de estados de chat (sin LLM)."""
+"""Unit tests for the chat state machine (no LLM)."""
 
 from domain.chat.chat_state import (
     ChatState,

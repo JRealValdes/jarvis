@@ -1,4 +1,4 @@
-"""Agente GPT-3.5 con memoria y herramientas locales + servidores MCP vía stdio."""
+"""GPT-3.5 agent with memory, local tools, and MCP servers via stdio."""
 
 import asyncio
 import json
@@ -21,7 +21,7 @@ from tools.tools_registry import local_tools
 
 
 class State(TypedDict):
-    """Estado del grafo con mensajes y real_name inyectado en tools."""
+    """Graph state with messages and real_name injected into tools."""
 
     messages: Annotated[list, add_messages]
     real_name: str
@@ -32,15 +32,15 @@ server_config_path = os.path.join("mcp", "server_config.json")
 
 class JarvisMcpMemoryAgent:
     """
-    Agente con memoria que combina tools locales y tools de servidores MCP.
+    Agent with memory combining local tools and MCP server tools.
 
-    La conexión MCP se establece de forma lazy en la primera invocación.
+    MCP connection is established lazily on the first invocation.
     """
 
     def __init__(self, model_enum: ModelEnum) -> None:
         """
         Args:
-            model_enum: Debe ser GPT_3_5.
+            model_enum: Must be GPT_3_5.
         """
         self.model_enum = model_enum
         self.exit_stack: AsyncExitStack | None = None
@@ -53,15 +53,15 @@ class JarvisMcpMemoryAgent:
         self, model_enum: ModelEnum, tools: list, memory: MemorySaver | None = None
     ) -> None:
         """
-        Compila el grafo LangGraph con las herramientas dadas.
+        Compile the LangGraph with the given tools.
 
         Args:
-            model_enum: Modelo LLM (GPT_3_5).
-            tools: Herramientas locales + MCP.
-            memory: Checkpointer; si es None se crea MemorySaver.
+            model_enum: LLM model (GPT_3_5).
+            tools: Local + MCP tools.
+            memory: Checkpointer; MemorySaver is created if None.
 
         Raises:
-            ValueError: Si el modelo no es GPT_3_5.
+            ValueError: If the model is not GPT_3_5.
         """
         if model_enum == ModelEnum.GPT_3_5:
             llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
@@ -88,11 +88,11 @@ class JarvisMcpMemoryAgent:
 
     async def _connect_to_server(self, server_name: str, server_config: dict) -> None:
         """
-        Conecta a un servidor MCP por stdio y añade sus tools.
+        Connect to an MCP server over stdio and append its tools.
 
         Args:
-            server_name: Nombre lógico del servidor (logging).
-            server_config: Parámetros para StdioServerParameters.
+            server_name: Logical server name (for logging).
+            server_config: Parameters for StdioServerParameters.
         """
         server_params = StdioServerParameters(**server_config)
         read, write = await self.exit_stack.enter_async_context(stdio_client(server_params))
@@ -103,10 +103,10 @@ class JarvisMcpMemoryAgent:
 
     async def initialize_mcp_connection(self) -> None:
         """
-        Lee ``mcp/server_config.json`` y conecta todos los servidores MCP.
+        Read ``mcp/server_config.json`` and connect all MCP servers.
 
         Returns:
-            None. Idempotente si ya estaba conectado.
+            None. Idempotent if already connected.
         """
         if self._is_connected:
             print("[INFO] Initialize MCP Connection called, but agent MCP services are already initialized")
@@ -126,7 +126,7 @@ class JarvisMcpMemoryAgent:
 
     async def setup_mcp(self) -> None:
         """
-        Inicializa tools locales, conexión MCP y grafo LangGraph.
+        Initialize local tools, MCP connection, and LangGraph.
 
         Returns:
             None.
@@ -137,13 +137,13 @@ class JarvisMcpMemoryAgent:
 
     async def ainvoke(self, **kwargs) -> dict:
         """
-        Invocación asíncrona del grafo (conecta MCP si hace falta).
+        Async graph invocation (connects MCP if needed).
 
         Args:
-            **kwargs: Argumentos de ``graph.ainvoke``.
+            **kwargs: Arguments for ``graph.ainvoke``.
 
         Returns:
-            Estado final del grafo.
+            Final graph state.
         """
         if not self._is_connected:
             await self.setup_mcp()
@@ -151,7 +151,7 @@ class JarvisMcpMemoryAgent:
 
     async def aclose(self) -> None:
         """
-        Cierra sesiones MCP y resetea el flag de conexión.
+        Close MCP sessions and reset the connection flag.
 
         Returns:
             None.
@@ -163,13 +163,13 @@ class JarvisMcpMemoryAgent:
 
     def invoke(self, **kwargs) -> dict:
         """
-        Envoltorio síncrono que ejecuta ainvoke y cierra MCP al terminar.
+        Synchronous wrapper that runs ainvoke and closes MCP when done.
 
         Args:
-            **kwargs: Argumentos de ``ainvoke``.
+            **kwargs: Arguments for ``ainvoke``.
 
         Returns:
-            Estado final del grafo.
+            Final graph state.
         """
 
         async def _wrapped() -> dict:

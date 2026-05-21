@@ -1,4 +1,4 @@
-"""Orquestación de sesiones de chat, caché de agentes e invocación del LLM."""
+"""Chat session orchestration, agent cache, and LLM invocation."""
 
 import json
 
@@ -27,11 +27,11 @@ _agents_cache: dict[ModelEnum, object] = {}
 
 def get_cache_status() -> dict:
     """
-    Resume el estado de las cachés globales de agentes y sesiones.
+    Summarize global agent and session cache state.
 
     Returns:
-        Dict con claves ``agents_cache_count``, ``sessions_cache_count``,
-        ``agent_models`` (nombres) y ``sessions`` (pares modelo/hilo).
+        Dict with keys ``agents_cache_count``, ``sessions_cache_count``,
+        ``agent_models`` (names), and ``sessions`` (model/thread pairs).
     """
     sessions = [(key[0].name, key[1]) for key in _sessions_cache.keys()]
     return {
@@ -46,14 +46,14 @@ def check_individual_session_cache_exists(
     thread_id: str, model: ModelEnum = DEFAULT_MODEL
 ) -> bool:
     """
-    Indica si existe una sesión en caché para el hilo y modelo dados.
+    Report whether a session is cached for the given thread and model.
 
     Args:
-        thread_id: Identificador de conversación (p. ej. real_name del usuario).
-        model: Modelo asociado a la sesión.
+        thread_id: Conversation id (e.g. user real_name).
+        model: Model associated with the session.
 
     Returns:
-        True si la clave (model, thread_id) está en caché.
+        True if key (model, thread_id) is in the cache.
     """
     return (model, thread_id) in _sessions_cache
 
@@ -65,16 +65,16 @@ def ask_jarvis(
     user_info: dict | None = None,
 ) -> list[str]:
     """
-    Punto de entrada principal para enviar un mensaje a Jarvis.
+    Main entry point to send a message to Jarvis.
 
     Args:
-        prompt: Mensaje del usuario.
-        model: Modelo LLM a usar.
-        thread_id: Identificador de hilo / sesión.
-        user_info: Dict de usuario autenticado (API); None en CLI sin JWT.
+        prompt: User message.
+        model: LLM model to use.
+        thread_id: Thread / session identifier.
+        user_info: Authenticated user dict (API); None in CLI without JWT.
 
     Returns:
-        Lista de fragmentos de respuesta (texto) para mostrar al usuario.
+        List of response text fragments for the user.
     """
     session_key = (model, thread_id)
     if session_key not in _sessions_cache:
@@ -88,11 +88,11 @@ def ask_jarvis(
 
 def reset_session(thread_id: str, model: ModelEnum = DEFAULT_MODEL) -> None:
     """
-    Elimina la sesión en caché y el hilo de memoria del agente si aplica.
+    Remove the cached session and agent memory thread if applicable.
 
     Args:
-        thread_id: Hilo a limpiar.
-        model: Modelo asociado al hilo.
+        thread_id: Thread to clear.
+        model: Model associated with the thread.
 
     Returns:
         None.
@@ -106,7 +106,7 @@ def reset_session(thread_id: str, model: ModelEnum = DEFAULT_MODEL) -> None:
 
 def reset_cache_global() -> None:
     """
-    Vacía por completo las cachés de agentes y sesiones.
+    Clear agent and session caches completely.
 
     Returns:
         None.
@@ -117,18 +117,18 @@ def reset_cache_global() -> None:
 
 
 reset_cache = reset_cache_global
-"""Alias usado por la UI Gradio (``app.py``)."""
+"""Alias used by the Gradio UI (``app.py``)."""
 
 
 def _parse_message_list(messages: list) -> list[dict]:
     """
-    Convierte mensajes LangChain a dicts ``{role, content}`` para la API.
+    Convert LangChain messages to ``{role, content}`` dicts for the API.
 
     Args:
-        messages: Lista de SystemMessage, HumanMessage, AIMessage, ToolMessage.
+        messages: List of SystemMessage, HumanMessage, AIMessage, ToolMessage.
 
     Returns:
-        Lista de dicts con roles ``system``, ``user`` o ``assistant``.
+        List of dicts with roles ``system``, ``user``, or ``assistant``.
     """
     result = []
     for msg in messages:
@@ -170,14 +170,14 @@ def _parse_message_list(messages: list) -> list[dict]:
 
 def get_message_history(thread_id: str, model: ModelEnum = DEFAULT_MODEL) -> list[dict]:
     """
-    Obtiene el historial parseado de un hilo si la sesión está en caché.
+    Return parsed message history for a thread if the session is cached.
 
     Args:
-        thread_id: Identificador de conversación.
-        model: Modelo del agente en caché.
+        thread_id: Conversation identifier.
+        model: Cached agent model.
 
     Returns:
-        Lista de mensajes ``{role, content}``; lista vacía si no hay sesión o falla.
+        List of ``{role, content}`` messages; empty if no session or on failure.
     """
     print(f"Sessions cache: {_sessions_cache}")
     session_key = (model, thread_id)
@@ -198,14 +198,14 @@ def get_message_history(thread_id: str, model: ModelEnum = DEFAULT_MODEL) -> lis
 
 class JarvisSession:
     """
-    Orquesta un turno de conversación: estado, prompts y agente LLM.
+    Orchestrates a conversation turn: state, prompts, and LLM agent.
 
     Attributes:
-        model_enum: Modelo LLM de la sesión.
-        thread_id: Identificador de hilo.
-        valid_user: Si hay usuario identificado o autenticado.
-        user: Dict con datos de usuario (real_name, jarvis_name, etc.).
-        agent: Instancia de agente desde caché global.
+        model_enum: Session LLM model.
+        thread_id: Thread identifier.
+        valid_user: Whether the user is identified or authenticated.
+        user: User data dict (real_name, jarvis_name, etc.).
+        agent: Agent instance from the global cache.
     """
 
     def __init__(
@@ -216,9 +216,9 @@ class JarvisSession:
     ) -> None:
         """
         Args:
-            model_enum: Modelo a usar.
-            thread_id: Hilo de conversación.
-            user_info: Usuario autenticado vía API; None si no hay JWT.
+            model_enum: Model to use.
+            thread_id: Conversation thread.
+            user_info: API-authenticated user; None without JWT.
         """
         self.model_enum = model_enum
         self.thread_id = thread_id
@@ -229,10 +229,10 @@ class JarvisSession:
 
     def _load_or_build_agent(self) -> object:
         """
-        Obtiene el agente desde caché global o lo construye.
+        Get the agent from the global cache or build it.
 
         Returns:
-            Instancia de agente (Basic, Memory o MCP).
+            Agent instance (Basic, Memory, or MCP).
         """
         if self.model_enum not in _agents_cache:
             _agents_cache[self.model_enum] = build_agent(self.model_enum)
@@ -240,13 +240,13 @@ class JarvisSession:
 
     def _try_identify_user(self, prompt: str) -> None:
         """
-        Intenta identificar al usuario por patrón en el prompt.
+        Try to identify the user from a pattern in the prompt.
 
         Args:
-            prompt: Mensaje del usuario.
+            prompt: User message.
 
         Returns:
-            None. Actualiza ``valid_user`` y ``user`` si hay match.
+            None. Updates ``valid_user`` and ``user`` on match.
         """
         user = find_user_by_prompt(prompt)
         if user:
@@ -255,10 +255,10 @@ class JarvisSession:
 
     def _update_chat_state(self, prompt: str) -> None:
         """
-        Avanza la máquina de estados y aplica efectos de memoria si aplica.
+        Advance the state machine and apply memory effects if needed.
 
         Args:
-            prompt: Último mensaje del usuario.
+            prompt: Latest user message.
 
         Returns:
             None.
@@ -285,13 +285,13 @@ class JarvisSession:
 
     def _build_agent_kwargs(self, messages: list) -> dict:
         """
-        Construye kwargs para ``agent.invoke``.
+        Build kwargs for ``agent.invoke``.
 
         Args:
-            messages: Lista de mensajes LangChain.
+            messages: LangChain message list.
 
         Returns:
-            Dict con ``input`` y opcionalmente ``config`` (thread_id).
+            Dict with ``input`` and optionally ``config`` (thread_id).
         """
         real_name = self.user["real_name"] if self.user else ""
         kwargs = {"input": {"messages": messages, "real_name": real_name}}
@@ -301,13 +301,13 @@ class JarvisSession:
 
     def _process_messages(self, messages: list) -> list[str] | str:
         """
-        Invoca el agente y extrae respuestas de asistente desde el estado.
+        Invoke the agent and extract assistant replies from the state.
 
         Args:
-            messages: Mensajes a enviar al grafo.
+            messages: Messages to send to the graph.
 
         Returns:
-            Lista de cadenas de respuesta, o mensaje de error como str/lista.
+            List of response strings, or an error message as str/list.
         """
         try:
             kwargs = self._build_agent_kwargs(messages)
@@ -325,13 +325,13 @@ class JarvisSession:
 
     def ask(self, prompt: str) -> list[str] | str:
         """
-        Procesa un turno de usuario y devuelve la respuesta de Jarvis.
+        Process a user turn and return Jarvis's reply.
 
         Args:
-            prompt: Mensaje del usuario.
+            prompt: User message.
 
         Returns:
-            Lista de strings (respuestas) o mensaje único según el estado.
+            List of response strings or a single message depending on state.
         """
         self._update_chat_state(prompt)
 

@@ -18,17 +18,17 @@ async def whatsapp_webhook(
     user: dict = Depends(verify_jwt_token),
 ) -> PlainTextResponse:
     """
-    Webhook Twilio/WhatsApp: reenvía el cuerpo del mensaje a Jarvis.
+    Twilio/WhatsApp webhook: forwards the message body to Jarvis.
 
     Args:
-        request: Request FastAPI (reservado para extensiones).
-        Body: Texto del mensaje entrante.
-        From: Identificador del remitente (usado como thread_id).
-        ProfileName: Nombre de perfil WhatsApp (opcional).
-        user: Payload JWT.
+        request: FastAPI request (reserved for extensions).
+        Body: Incoming message text.
+        From: Sender identifier (used as thread_id).
+        ProfileName: WhatsApp profile name (optional).
+        user: JWT payload.
 
     Returns:
-        PlainTextResponse con respuestas unidas por saltos de línea.
+        PlainTextResponse with replies joined by newlines.
     """
     text = chat_service.whatsapp_reply(Body, From, user)
     return PlainTextResponse(text)

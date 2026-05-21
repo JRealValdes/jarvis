@@ -1,4 +1,4 @@
-"""Casos de uso de autenticación (login Basic → JWT)."""
+"""Authentication use cases (Basic login → JWT)."""
 
 import secrets
 
@@ -11,21 +11,21 @@ from utils.security import decode_symm_crypt_key
 
 
 class AuthService:
-    """Autenticación de usuarios y emisión de tokens."""
+    """User authentication and token issuance."""
 
     def login(self, username: str, password: str) -> TokenResponse:
         """
-        Valida credenciales HTTP Basic y devuelve un JWT.
+        Validate HTTP Basic credentials and return a JWT.
 
         Args:
-            username: access_name del usuario.
-            password: Contraseña en claro.
+            username: User access_name.
+            password: Plain-text password.
 
         Returns:
-            TokenResponse con access_token firmado.
+            TokenResponse with signed access_token.
 
         Raises:
-            HTTPException: 401 si usuario o contraseña no son válidos.
+            HTTPException: 401 if username or password is invalid.
         """
         user = get_user_by_field("access_name", username, is_sensitive=True)
 
@@ -43,13 +43,13 @@ class AuthService:
 
     def build_validate_token_response(self, user: dict) -> dict:
         """
-        Formatea la respuesta de GET /validate-token.
+        Format the GET /validate-token response.
 
         Args:
-            user: Payload JWT decodificado.
+            user: Decoded JWT payload.
 
         Returns:
-            Dict con status, message y user.
+            Dict with status, message, and user.
         """
         return {
             "status": "ok",

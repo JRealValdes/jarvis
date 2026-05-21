@@ -1,4 +1,4 @@
-"""CLI interactivo de Jarvis (bucle de lectura por stdin)."""
+"""Interactive Jarvis CLI (stdin read loop)."""
 
 from core.config import DEFAULT_MODEL
 from agents.session import ask_jarvis
@@ -9,7 +9,7 @@ thread_id = "1"
 
 def main() -> None:
     """
-    Ejecuta el chat por consola hasta salir/exit/quit o frase de despedida.
+    Run console chat until salir/exit/quit or a farewell phrase.
 
     Returns:
         None.

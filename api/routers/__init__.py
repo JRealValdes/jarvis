@@ -1,4 +1,4 @@
-"""Routers FastAPI por dominio (auth, chat, webhooks, admin)."""
+"""FastAPI routers by domain (auth, chat, webhooks, admin)."""
 
 from api.routers import admin, auth, chat, webhooks
 

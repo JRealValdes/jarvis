@@ -1,4 +1,4 @@
-"""Interfaz Gradio para chat con Jarvis (texto y voz)."""
+"""Gradio interface for Jarvis chat (text and voice)."""
 
 import gradio as gr
 
@@ -14,15 +14,15 @@ thread_id = "1"
 
 def respond(message: str, chat_history: list, model_used: ModelEnum | str) -> tuple[list, str]:
     """
-    Envía un mensaje de texto a Jarvis y actualiza el historial Gradio.
+    Send a text message to Jarvis and update the Gradio history.
 
     Args:
-        message: Texto del usuario.
-        chat_history: Historial previo (formato messages de Gradio).
-        model_used: ModelEnum o nombre de miembro del enum como str.
+        message: User text.
+        chat_history: Previous history (Gradio messages format).
+        model_used: ModelEnum or enum member name as str.
 
     Returns:
-        Tupla (chat_history actualizado, cadena vacía para limpiar el textbox).
+        Tuple of (updated chat_history, empty string to clear the textbox).
     """
     if isinstance(model_used, str):
         model_used = ModelEnum[model_used]
@@ -41,15 +41,15 @@ def respond_audio(
     audio_file: str | None, chat_history: list, model_name: ModelEnum | str
 ) -> tuple[list, str]:
     """
-    Transcribe audio y delega en ``respond``.
+    Transcribe audio and delegate to ``respond``.
 
     Args:
-        audio_file: Ruta al archivo de audio o None.
-        chat_history: Historial Gradio.
-        model_name: Modelo seleccionado.
+        audio_file: Path to the audio file or None.
+        chat_history: Gradio history.
+        model_name: Selected model.
 
     Returns:
-        Tupla (historial, mensaje de estado o error).
+        Tuple of (history, status or error message).
     """
     if audio_file is None:
         return chat_history, "No audio file provided."
@@ -64,10 +64,10 @@ def respond_audio(
 
 def reset_chat() -> tuple[str, list]:
     """
-    Reinicia la caché global de sesiones y vacía el chat.
+    Reset the global session cache and clear the chat.
 
     Returns:
-        Tupla (mensaje de estado, lista vacía de historial).
+        Tuple of (status message, empty history list).
     """
     reset_cache()
     return "Chat cache resetted.", []

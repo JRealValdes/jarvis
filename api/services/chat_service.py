@@ -1,4 +1,4 @@
-"""Casos de uso de chat, sesión e historial."""
+"""Chat, session, and history use cases."""
 
 from fastapi import HTTPException, status
 
@@ -14,15 +14,15 @@ from enums.core_enums import ModelEnum
 
 
 class ChatService:
-    """Orquestación de conversaciones con Jarvis vía API."""
+    """Orchestrates Jarvis conversations via the API."""
 
     def ask(self, input_data: AskInput, user: dict) -> dict:
         """
-        Envía un mensaje a Jarvis.
+        Send a message to Jarvis.
 
         Args:
-            input_data: Mensaje, modelo y thread_id opcional.
-            user: Claims JWT.
+            input_data: Message, model, and optional thread_id.
+            user: JWT claims.
 
         Returns:
             Dict ``{response: list[str]}``.
@@ -36,17 +36,17 @@ class ChatService:
         self, payload: ThreadIdPayload | None, user: dict
     ) -> dict:
         """
-        Reinicia la caché de sesión del hilo indicado o del usuario actual.
+        Reset session cache for the given thread or the current user.
 
         Args:
-            payload: Cuerpo opcional con thread_id.
-            user: Claims JWT.
+            payload: Optional body with thread_id.
+            user: JWT claims.
 
         Returns:
             Dict ``{status, message}``.
 
         Raises:
-            HTTPException: 403 si un no-admin resetea otro hilo.
+            HTTPException: 403 if a non-admin resets another thread.
         """
         thread_id = payload.thread_id if payload else None
         print(f"Realizando reset session con thread_id: {thread_id}")
@@ -57,29 +57,29 @@ class ChatService:
 
     def individual_cache_exists(self, real_name: str) -> bool:
         """
-        Indica si hay sesión en caché para un real_name.
+        Report whether a session is cached for a real_name.
 
         Args:
-            real_name: Identificador del usuario.
+            real_name: User identifier.
 
         Returns:
-            True si existe entrada en caché de sesiones.
+            True if a session cache entry exists.
         """
         return check_individual_session_cache_exists(real_name)
 
     def get_history(self, thread_id: str | None, user: dict) -> dict:
         """
-        Devuelve historial parseado de mensajes para un hilo.
+        Return parsed message history for a thread.
 
         Args:
-            thread_id: Hilo explícito o None para usar real_name del JWT.
-            user: Claims JWT.
+            thread_id: Explicit thread or None to use JWT real_name.
+            user: JWT claims.
 
         Returns:
             Dict ``{thread_id, messages}``.
 
         Raises:
-            HTTPException: 403 si un no-admin consulta otro hilo.
+            HTTPException: 403 if a non-admin queries another thread.
         """
         thread_id = self._resolve_thread_id(thread_id, user, action="read")
         history = get_message_history(thread_id)
@@ -87,15 +87,15 @@ class ChatService:
 
     def whatsapp_reply(self, body: str, sender_id: str, user: dict) -> str:
         """
-        Procesa un mensaje WhatsApp y devuelve texto plano concatenado.
+        Process a WhatsApp message and return concatenated plain text.
 
         Args:
-            body: Texto del mensaje.
-            sender_id: Identificador From (thread_id).
-            user: Claims JWT.
+            body: Message text.
+            sender_id: From identifier (thread_id).
+            user: JWT claims.
 
         Returns:
-            Respuestas de Jarvis unidas por saltos de línea.
+            Jarvis replies joined by newlines.
         """
         responses = ask_jarvis(body, DEFAULT_MODEL, sender_id, user_info=user)
         return "\n".join(responses)
@@ -104,18 +104,18 @@ class ChatService:
         self, thread_id: str | None, user: dict, *, action: str
     ) -> str:
         """
-        Resuelve thread_id y comprueba permisos de admin para hilos ajenos.
+        Resolve thread_id and enforce admin permissions for foreign threads.
 
         Args:
-            thread_id: Hilo solicitado o None.
-            user: Claims JWT.
-            action: ``reset`` o ``read`` (solo afecta el mensaje de error).
+            thread_id: Requested thread or None.
+            user: JWT claims.
+            action: ``reset`` or ``read`` (only affects the error message).
 
         Returns:
-            thread_id efectivo.
+            Effective thread_id.
 
         Raises:
-            HTTPException: 403 si no-admin accede a otro hilo.
+            HTTPException: 403 if a non-admin accesses another thread.
         """
         if thread_id:
             if not user.get("admin", False):

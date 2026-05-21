@@ -1,4 +1,4 @@
-"""Rutas de autenticación: login Basic y validación de JWT."""
+"""Authentication routes: Basic login and JWT validation."""
 
 from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBasicCredentials
@@ -15,16 +15,16 @@ def login_for_token(
     credentials: HTTPBasicCredentials = Depends(security_basic),
 ) -> TokenResponse:
     """
-    Autentica con HTTP Basic y devuelve un JWT bearer.
+    Authenticate with HTTP Basic and return a bearer JWT.
 
     Args:
-        credentials: Usuario y contraseña (access_name / password).
+        credentials: Username and password (access_name / password).
 
     Returns:
-        TokenResponse con access_token y token_type.
+        TokenResponse with access_token and token_type.
 
     Raises:
-        HTTPException: 401 si las credenciales no son válidas.
+        HTTPException: 401 if credentials are invalid.
     """
     return auth_service.login(credentials.username, credentials.password)
 
@@ -32,12 +32,12 @@ def login_for_token(
 @router.get("/validate-token")
 async def validate_token(user: dict = Depends(verify_jwt_token)) -> dict:
     """
-    Comprueba que el Bearer JWT es válido.
+    Verify that the Bearer JWT is valid.
 
     Args:
-        user: Payload JWT (dependencia).
+        user: JWT payload (dependency).
 
     Returns:
-        Dict con status, message y user (claims).
+        Dict with status, message, and user (claims).
     """
     return auth_service.build_validate_token_response(user)

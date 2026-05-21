@@ -1,4 +1,4 @@
-"""Máquina de estados del flujo conversacional de Jarvis."""
+"""State machine for the Jarvis conversational flow."""
 
 from enum import Enum
 
@@ -6,7 +6,7 @@ from enums.core_enums import IdentificationFailedProtocolEnum
 
 
 class ChatState(Enum):
-    """Estados del flujo de conversación de una sesión Jarvis."""
+    """Conversation flow states for a Jarvis session."""
 
     NOT_INITIALIZED = "NOT_INITIALIZED"
     JARVIS_WELCOME_MESSAGE = "JARVIS_WELCOME_MESSAGE"
@@ -22,16 +22,16 @@ def compute_next_chat_state(
     identification_protocol: IdentificationFailedProtocolEnum,
 ) -> ChatState:
     """
-    Calcula el siguiente estado sin efectos secundarios (sin I/O ni memoria).
+    Compute the next state with no side effects (no I/O or memory).
 
     Args:
-        current: Estado actual de la sesión.
-        valid_user: Si el usuario está identificado o autenticado.
-        was_previously_invalid: True si antes de este turno no había usuario válido.
-        identification_protocol: Comportamiento cuando falla la identificación.
+        current: Current session state.
+        valid_user: Whether the user is identified or authenticated.
+        was_previously_invalid: True if there was no valid user before this turn.
+        identification_protocol: Behavior when identification fails.
 
     Returns:
-        Nuevo ChatState tras aplicar las transiciones del turno.
+        New ChatState after applying turn transitions.
     """
     if current == ChatState.NOT_INITIALIZED:
         if valid_user:
@@ -61,15 +61,15 @@ def should_clear_agent_thread_on_identification(
     valid_user: bool,
 ) -> bool:
     """
-    Indica si hay que borrar el hilo del agente tras identificar al usuario en chat activo.
+    Whether to clear the agent thread after identifying the user during active chat.
 
     Args:
-        current: Estado antes de ``compute_next_chat_state``.
-        was_previously_invalid: Usuario inválido al inicio del turno.
-        valid_user: Usuario válido tras intentar identificar.
+        current: State before ``compute_next_chat_state``.
+        was_previously_invalid: User was invalid at the start of the turn.
+        valid_user: User is valid after identification attempt.
 
     Returns:
-        True si se debe llamar a ``memory.delete_thread``.
+        True if ``memory.delete_thread`` should be called.
     """
     return (
         current == ChatState.INITIALIZED

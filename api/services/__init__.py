@@ -1,4 +1,4 @@
-"""Casos de uso de la API (lógica sin HTTP)."""
+"""API use cases (logic without HTTP)."""
 
 from api.services.admin_service import AdminService, admin_service
 from api.services.auth_service import AuthService, auth_service

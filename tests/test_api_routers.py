@@ -1,4 +1,4 @@
-"""Tests de registro de routers en la aplicación FastAPI."""
+"""Tests for router registration on the FastAPI application."""
 
 from api.main import app
 from api.routers import admin, auth, chat, webhooks

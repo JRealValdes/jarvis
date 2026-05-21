@@ -1,4 +1,4 @@
-"""Esquemas Pydantic para chat y gestión de sesiones."""
+"""Pydantic schemas for chat and session management."""
 
 from typing import Optional
 
@@ -8,7 +8,7 @@ from config import DEFAULT_MODEL
 
 
 class AskInput(BaseModel):
-    """Cuerpo JSON para POST /ask."""
+    """JSON body for POST /ask."""
 
     message: str = Field(description="Mensaje del usuario para Jarvis.")
     model_name: str = Field(
@@ -22,7 +22,7 @@ class AskInput(BaseModel):
 
 
 class ThreadIdPayload(BaseModel):
-    """Cuerpo opcional para POST /reset-session."""
+    """Optional body for POST /reset-session."""
 
     thread_id: Optional[str] = Field(
         default=None,

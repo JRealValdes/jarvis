@@ -1,4 +1,4 @@
-"""Utilidades de cifrado simétrico (Fernet) y hashing para datos de usuario."""
+"""Symmetric encryption (Fernet) and hashing utilities for user data."""
 
 import hashlib
 import os
@@ -13,67 +13,67 @@ fernet = Fernet(FERNET_KEY)
 
 def hash_string_sha256_lowered(input_string: str) -> str:
     """
-    Calcula el hash SHA-256 de una cadena en minúsculas.
+    Compute the SHA-256 hash of a lowercased string.
 
     Args:
-        input_string: Texto a hashear.
+        input_string: Text to hash.
 
     Returns:
-        Hex digest SHA-256 en minúsculas.
+        Lowercase SHA-256 hex digest.
     """
     return hashlib.sha256(input_string.lower().encode()).hexdigest()
 
 
 def encode_symm_crypt_key(input_string: str) -> str:
     """
-    Cifra una cadena con Fernet (clave simétrica de entorno).
+    Encrypt a string with Fernet (symmetric key from environment).
 
     Args:
-        input_string: Texto en claro.
+        input_string: Plain text.
 
     Returns:
-        Token cifrado como cadena UTF-8.
+        Encrypted token as a UTF-8 string.
     """
     return fernet.encrypt(input_string.encode()).decode()
 
 
 def decode_symm_crypt_key(encoded_string: str) -> str:
     """
-    Descifra una cadena previamente cifrada con Fernet.
+    Decrypt a string previously encrypted with Fernet.
 
     Args:
-        encoded_string: Token cifrado.
+        encoded_string: Encrypted token.
 
     Returns:
-        Texto en claro.
+        Plain text.
 
     Raises:
-        cryptography.fernet.InvalidToken: Si la clave o el token no son válidos.
+        cryptography.fernet.InvalidToken: If the key or token is invalid.
     """
     return fernet.decrypt(encoded_string.encode()).decode()
 
 
 def encode_multiple_strings_sck(strings: list[str]) -> list[str]:
     """
-    Cifra una lista de cadenas.
+    Encrypt a list of strings.
 
     Args:
-        strings: Lista de textos en claro.
+        strings: List of plain texts.
 
     Returns:
-        Lista de tokens cifrados, en el mismo orden.
+        List of encrypted tokens in the same order.
     """
     return [encode_symm_crypt_key(s) for s in strings]
 
 
 def decode_multiple_strings_sck(encoded_strings: list[str]) -> list[str]:
     """
-    Descifra una lista de tokens Fernet.
+    Decrypt a list of Fernet tokens.
 
     Args:
-        encoded_strings: Lista de tokens cifrados.
+        encoded_strings: List of encrypted tokens.
 
     Returns:
-        Lista de textos en claro, en el mismo orden.
+        List of plain texts in the same order.
     """
     return [decode_symm_crypt_key(s) for s in encoded_strings]

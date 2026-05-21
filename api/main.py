@@ -1,4 +1,8 @@
-"""Bootstrap de la aplicación FastAPI Jarvis."""
+"""FastAPI Jarvis application bootstrap."""
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 import uvicorn
 from fastapi import FastAPI
@@ -9,10 +13,10 @@ from api.routers import admin, auth, chat, webhooks
 
 def create_app() -> FastAPI:
     """
-    Construye la instancia FastAPI con todos los routers registrados.
+    Build the FastAPI instance with all routers registered.
 
     Returns:
-        Aplicación FastAPI configurada.
+        Configured FastAPI application.
     """
     application = FastAPI(
         title="Jarvis API",
@@ -30,12 +34,12 @@ app = create_app()
 
 
 def start_uvicorn() -> None:
-    """Arranca el servidor ASGI en 0.0.0.0:API_PORT (bloqueante)."""
+    """Start the ASGI server on 0.0.0.0:API_PORT (blocking)."""
     uvicorn.run(app, host="0.0.0.0", port=API_PORT)
 
 
 def main() -> None:
-    """Punto de entrada CLI: túnel opcional + uvicorn."""
+    """CLI entry point: optional tunnel plus uvicorn."""
     run_with_optional_tunnel(start_uvicorn)
 
 

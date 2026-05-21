@@ -1,14 +1,14 @@
-"""Casos de uso administrativos (caché global)."""
+"""Administrative use cases (global cache)."""
 
 from agents.session import get_cache_status, reset_cache_global
 
 
 class AdminService:
-    """Operaciones restringidas a usuarios admin."""
+    """Operations restricted to admin users."""
 
     def reset_global_memory(self) -> dict:
         """
-        Vacía todas las cachés de agentes y sesiones.
+        Clear all agent and session caches.
 
         Returns:
             Dict ``{status, message}``.
@@ -19,10 +19,10 @@ class AdminService:
 
     def get_cache_status(self) -> dict:
         """
-        Resume el estado de cachés globales.
+        Summarize global cache state.
 
         Returns:
-            Dict con contadores y listas de modelos/sesiones activas.
+            Dict with counters and lists of active models/sessions.
         """
         return get_cache_status()
 

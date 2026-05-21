@@ -1,4 +1,4 @@
-"""Tests de shims de compatibilidad (config, enums, security)."""
+"""Compatibility shim tests (config, enums, security)."""
 
 import config as root_config
 import enums.core_enums as root_enums

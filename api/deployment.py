@@ -1,4 +1,4 @@
-"""Utilidades de despliegue: cloudflared, Firebase y Telegram."""
+"""Deployment utilities: cloudflared, Firebase, and Telegram."""
 
 import os
 import re
@@ -7,24 +7,44 @@ import time
 from datetime import datetime, timezone
 
 import requests
+from dotenv import load_dotenv
 from firebase_admin import credentials, db, initialize_app
 
 from config import EXPOSE_API_WITH_CLOUDFLARED
 
+# Load .env file before reading variables (avoids None values when importing the module).
+load_dotenv()
+
 API_PORT = int(os.getenv("API_PORT", 8000))
-telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID")
-firebase_url = os.getenv("FIREBASE_DB_URL")
-firebase_path = os.getenv("FIREBASE_NODE_PATH", "jarvis/latest_url")
-firebase_private_key_path = "api/firebase_project_secret_private_key.json"
+FIREBASE_PRIVATE_KEY_PATH = "api/firebase_project_secret_private_key.json"
+
+
+def _telegram_config() -> tuple[str | None, str | None]:
+    """
+    Read Telegram tokens from the environment.
+
+    Returns:
+        Tuple of (bot_token, chat_id).
+    """
+    return os.getenv("TELEGRAM_BOT_TOKEN"), os.getenv("TELEGRAM_CHAT_ID")
+
+
+def _firebase_config() -> tuple[str | None, str]:
+    """
+    Read Firebase Realtime Database configuration from the environment.
+
+    Returns:
+        Tuple of (database_url, node_path). node_path has a default value.
+    """
+    return os.getenv("FIREBASE_DB_URL"), os.getenv("FIREBASE_NODE_PATH", "jarvis/latest_url")
 
 
 def expose_api_with_cloudflared() -> str | None:
     """
-    Arranca un túnel cloudflared hacia localhost:API_PORT.
+    Start a cloudflared tunnel to localhost:API_PORT.
 
     Returns:
-        URL pública ``https://*.trycloudflare.com`` o None si no se detecta a tiempo.
+        Public URL ``https://*.trycloudflare.com``, or None if not detected in time.
     """
     process = subprocess.Popen(
         ["cloudflared", "tunnel", "--url", f"http://localhost:{API_PORT}"],
@@ -50,14 +70,15 @@ def expose_api_with_cloudflared() -> str | None:
 
 def save_url_to_firebase(url: str) -> None:
     """
-    Publica la URL del túnel en Firebase Realtime Database.
+    Publish the tunnel URL to Firebase Realtime Database.
 
     Args:
-        url: URL pública del túnel.
+        url: Public tunnel URL.
 
     Returns:
-        None. Imprime error si falta configuración o falla la escritura.
+        None. Prints an error if configuration is missing or the write fails.
     """
+    firebase_url, firebase_path = _firebase_config()
     if not firebase_url:
         print("❌ No está configurada la URL de Firebase.")
         return
@@ -68,7 +89,7 @@ def save_url_to_firebase(url: str) -> None:
     }
 
     try:
-        cred = credentials.Certificate(firebase_private_key_path)
+        cred = credentials.Certificate(FIREBASE_PRIVATE_KEY_PATH)
         initialize_app(
             cred,
             {
@@ -85,19 +106,20 @@ def save_url_to_firebase(url: str) -> None:
 
 def send_telegram_message(text: str) -> None:
     """
-    Envía un mensaje al chat de Telegram configurado en entorno.
+    Send a message to the Telegram chat configured in the environment.
 
     Args:
-        text: Contenido del mensaje.
+        text: Message body.
 
     Returns:
         None.
     """
-    if not telegram_bot_token or not telegram_chat_id:
+    bot_token, chat_id = _telegram_config()
+    if not bot_token or not chat_id:
         print("⚠️ Falta configuración de Telegram.")
         return
-    url = f"https://api.telegram.org/bot{telegram_bot_token}/sendMessage"
-    data = {"chat_id": telegram_chat_id, "text": text}
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    data = {"chat_id": chat_id, "text": text}
     try:
         response = requests.post(url, json=data)
         response.raise_for_status()
@@ -107,10 +129,10 @@ def send_telegram_message(text: str) -> None:
 
 def run_with_optional_tunnel(start_server) -> None:
     """
-    Opcionalmente expone la API con cloudflared y arranca el servidor.
+    Optionally expose the API with cloudflared and start the server.
 
     Args:
-        start_server: Callable sin argumentos (p. ej. start_uvicorn).
+        start_server: Zero-argument callable (e.g. start_uvicorn).
 
     Returns:
         None.

@@ -1,1 +1,1 @@
-"""Núcleo compartido: configuración y enumeraciones."""
+"""Shared core: configuration and enumerations."""

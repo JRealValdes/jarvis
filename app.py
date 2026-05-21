@@ -1,4 +1,4 @@
-"""Shim de entrada Gradio (Hugging Face: app_file: app.py)."""
+"""Gradio entry shim (Hugging Face: app_file: app.py)."""
 
 from interfaces.gradio_app import demo
 

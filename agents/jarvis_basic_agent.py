@@ -1,4 +1,4 @@
-"""Agente ReAct sin memoria persistente (Zephyr vía HF, Mistral vía Ollama)."""
+"""ReAct agent without persistent memory (Zephyr via HF, Mistral via Ollama)."""
 
 import os
 
@@ -11,22 +11,22 @@ from tools.tools_registry import local_tools
 
 class JarvisBasicAgent:
     """
-    Agente LangGraph preconstruido (ReAct) para modelos locales o HuggingFace.
+    Prebuilt LangGraph ReAct agent for local or HuggingFace models.
 
     Attributes:
-        model_enum: Modelo configurado.
-        graph: Grafo compilado invocable.
-        memory: Siempre None en este agente.
-        tools: Lista de herramientas LangChain registradas.
+        model_enum: Configured model.
+        graph: Compiled invocable graph.
+        memory: Always None for this agent.
+        tools: Registered LangChain tools list.
     """
 
     def __init__(self, model_enum: ModelEnum) -> None:
         """
         Args:
-            model_enum: ZEPHYR o MISTRAL.
+            model_enum: ZEPHYR or MISTRAL.
 
         Raises:
-            ValueError: Si el modelo no está soportado en esta clase.
+            ValueError: If the model is not supported by this class.
         """
         self.model_enum = model_enum
         self.graph, self.memory, self.tools = self._build_agent(model_enum)
@@ -35,16 +35,16 @@ class JarvisBasicAgent:
         self, model_enum: ModelEnum
     ) -> tuple[object, None, list]:
         """
-        Construye el grafo ReAct y las herramientas asociadas.
+        Build the ReAct graph and associated tools.
 
         Args:
-            model_enum: Modelo a instanciar.
+            model_enum: Model to instantiate.
 
         Returns:
-            Tupla (graph, memory, tools) con memory=None.
+            Tuple (graph, memory, tools) with memory=None.
 
         Raises:
-            ValueError: Si model_enum no es ZEPHYR ni MISTRAL.
+            ValueError: If model_enum is neither ZEPHYR nor MISTRAL.
         """
         tools = local_tools
         if model_enum == ModelEnum.ZEPHYR:
@@ -66,16 +66,16 @@ class JarvisBasicAgent:
 
     def invoke(self, **kwargs) -> dict:
         """
-        Ejecuta una invocación del grafo.
+        Run a graph invocation.
 
         Args:
-            **kwargs: Argumentos aceptados por ``graph.invoke`` (input, config, etc.).
+            **kwargs: Arguments accepted by ``graph.invoke`` (input, config, etc.).
 
         Returns:
-            Estado resultante del grafo (dict con claves como ``messages``).
+            Resulting graph state (dict with keys such as ``messages``).
         """
         return self.graph.invoke(**kwargs)
 
     def cleanup(self) -> None:
-        """Libera recursos del agente (no-op en este agente)."""
+        """Release agent resources (no-op for this agent)."""
         pass

@@ -1,4 +1,4 @@
-"""Transcripción de audio con OpenAI Whisper para el agente y la UI Gradio."""
+"""Audio transcription with OpenAI Whisper for the agent and Gradio UI."""
 
 import os
 from typing import Optional
@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 
 class TranscribeAudioInput(BaseModel):
-    """Esquema de argumentos para la herramienta de transcripción."""
+    """Argument schema for the transcription tool."""
 
     file_path: str = Field(description="Ruta absoluta o relativa al archivo de audio.")
 

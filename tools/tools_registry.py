@@ -1,4 +1,4 @@
-"""Descubrimiento automático de herramientas LangChain en el paquete tools."""
+"""Automatic discovery of LangChain tools in the tools package."""
 
 import importlib
 import inspect
@@ -9,7 +9,7 @@ current_dir = os.path.dirname(__file__)
 package_name = __package__ or "tools"
 
 local_tools: list = []
-"""Lista de objetos @tool registrados al importar este módulo."""
+"""List of @tool objects registered when this module is imported."""
 
 for _, module_name, is_pkg in pkgutil.iter_modules([current_dir]):
     if is_pkg or module_name.startswith("_"):

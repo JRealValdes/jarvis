@@ -1,7 +1,7 @@
 """
-Shim de compatibilidad.
+Compatibility shim.
 
-Preferir ``python -m api.main`` o ``from api.main import app``.
+Prefer ``python -m api.main`` or ``from api.main import app``.
 """
 
 from api.deployment import (

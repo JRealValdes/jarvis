@@ -1,3 +1,3 @@
-"""Shim de compatibilidad — usar ``infrastructure.crypto.fernet`` en código nuevo."""
+"""Compatibility shim — use ``infrastructure.crypto.fernet`` in new code."""
 
 from infrastructure.crypto.fernet import *  # noqa: F403

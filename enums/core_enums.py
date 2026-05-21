@@ -1,3 +1,3 @@
-"""Shim de compatibilidad — usar ``core.enums.core_enums`` en código nuevo."""
+"""Compatibility shim — use ``core.enums.core_enums`` in new code."""
 
 from core.enums.core_enums import *  # noqa: F403

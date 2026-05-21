@@ -45,9 +45,9 @@ Desde la raíz del proyecto:
 
 ```bash
 uv run pytest
-uv run python main.py
-uv run python app.py
-uv run python -m api.main
+uv run main.py
+uv run app.py
+uv run -m api.main
 # shims legacy: api/main_api.py, config.py, enums/, utils/security.py
 ```
 
@@ -67,9 +67,9 @@ FERNET_KEY=...
 
 ## Usage
 ```bash
-uv run python main.py              # CLI (shim → interfaces/cli.py)
-uv run python app.py               # Gradio (shim → interfaces/gradio_app.py)
-uv run python -m api.main          # API HTTP
+uv run main.py              # CLI (shim → interfaces/cli.py)
+uv run app.py               # Gradio (shim → interfaces/gradio_app.py)
+uv run -m api.main          # API HTTP
 ```
 
 ## Architecture

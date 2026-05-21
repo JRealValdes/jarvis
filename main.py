@@ -1,4 +1,4 @@
-"""Shim de entrada CLI — ver ``interfaces.cli``."""
+"""CLI entry shim — see ``interfaces.cli``."""
 
 from interfaces.cli import main
 

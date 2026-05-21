@@ -1,4 +1,4 @@
-"""Autenticación OAuth de Google Calendar por usuario y cuenta."""
+"""Google Calendar OAuth authentication per user and account."""
 
 import os
 
@@ -14,13 +14,13 @@ GOOGLE_API_DIR = os.path.join(PROJECT_ROOT, "api", "google_api")
 
 def _load_paths(user_dir: str) -> tuple[str | None, str | None]:
     """
-    Localiza credential_*.json y token_*.json en un directorio de cuenta.
+    Locate credential_*.json and token_*.json in an account directory.
 
     Args:
-        user_dir: Ruta al directorio de la cuenta Google.
+        user_dir: Path to the Google account directory.
 
     Returns:
-        Tupla (credential_path, token_path); cada uno puede ser None.
+        Tuple (credential_path, token_path); either may be None.
     """
     credential_path, token_path = None, None
     for filename in os.listdir(user_dir):
@@ -35,11 +35,11 @@ def _load_paths(user_dir: str) -> tuple[str | None, str | None]:
 
 def _persist(creds: Credentials, token_path: str) -> None:
     """
-    Guarda credenciales OAuth actualizadas en disco.
+    Persist updated OAuth credentials to disk.
 
     Args:
-        creds: Credenciales de Google.
-        token_path: Ruta del archivo token JSON.
+        creds: Google credentials.
+        token_path: Path to the token JSON file.
 
     Returns:
         None.
@@ -52,18 +52,18 @@ def _ensure_creds(
     credential_path: str, token_path: str | None, allow_logging_popup: bool
 ) -> Credentials:
     """
-    Obtiene credenciales válidas (refresh, o flujo interactivo).
+    Obtain valid credentials (refresh or interactive flow).
 
     Args:
-        credential_path: Ruta a client secrets OAuth.
-        token_path: Ruta al token guardado (opcional).
-        allow_logging_popup: Si False, no abre navegador y lanza error si falta token.
+        credential_path: Path to OAuth client secrets.
+        token_path: Path to saved token (optional).
+        allow_logging_popup: If False, do not open a browser and raise if token is missing.
 
     Returns:
-        Credenciales listas para la API de Calendar.
+        Credentials ready for the Calendar API.
 
     Raises:
-        RuntimeError: Si no hay token válido y allow_logging_popup es False.
+        RuntimeError: If there is no valid token and allow_logging_popup is False.
     """
     creds = None
     if token_path and os.path.exists(token_path):
@@ -97,17 +97,17 @@ def get_authentications_for_user(
     username: str, allow_logging_popup: bool = False
 ) -> dict[str, Credentials]:
     """
-    Carga credenciales OAuth para todas las cuentas Google del usuario.
+    Load OAuth credentials for all Google accounts of a user.
 
     Args:
-        username: Nombre de carpeta bajo ``api/google_api/<username>/``.
-        allow_logging_popup: Permite flujo OAuth en navegador si falta token.
+        username: Folder name under ``api/google_api/<username>/``.
+        allow_logging_popup: Allow browser OAuth flow if token is missing.
 
     Returns:
-        Dict ``{nombre_cuenta: Credentials}`` solo con cuentas autenticadas con éxito.
+        Dict ``{account_name: Credentials}`` for successfully authenticated accounts only.
 
     Raises:
-        FileNotFoundError: Si no existe el directorio del usuario.
+        FileNotFoundError: If the user directory does not exist.
     """
     authentications: dict[str, Credentials] = {}
 

@@ -1,4 +1,4 @@
-"""Tests de servicios API (sin LLM ni base de datos)."""
+"""API service tests (no LLM or database)."""
 
 from api.services.auth_service import AuthService
 from api.services.chat_service import ChatService

@@ -1,4 +1,4 @@
-"""Tests de dominio de usuarios (prompts e identificación)."""
+"""User domain tests (prompts and identification)."""
 
 from unittest.mock import patch
 

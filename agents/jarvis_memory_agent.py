@@ -1,4 +1,4 @@
-"""Agente LangGraph con memoria (MemorySaver) y herramientas para GPT-3.5."""
+"""LangGraph agent with memory (MemorySaver) and tools for GPT-3.5."""
 
 from typing import Annotated
 
@@ -14,7 +14,7 @@ from tools.tools_registry import local_tools
 
 
 class State(TypedDict):
-    """Estado del grafo: mensajes acumulados y nombre real del usuario para tools."""
+    """Graph state: accumulated messages and real_name for tools."""
 
     messages: Annotated[list, add_messages]
     real_name: str
@@ -22,22 +22,22 @@ class State(TypedDict):
 
 class JarvisMemoryAgent:
     """
-    Agente con bucle chatbot ↔ tools y checkpointer en memoria.
+    Agent with chatbot ↔ tools loop and in-memory checkpointer.
 
     Attributes:
-        model_enum: Debe ser GPT_3_5.
-        graph: Grafo compilado.
-        memory: MemorySaver para hilos por thread_id.
-        tools: Herramientas locales registradas.
+        model_enum: Must be GPT_3_5.
+        graph: Compiled graph.
+        memory: MemorySaver for per-thread_id threads.
+        tools: Registered local tools.
     """
 
     def __init__(self, model_enum: ModelEnum) -> None:
         """
         Args:
-            model_enum: Solo ModelEnum.GPT_3_5 está soportado.
+            model_enum: Only ModelEnum.GPT_3_5 is supported.
 
         Raises:
-            ValueError: Si el modelo no es GPT_3_5.
+            ValueError: If the model is not GPT_3_5.
         """
         self.model_enum = model_enum
         self.graph, self.memory, self.tools = self._build_agent(model_enum)
@@ -46,16 +46,16 @@ class JarvisMemoryAgent:
         self, model_enum: ModelEnum
     ) -> tuple[object, MemorySaver, list]:
         """
-        Compila el StateGraph con nodos chatbot y tools.
+        Compile the StateGraph with chatbot and tools nodes.
 
         Args:
-            model_enum: Modelo LLM.
+            model_enum: LLM model.
 
         Returns:
-            Tupla (graph compilado, memory saver, lista de tools).
+            Tuple (compiled graph, memory saver, tool list).
 
         Raises:
-            ValueError: Si model_enum no es GPT_3_5.
+            ValueError: If model_enum is not GPT_3_5.
         """
         tools = local_tools
         if model_enum == ModelEnum.GPT_3_5:
@@ -82,16 +82,16 @@ class JarvisMemoryAgent:
 
     def invoke(self, **kwargs) -> dict:
         """
-        Invoca el grafo (requiere config con thread_id si hay memoria).
+        Invoke the graph (requires config with thread_id when memory is enabled).
 
         Args:
             **kwargs: ``input``, ``config``, etc.
 
         Returns:
-            Estado final del grafo.
+            Final graph state.
         """
         return self.graph.invoke(**kwargs)
 
     def cleanup(self) -> None:
-        """Libera recursos del agente (no-op)."""
+        """Release agent resources (no-op)."""
         pass

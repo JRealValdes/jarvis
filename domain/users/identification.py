@@ -1,4 +1,4 @@
-"""Identificación de usuarios a partir del lenguaje natural."""
+"""User identification from natural language."""
 
 import re
 
@@ -9,13 +9,13 @@ _IDENTIFICATION_PATTERN = re.compile(r"\bsoy\s+([^\s,.!?]+)", re.IGNORECASE)
 
 def find_user_by_prompt(prompt: str) -> dict | None:
     """
-    Detecta ``soy <nombre>`` en el prompt y busca usuario por access_name.
+    Detect ``soy <name>`` in the prompt and look up the user by access_name.
 
     Args:
-        prompt: Texto libre del usuario.
+        prompt: Free-form user text.
 
     Returns:
-        Dict de usuario si existe; None si no hay patrón o no hay match.
+        User dict if found; None if there is no pattern or no match.
     """
     match = _IDENTIFICATION_PATTERN.search(prompt)
     if not match:

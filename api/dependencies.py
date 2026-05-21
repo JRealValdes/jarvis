@@ -1,4 +1,4 @@
-"""Dependencias FastAPI: seguridad HTTP/JWT y utilidades de tokens."""
+"""FastAPI dependencies: HTTP/JWT security and token utilities."""
 
 import os
 from datetime import datetime, timedelta, timezone
@@ -19,13 +19,13 @@ security_bearer = HTTPBearer(auto_error=True)
 
 def get_jwt_secret_key() -> str:
     """
-    Lee la clave de firma JWT desde entorno.
+    Read the JWT signing key from the environment.
 
     Returns:
-        Valor de ``JWT_SECRET_KEY``.
+        Value of ``JWT_SECRET_KEY``.
 
     Raises:
-        RuntimeError: Si la variable no está definida.
+        RuntimeError: If the variable is not set.
     """
     secret = os.getenv("JWT_SECRET_KEY")
     if not secret:
@@ -42,17 +42,17 @@ def build_token_payload(
     admin: bool | None = None,
 ) -> dict:
     """
-    Construye el payload JWT con expiración estándar.
+    Build a JWT payload with standard expiration.
 
     Args:
-        sub: Subject (access_name o username).
-        real_name: Nombre real del usuario (claims extendidos tras login).
-        jarvis_name: Nombre de cortesía para Jarvis.
-        is_female: Género para personalización.
-        admin: Privilegios de administrador.
+        sub: Subject (access_name or username).
+        real_name: User's real name (extended claim after login).
+        jarvis_name: Courtesy name Jarvis uses for the user.
+        is_female: Gender for personalization.
+        admin: Administrator privileges.
 
     Returns:
-        Dict listo para ``jwt.encode`` (incluye ``exp`` UTC).
+        Dict ready for ``jwt.encode`` (includes UTC ``exp``).
     """
     payload: dict = {
         "sub": sub,
@@ -71,13 +71,13 @@ def build_token_payload(
 
 def build_token_payload_from_user(user: dict) -> dict:
     """
-    Payload JWT completo a partir de una fila de ``users``.
+    Build a full JWT payload from a ``users`` row.
 
     Args:
-        user: Dict devuelto por ``get_user_by_field``.
+        user: Dict returned by ``get_user_by_field``.
 
     Returns:
-        Claims con sub, real_name, jarvis_name, is_female, admin y exp.
+        Claims with sub, real_name, jarvis_name, is_female, admin, and exp.
     """
     return build_token_payload(
         sub=user["access_name"],
@@ -90,26 +90,26 @@ def build_token_payload_from_user(user: dict) -> dict:
 
 def encode_jwt(payload: dict) -> str:
     """
-    Firma un payload JWT.
+    Sign a JWT payload.
 
     Args:
-        payload: Claims (debe incluir ``exp``).
+        payload: Claims (must include ``exp``).
 
     Returns:
-        Token JWT como cadena.
+        JWT token string.
     """
     return jwt.encode(payload, get_jwt_secret_key(), algorithm=JWT_ALGORITHM)
 
 
 def create_jwt_token(username: str) -> str:
     """
-    Genera un JWT mínimo (solo sub + exp) para usos internos.
+    Generate a minimal JWT (sub + exp only) for internal use.
 
     Args:
-        username: Identificador (sub).
+        username: Identifier (sub).
 
     Returns:
-        Token JWT firmado.
+        Signed JWT token.
     """
     return encode_jwt(build_token_payload(sub=username))
 
@@ -118,16 +118,16 @@ def verify_jwt_token(
     credentials: HTTPAuthorizationCredentials = Depends(security_bearer),
 ) -> dict:
     """
-    Dependencia FastAPI que valida el Bearer JWT.
+    FastAPI dependency that validates the Bearer JWT.
 
     Args:
-        credentials: Cabecera Authorization Bearer.
+        credentials: Authorization Bearer header.
 
     Returns:
-        Payload decodificado (sub, real_name, jarvis_name, is_female, admin, exp).
+        Decoded payload (sub, real_name, jarvis_name, is_female, admin, exp).
 
     Raises:
-        HTTPException: 401 si el token expiró o es inválido.
+        HTTPException: 401 if the token expired or is invalid.
     """
     try:
         return jwt.decode(
@@ -143,16 +143,16 @@ def verify_jwt_token(
 
 def require_admin(user: dict = Depends(verify_jwt_token)) -> dict:
     """
-    Dependencia que exige usuario admin en el JWT.
+    Dependency that requires an admin user in the JWT.
 
     Args:
-        user: Payload decodificado de verify_jwt_token.
+        user: Decoded payload from verify_jwt_token.
 
     Returns:
-        Mismo dict user si es admin.
+        Same user dict if admin.
 
     Raises:
-        HTTPException: 403 si no tiene privilegio admin.
+        HTTPException: 403 if the user lacks admin privilege.
     """
     if not user.get("admin", False):
         raise HTTPException(

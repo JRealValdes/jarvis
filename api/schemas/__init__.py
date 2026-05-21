@@ -1,4 +1,4 @@
-"""Modelos Pydantic de entrada/salida de la API HTTP."""
+"""Pydantic input/output models for the HTTP API."""
 
 from api.schemas.auth import TokenResponse
 from api.schemas.chat import AskInput, ThreadIdPayload

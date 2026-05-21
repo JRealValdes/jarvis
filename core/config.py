@@ -1,26 +1,26 @@
-"""Configuración global de Jarvis (modelo por defecto, JWT, flags de depuración)."""
+"""Global Jarvis configuration (default model, JWT, debug flags)."""
 
 from core.enums.core_enums import IdentificationFailedProtocolEnum, ModelEnum
 
 DEFAULT_MODEL: ModelEnum = ModelEnum.GPT_3_5
-"""Modelo LLM usado cuando el cliente no especifica otro."""
+"""LLM used when the client does not specify another model."""
 
 IDENTIFICATION_FAILED_PROTOCOL: IdentificationFailedProtocolEnum = (
     IdentificationFailedProtocolEnum.AUTOMATIC_RESPONSE
 )
-"""Comportamiento cuando el usuario no se identifica en la sesión."""
+"""Behavior when the user is not identified in a session."""
 
 DB_DEBUG_MODE: bool = False
-"""Si es True, permite operaciones de depuración sobre la base de usuarios."""
+"""If True, allows debug operations on the user database."""
 
 EXPOSE_API_WITH_CLOUDFLARED: bool = True
-"""Si es True, al arrancar la API intenta exponerla con cloudflared."""
+"""If True, the API attempts cloudflared exposure on startup."""
 
 JWT_ALGORITHM: str = "HS256"
-"""Algoritmo de firma para tokens JWT."""
+"""Signing algorithm for JWT tokens."""
 
 JWT_EXP_DELTA_SECONDS: int = 3600
-"""Duración del token JWT en segundos (1 hora por defecto)."""
+"""JWT lifetime in seconds (one hour by default)."""
 
 USE_MCP: bool = False
-"""Si es True, el agente GPT-3.5 usa JarvisMcpMemoryAgent en lugar de JarvisMemoryAgent."""
+"""If True, the GPT-3.5 agent uses JarvisMcpMemoryAgent instead of JarvisMemoryAgent."""
