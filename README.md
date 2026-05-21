@@ -98,7 +98,6 @@ jarvis/
 │   ├── routers/
 │   │   ├── auth.py
 │   │   ├── chat.py
-│   │   ├── webhooks.py
 │   │   └── admin.py
 │   ├── security/
 │   │   └── jwt.py

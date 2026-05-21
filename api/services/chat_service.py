@@ -9,7 +9,6 @@ from agents.session import (
     reset_session,
 )
 from api.schemas.chat import AskInput, ThreadIdPayload
-from core.config import DEFAULT_MODEL
 from core.enums import ModelEnum
 
 
@@ -22,7 +21,7 @@ class ChatService:
 
         Args:
             input_data: Message, model, and optional thread_id.
-            user: JWT claims.
+            user: Decoded JWT claims.
 
         Returns:
             Dict ``{response: list[str]}``.
@@ -40,7 +39,7 @@ class ChatService:
 
         Args:
             payload: Optional body with thread_id.
-            user: JWT claims.
+            user: Decoded JWT claims.
 
         Returns:
             Dict ``{status, message}``.
@@ -71,7 +70,7 @@ class ChatService:
 
         Args:
             thread_id: Explicit thread or None to use JWT real_name.
-            user: JWT claims.
+            user: Decoded JWT claims.
 
         Returns:
             Dict ``{thread_id, messages}``.
@@ -83,21 +82,6 @@ class ChatService:
         history = get_message_history(thread_id)
         return {"thread_id": thread_id, "messages": history}
 
-    def whatsapp_reply(self, body: str, sender_id: str, user: dict) -> str:
-        """
-        Process a WhatsApp message and return concatenated plain text.
-
-        Args:
-            body: Message text.
-            sender_id: From identifier (thread_id).
-            user: JWT claims.
-
-        Returns:
-            Jarvis replies joined by newlines.
-        """
-        responses = ask_jarvis(body, DEFAULT_MODEL, sender_id, user_info=user)
-        return "\n".join(responses)
-
     def _resolve_thread_id(
         self, thread_id: str | None, user: dict, *, action: str
     ) -> str:
@@ -106,7 +90,7 @@ class ChatService:
 
         Args:
             thread_id: Requested thread or None.
-            user: JWT claims.
+            user: Decoded JWT claims.
             action: ``reset`` or ``read`` (only affects the error message).
 
         Returns:

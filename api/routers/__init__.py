@@ -1,5 +1,5 @@
-"""FastAPI routers by domain (auth, chat, webhooks, admin)."""
+"""FastAPI routers by domain (auth, chat, admin)."""
 
-from api.routers import admin, auth, chat, webhooks
+from api.routers import admin, auth, chat
 
-__all__ = ["admin", "auth", "chat", "webhooks"]
+__all__ = ["admin", "auth", "chat"]

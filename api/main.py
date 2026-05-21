@@ -11,7 +11,7 @@ from api.deployment import API_PORT, run_with_optional_tunnel
 from core.logging_config import configure_logging
 
 configure_logging()
-from api.routers import admin, auth, chat, webhooks
+from api.routers import admin, auth, chat
 
 
 def create_app() -> FastAPI:
@@ -28,7 +28,6 @@ def create_app() -> FastAPI:
     )
     application.include_router(auth.router)
     application.include_router(chat.router)
-    application.include_router(webhooks.router)
     application.include_router(admin.router)
     return application
 
