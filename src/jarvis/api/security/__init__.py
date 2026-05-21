@@ -1,6 +1,6 @@
 """API security helpers (JWT signing and verification)."""
 
-from api.security.jwt import (
+from jarvis.api.security.jwt import (
     build_token_payload,
     build_token_payload_from_user,
     create_jwt_token,

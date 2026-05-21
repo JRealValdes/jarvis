@@ -8,7 +8,7 @@ from langgraph.prebuilt import InjectedState
 from typing import Optional
 from dateutil import parser
 
-from infrastructure.google.calendar_auth import get_authentications_for_user
+from jarvis.infrastructure.google.calendar_auth import get_authentications_for_user
 
 
 def ensure_timezone(dt_string: str, fallback_tz: str = "+00:00") -> str:

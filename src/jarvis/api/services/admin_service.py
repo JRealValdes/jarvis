@@ -1,6 +1,6 @@
 """Administrative use cases (global cache)."""
 
-from agents.session import get_cache_status, reset_cache_global
+from jarvis.agents.session import get_cache_status, reset_cache_global
 
 
 class AdminService:

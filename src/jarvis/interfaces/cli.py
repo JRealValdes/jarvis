@@ -1,7 +1,7 @@
 """Interactive Jarvis CLI (stdin read loop)."""
 
-from core.config import DEFAULT_MODEL
-from agents.session import ask_jarvis
+from jarvis.core.config import DEFAULT_MODEL
+from jarvis.agents.session import ask_jarvis
 
 model_used = DEFAULT_MODEL
 thread_id = "1"

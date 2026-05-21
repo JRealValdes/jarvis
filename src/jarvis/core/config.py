@@ -1,6 +1,6 @@
 """Global Jarvis configuration (default model, JWT, debug flags)."""
 
-from core.enums import IdentificationFailedProtocolEnum, ModelEnum
+from jarvis.core.enums import IdentificationFailedProtocolEnum, ModelEnum
 
 DEFAULT_MODEL: ModelEnum = ModelEnum.GPT_3_5
 """LLM used when the client does not specify another model."""

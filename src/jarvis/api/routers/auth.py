@@ -3,9 +3,9 @@
 from fastapi import APIRouter, Depends
 from fastapi.security import HTTPBasicCredentials
 
-from api.dependencies import security_basic, verify_jwt_token
-from api.schemas.auth import TokenResponse
-from api.services.auth_service import auth_service
+from jarvis.api.dependencies import security_basic, verify_jwt_token
+from jarvis.api.schemas.auth import TokenResponse
+from jarvis.api.services.auth_service import auth_service
 
 router = APIRouter(tags=["auth"])
 

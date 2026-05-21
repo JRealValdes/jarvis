@@ -2,7 +2,7 @@
 
 from enum import Enum
 
-from core.enums import IdentificationFailedProtocolEnum
+from jarvis.core.enums import IdentificationFailedProtocolEnum
 
 
 class ChatState(Enum):

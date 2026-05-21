@@ -2,7 +2,7 @@
 
 import re
 
-from infrastructure.persistence.users.repository import get_user_by_field
+from jarvis.infrastructure.persistence.users.repository import get_user_by_field
 
 _IDENTIFICATION_PATTERN = re.compile(r"\bsoy\s+([^\s,.!?]+)", re.IGNORECASE)
 

@@ -1,6 +1,6 @@
 """Backward-compatible import path — prefer ``infrastructure.google.calendar_auth``."""
 
-from infrastructure.google.calendar_auth import (  # noqa: F401
+from jarvis.infrastructure.google.calendar_auth import (  # noqa: F401
     GOOGLE_API_DIR,
     get_authentications_for_user,
 )

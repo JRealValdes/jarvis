@@ -2,11 +2,11 @@
 
 import os
 
-from core.enums import ModelEnum
+from jarvis.core.enums import ModelEnum
 from langchain_ollama import ChatOllama
 from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 from langchain.agents import create_agent
-from tools.tools_registry import local_tools
+from jarvis.tools.tools_registry import local_tools
 
 
 class JarvisBasicAgent:

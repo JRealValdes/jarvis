@@ -2,14 +2,14 @@
 
 from fastapi import HTTPException, status
 
-from agents.session import (
+from jarvis.agents.session import (
     ask_jarvis,
     check_individual_session_cache_exists,
     get_message_history,
     reset_session,
 )
-from api.schemas.chat import AskInput, ThreadIdPayload
-from core.enums import ModelEnum
+from jarvis.api.schemas.chat import AskInput, ThreadIdPayload
+from jarvis.core.enums import ModelEnum
 
 
 class ChatService:

@@ -11,7 +11,7 @@ from typing import Annotated
 
 from typing_extensions import TypedDict
 
-from core.enums import ModelEnum
+from jarvis.core.enums import ModelEnum
 from langchain_openai import ChatOpenAI
 from langchain_mcp_adapters.tools import load_mcp_tools
 from langgraph.checkpoint.memory import MemorySaver
@@ -20,7 +20,7 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
-from tools.tools_registry import local_tools
+from jarvis.tools.tools_registry import local_tools
 
 
 class State(TypedDict):
@@ -30,9 +30,31 @@ class State(TypedDict):
     real_name: str
 
 
-from core.paths import MCP_SERVER_CONFIG_PATH
+from jarvis.core.paths import MCP_DIR, MCP_SERVER_CONFIG_PATH
 
 server_config_path = str(MCP_SERVER_CONFIG_PATH)
+
+
+def _resolve_mcp_server_config(server_config: dict) -> dict:
+    """
+    Normalize MCP server config paths relative to ``MCP_DIR``.
+
+    Args:
+        server_config: Raw entry from ``server_config.json``.
+
+    Returns:
+        Config with absolute paths in ``args`` when they reference local scripts.
+    """
+    resolved = dict(server_config)
+    args = list(resolved.get("args", []))
+    normalized: list[str] = []
+    for arg in args:
+        if isinstance(arg, str) and arg.endswith(".py") and not os.path.isabs(arg):
+            normalized.append(str((MCP_DIR / arg).resolve()))
+        else:
+            normalized.append(arg)
+    resolved["args"] = normalized
+    return resolved
 
 
 class JarvisMcpMemoryAgent:
@@ -99,7 +121,7 @@ class JarvisMcpMemoryAgent:
             server_name: Logical server name (for logging).
             server_config: Parameters for StdioServerParameters.
         """
-        server_params = StdioServerParameters(**server_config)
+        server_params = StdioServerParameters(**_resolve_mcp_server_config(server_config))
         read, write = await self.exit_stack.enter_async_context(stdio_client(server_params))
         session = await self.exit_stack.enter_async_context(ClientSession(read, write))
         await session.initialize()

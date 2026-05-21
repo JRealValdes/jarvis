@@ -3,9 +3,8 @@
         "math": {
             "command": "python",
             "args": [
-                "mcp/servers/math_server.py"
+                "servers/math_server.py"
             ]
         }
     }
 }
-  

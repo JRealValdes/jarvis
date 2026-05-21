@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 import jwt
 
-from core.config import JWT_ALGORITHM, JWT_EXP_DELTA_SECONDS
+from jarvis.core.config import JWT_ALGORITHM, JWT_EXP_DELTA_SECONDS
 
 
 def get_jwt_secret_key() -> str:

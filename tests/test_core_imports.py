@@ -1,8 +1,8 @@
 """Smoke tests for canonical core and infrastructure imports."""
 
-from core.config import DEFAULT_MODEL, USE_MCP
-from core.enums import ModelEnum
-from infrastructure.crypto.fernet import decode_symm_crypt_key, encode_symm_crypt_key
+from jarvis.core.config import DEFAULT_MODEL, USE_MCP
+from jarvis.core.enums import ModelEnum
+from jarvis.infrastructure.crypto.fernet import decode_symm_crypt_key, encode_symm_crypt_key
 
 
 def test_core_config_defaults():
@@ -16,7 +16,7 @@ def test_fernet_helpers_are_callable():
 
 
 def test_interfaces_gradio_demo_importable():
-    from interfaces.gradio_app import demo, respond, reset_chat
+    from jarvis.interfaces.gradio_app import demo, respond, reset_chat
 
     assert demo is not None
     assert callable(respond)

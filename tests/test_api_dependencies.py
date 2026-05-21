@@ -2,13 +2,13 @@
 
 import jwt
 
-from api.security.jwt import (
+from jarvis.api.security.jwt import (
     build_token_payload,
     build_token_payload_from_user,
     create_jwt_token,
     encode_jwt,
 )
-from core.config import JWT_ALGORITHM
+from jarvis.core.config import JWT_ALGORITHM
 
 
 def test_create_jwt_token_roundtrip():
@@ -46,7 +46,7 @@ def test_encode_jwt_matches_build_token_payload():
 
 
 def test_schemas_importable():
-    from api.schemas import AskInput, ThreadIdPayload, TokenResponse
+    from jarvis.api.schemas import AskInput, ThreadIdPayload, TokenResponse
 
     assert AskInput(message="hola").message == "hola"
     assert ThreadIdPayload().thread_id is None

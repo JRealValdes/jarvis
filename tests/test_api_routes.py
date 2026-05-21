@@ -3,8 +3,8 @@
 import jwt
 from fastapi.testclient import TestClient
 
-from api.main import app
-from core.config import JWT_ALGORITHM
+from jarvis.api.main import app
+from jarvis.core.config import JWT_ALGORITHM
 
 
 def _admin_token() -> str:

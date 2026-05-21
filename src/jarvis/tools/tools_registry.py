@@ -6,7 +6,7 @@ import os
 import pkgutil
 
 current_dir = os.path.dirname(__file__)
-package_name = __package__ or "tools"
+package_name = __package__ or "jarvis.tools"
 
 local_tools: list = []
 """List of @tool objects registered when this module is imported."""

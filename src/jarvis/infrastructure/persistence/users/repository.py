@@ -5,9 +5,9 @@ import os
 import sqlite3
 logger = logging.getLogger(__name__)
 
-from core.config import DB_DEBUG_MODE
-from core.paths import USERS_DB_PATH
-from infrastructure.crypto.fernet import decode_symm_crypt_key, encode_symm_crypt_key
+from jarvis.core.config import DB_DEBUG_MODE
+from jarvis.core.paths import USERS_DB_PATH
+from jarvis.infrastructure.crypto.fernet import decode_symm_crypt_key, encode_symm_crypt_key
 
 DB_PATH = str(USERS_DB_PATH)
 

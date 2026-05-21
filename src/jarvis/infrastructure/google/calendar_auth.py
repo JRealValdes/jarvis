@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
 
-from core.paths import GOOGLE_CREDENTIALS_DIR
+from jarvis.core.paths import GOOGLE_CREDENTIALS_DIR
 
 GOOGLE_API_DIR = str(GOOGLE_CREDENTIALS_DIR)
 

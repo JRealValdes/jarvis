@@ -7,11 +7,11 @@ load_dotenv()
 import uvicorn
 from fastapi import FastAPI
 
-from api.deployment import API_PORT, run_with_optional_tunnel
-from core.logging_config import configure_logging
+from jarvis.api.deployment import API_PORT, run_with_optional_tunnel
+from jarvis.core.logging_config import configure_logging
 
 configure_logging()
-from api.routers import admin, auth, chat
+from jarvis.api.routers import admin, auth, chat
 
 
 def create_app() -> FastAPI:

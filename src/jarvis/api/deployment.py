@@ -11,8 +11,8 @@ import requests
 from dotenv import load_dotenv
 from firebase_admin import credentials, db, initialize_app
 
-from core.config import EXPOSE_API_WITH_CLOUDFLARED
-from core.paths import FIREBASE_PRIVATE_KEY_PATH
+from jarvis.core.config import EXPOSE_API_WITH_CLOUDFLARED
+from jarvis.core.paths import FIREBASE_PRIVATE_KEY_PATH
 
 logger = logging.getLogger(__name__)
 

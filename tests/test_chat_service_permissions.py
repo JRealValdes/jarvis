@@ -3,7 +3,7 @@
 import pytest
 from fastapi import HTTPException
 
-from api.services.chat_service import ChatService
+from jarvis.api.services.chat_service import ChatService
 
 
 def test_non_admin_cannot_reset_other_thread():

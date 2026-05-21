@@ -1,10 +1,10 @@
 """LangGraph agent factory by selected model."""
 
-from core.config import USE_MCP
-from core.enums import ModelEnum
-from agents.jarvis_memory_agent import JarvisMemoryAgent
-from agents.jarvis_mcp_memory_agent import JarvisMcpMemoryAgent
-from agents.jarvis_basic_agent import JarvisBasicAgent
+from jarvis.core.config import USE_MCP
+from jarvis.core.enums import ModelEnum
+from jarvis.agents.jarvis_memory_agent import JarvisMemoryAgent
+from jarvis.agents.jarvis_mcp_memory_agent import JarvisMcpMemoryAgent
+from jarvis.agents.jarvis_basic_agent import JarvisBasicAgent
 
 models_with_memory: list[ModelEnum] = [ModelEnum.GPT_3_5]
 """Models that persist conversation history with a checkpointer."""

@@ -1,6 +1,6 @@
 """Google integrations (Calendar OAuth, credentials on disk)."""
 
-from infrastructure.google.calendar_auth import (
+from jarvis.infrastructure.google.calendar_auth import (
     GOOGLE_API_DIR,
     get_authentications_for_user,
 )

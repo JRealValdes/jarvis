@@ -3,9 +3,9 @@
 from fastapi import APIRouter, Body, Depends
 from fastapi.responses import JSONResponse
 
-from api.dependencies import verify_jwt_token
-from api.schemas.chat import AskInput, ThreadIdPayload
-from api.services.chat_service import chat_service
+from jarvis.api.dependencies import verify_jwt_token
+from jarvis.api.schemas.chat import AskInput, ThreadIdPayload
+from jarvis.api.services.chat_service import chat_service
 
 router = APIRouter(tags=["chat"])
 

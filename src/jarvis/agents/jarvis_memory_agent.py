@@ -4,13 +4,13 @@ from typing import Annotated
 
 from typing_extensions import TypedDict
 
-from core.enums import ModelEnum
+from jarvis.core.enums import ModelEnum
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.graph.message import add_messages
-from tools.tools_registry import local_tools
+from jarvis.tools.tools_registry import local_tools
 
 
 class State(TypedDict):

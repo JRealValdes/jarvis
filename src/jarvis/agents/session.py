@@ -7,20 +7,20 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, Tool
 
 logger = logging.getLogger(__name__)
 
-from agents.factory import build_agent, models_with_memory
-from core.config import DEFAULT_MODEL, IDENTIFICATION_FAILED_PROTOCOL
-from domain.chat.chat_state import (
+from jarvis.agents.factory import build_agent, models_with_memory
+from jarvis.core.config import DEFAULT_MODEL, IDENTIFICATION_FAILED_PROTOCOL
+from jarvis.domain.chat.chat_state import (
     ChatState,
     compute_next_chat_state,
     should_clear_agent_thread_on_identification,
 )
-from domain.users.identification import find_user_by_prompt
-from domain.users.prompts import (
+from jarvis.domain.users.identification import find_user_by_prompt
+from jarvis.domain.users.prompts import (
     AUTOMATIC_RESPONSE_IF_ID_FAILED,
     build_background_prompt,
     get_welcome_message,
 )
-from core.enums import ModelEnum
+from jarvis.core.enums import ModelEnum
 
 not_verbosed_tools = ["get_upcoming_events_tool"]
 

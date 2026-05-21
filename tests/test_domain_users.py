@@ -2,8 +2,8 @@
 
 from unittest.mock import patch
 
-from domain.users.identification import find_user_by_prompt
-from domain.users.prompts import (
+from jarvis.domain.users.identification import find_user_by_prompt
+from jarvis.domain.users.prompts import (
     AUTOMATIC_RESPONSE_IF_ID_FAILED,
     build_background_prompt,
     get_welcome_message,
@@ -39,7 +39,7 @@ def test_find_user_by_prompt_no_pattern():
 def test_find_user_by_prompt_delegates_to_repository():
     fake_user = {"real_name": "Test", "jarvis_name": "Sir", "is_female": 0, "admin": 0}
     with patch(
-        "domain.users.identification.get_user_by_field",
+            "jarvis.domain.users.identification.get_user_by_field",
         return_value=fake_user,
     ) as mock_get:
         result = find_user_by_prompt("Hola, soy pepito")

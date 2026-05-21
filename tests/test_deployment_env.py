@@ -1,6 +1,6 @@
 """Tests for environment variable reads in api.deployment."""
 
-import api.deployment as deployment
+import jarvis.api.deployment as deployment
 
 
 def test_telegram_config_reads_from_environment(monkeypatch):

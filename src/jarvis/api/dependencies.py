@@ -8,8 +8,8 @@ from fastapi.security import (
     HTTPBearer,
 )
 
-from api.security.jwt import get_jwt_secret_key
-from core.config import JWT_ALGORITHM
+from jarvis.api.security.jwt import get_jwt_secret_key
+from jarvis.core.config import JWT_ALGORITHM
 
 security_basic = HTTPBasic()
 security_bearer = HTTPBearer(auto_error=True)

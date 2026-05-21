@@ -2,8 +2,8 @@
 
 from fastapi import APIRouter, Depends
 
-from api.dependencies import require_admin
-from api.services.admin_service import admin_service
+from jarvis.api.dependencies import require_admin
+from jarvis.api.services.admin_service import admin_service
 
 router = APIRouter(tags=["admin"])
 
