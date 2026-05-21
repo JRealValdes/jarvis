@@ -10,7 +10,7 @@ import requests
 from dotenv import load_dotenv
 from firebase_admin import credentials, db, initialize_app
 
-from config import EXPOSE_API_WITH_CLOUDFLARED
+from core.config import EXPOSE_API_WITH_CLOUDFLARED
 
 # Load .env file before reading variables (avoids None values when importing the module).
 load_dotenv()

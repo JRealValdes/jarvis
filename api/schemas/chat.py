@@ -4,7 +4,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from config import DEFAULT_MODEL
+from core.config import DEFAULT_MODEL
 
 
 class AskInput(BaseModel):

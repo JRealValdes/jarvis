@@ -9,8 +9,8 @@ from agents.session import (
     get_cache_status,
     reset_cache_global,
 )
-from config import DEFAULT_MODEL
-from enums.core_enums import IdentificationFailedProtocolEnum, ModelEnum
+from core.config import DEFAULT_MODEL
+from core.enums import IdentificationFailedProtocolEnum, ModelEnum
 
 
 def test_model_enum_members():

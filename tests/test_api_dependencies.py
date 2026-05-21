@@ -8,7 +8,7 @@ from api.dependencies import (
     create_jwt_token,
     encode_jwt,
 )
-from config import JWT_ALGORITHM
+from core.config import JWT_ALGORITHM
 
 
 def test_create_jwt_token_roundtrip():

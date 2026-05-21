@@ -1,4 +1,4 @@
-"""CLI entry shim — see ``interfaces.cli``."""
+"""CLI entry point — delegates to ``interfaces.cli``."""
 
 from interfaces.cli import main
 

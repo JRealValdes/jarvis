@@ -4,8 +4,8 @@ import os
 import sqlite3
 from pathlib import Path
 
-from utils.security import decode_symm_crypt_key, encode_symm_crypt_key
-from config import DB_DEBUG_MODE
+from core.config import DB_DEBUG_MODE
+from infrastructure.crypto.fernet import decode_symm_crypt_key, encode_symm_crypt_key
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DB_PATH = os.path.join(_PROJECT_ROOT, "data", "users.db")

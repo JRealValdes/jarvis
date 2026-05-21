@@ -2,7 +2,7 @@
 
 from enum import Enum
 
-from enums.core_enums import IdentificationFailedProtocolEnum
+from core.enums import IdentificationFailedProtocolEnum
 
 
 class ChatState(Enum):

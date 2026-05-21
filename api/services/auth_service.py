@@ -6,8 +6,8 @@ from fastapi import HTTPException, status
 
 from api.dependencies import build_token_payload_from_user, encode_jwt
 from api.schemas.auth import TokenResponse
-from database.users.users_db import get_user_by_field
-from utils.security import decode_symm_crypt_key
+from infrastructure.crypto.fernet import decode_symm_crypt_key
+from infrastructure.persistence.users.repository import get_user_by_field
 
 
 class AuthService:

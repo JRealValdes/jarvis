@@ -2,7 +2,7 @@
 
 import os
 
-from enums.core_enums import ModelEnum
+from core.enums import ModelEnum
 from langchain_ollama import ChatOllama
 from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 from langgraph.prebuilt import create_react_agent

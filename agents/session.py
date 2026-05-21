@@ -5,7 +5,7 @@ import json
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
 from agents.factory import build_agent, models_with_memory
-from config import DEFAULT_MODEL, IDENTIFICATION_FAILED_PROTOCOL
+from core.config import DEFAULT_MODEL, IDENTIFICATION_FAILED_PROTOCOL
 from domain.chat.chat_state import (
     ChatState,
     compute_next_chat_state,
@@ -17,7 +17,7 @@ from domain.users.prompts import (
     build_background_prompt,
     get_welcome_message,
 )
-from enums.core_enums import ModelEnum
+from core.enums import ModelEnum
 
 not_verbosed_tools = ["get_upcoming_events_tool"]
 

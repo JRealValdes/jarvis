@@ -4,7 +4,7 @@ import jwt
 from fastapi.testclient import TestClient
 
 from api.main import app
-from config import JWT_ALGORITHM
+from core.config import JWT_ALGORITHM
 
 
 def _admin_token() -> str:

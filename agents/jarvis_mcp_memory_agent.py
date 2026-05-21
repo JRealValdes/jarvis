@@ -8,7 +8,7 @@ from typing import Annotated
 
 from typing_extensions import TypedDict
 
-from enums.core_enums import ModelEnum
+from core.enums import ModelEnum
 from langchain_openai import ChatOpenAI
 from langchain_mcp_adapters.tools import load_mcp_tools
 from langgraph.checkpoint.memory import MemorySaver

@@ -5,7 +5,7 @@ from domain.chat.chat_state import (
     compute_next_chat_state,
     should_clear_agent_thread_on_identification,
 )
-from enums.core_enums import IdentificationFailedProtocolEnum
+from core.enums import IdentificationFailedProtocolEnum
 
 
 def test_not_initialized_valid_user_welcome():

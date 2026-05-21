@@ -4,7 +4,7 @@ from typing import Annotated
 
 from typing_extensions import TypedDict
 
-from enums.core_enums import ModelEnum
+from core.enums import ModelEnum
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph
 from langgraph.checkpoint.memory import MemorySaver

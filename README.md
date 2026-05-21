@@ -48,10 +48,9 @@ uv run pytest
 uv run main.py
 uv run app.py
 uv run -m api.main
-# shims legacy: api/main_api.py, config.py, enums/, utils/security.py
 ```
 
-Convención de docstrings en código de producción: módulo + **Args** / **Returns** / **Raises** (ver [docs/REFACTOR_PLAN.md](docs/REFACTOR_PLAN.md)).
+Convención de docstrings en código de producción: módulo + **Args** / **Returns** / **Raises**.
 
 ## Configuration - If using OpenAI
 1. Copy `.env.example` to `.env`
@@ -67,14 +66,14 @@ FERNET_KEY=...
 
 ## Usage
 ```bash
-uv run main.py              # CLI (shim → interfaces/cli.py)
-uv run app.py               # Gradio (shim → interfaces/gradio_app.py)
+uv run main.py              # CLI (entry → interfaces/cli.py)
+uv run app.py               # Gradio (entry → interfaces/gradio_app.py; HF Spaces)
 uv run -m api.main          # API HTTP
 ```
 
 ## Architecture
 
-Target layout and phased refactor (without breaking `ask_jarvis` or existing API routes): [docs/REFACTOR_PLAN.md](docs/REFACTOR_PLAN.md).
+Layered layout: `core` (config, enums), `domain` (rules), `infrastructure` (DB, crypto), `agents`, `api`, `interfaces`.
 
 ## Structure
 ```
@@ -86,8 +85,7 @@ jarvis/
 │   ├── jarvis_memory_agent.py
 │   └── session.py
 ├── api/
-│   ├── main.py              # bootstrap FastAPI (preferido)
-│   ├── main_api.py          # shim compatibilidad
+│   ├── main.py              # bootstrap FastAPI
 │   ├── deployment.py
 │   ├── dependencies.py
 │   ├── services/
@@ -135,8 +133,7 @@ jarvis/
 ├── database/
 │   └── users/
 │       ├── example_users_info.csv
-│       ├── manage_users.ipynb
-│       └── users_db.py
+│       └── manage_users.ipynb
 ├── demos/
 │   ├── basic_mcp_test.py
 │   ├── chatbot_with_tools_and_memory.py
@@ -144,11 +141,8 @@ jarvis/
 │   ├── generate_crypt_key.ipynb
 │   ├── google_api_demo.ipynb
 │   └── graphrag_demo.ipynb
-├── enums/                 # shim → core.enums
-│   └── core_enums.py
-├── config.py              # shim → core.config
-├── main.py                # shim → interfaces.cli
-├── app.py                 # shim → interfaces.gradio_app
+├── main.py                # CLI entry
+├── app.py                 # Gradio entry (Hugging Face Spaces)
 ├── mcp/
 │   ├── server_config.json
 │   └── servers/
@@ -162,20 +156,15 @@ jarvis/
 │   ├── google_calendar.py
 │   ├── speech_to_text.py
 │   └── tools_registry.py
-├── docs/
-│   └── REFACTOR_PLAN.md
 ├── tests/
 │   ├── conftest.py
 │   ├── test_smoke_imports.py
 │   └── test_api_routes.py
 ├── pyproject.toml
 ├── requirements-dev.txt
-├── utils/
-│   └── security.py
 ├── .env.example
 ├── .gitignore
 ├── app.py
-├── config.py
 ├── main.py
 ├── README.md
 └── requirements.txt

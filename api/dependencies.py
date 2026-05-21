@@ -11,7 +11,7 @@ from fastapi.security import (
     HTTPBearer,
 )
 
-from config import JWT_ALGORITHM, JWT_EXP_DELTA_SECONDS
+from core.config import JWT_ALGORITHM, JWT_EXP_DELTA_SECONDS
 
 security_basic = HTTPBasic()
 security_bearer = HTTPBearer(auto_error=True)

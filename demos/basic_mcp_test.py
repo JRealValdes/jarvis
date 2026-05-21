@@ -5,7 +5,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) 
 
 from typing import Annotated
 from typing_extensions import TypedDict
-from enums.core_enums import ModelEnum
+from core.enums import ModelEnum
 from langchain_openai import ChatOpenAI
 from tools.calc import calculate_tool
 from tools.speech_to_text import speech_to_text_tool

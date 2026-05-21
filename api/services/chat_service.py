@@ -9,8 +9,8 @@ from agents.session import (
     reset_session,
 )
 from api.schemas.chat import AskInput, ThreadIdPayload
-from config import DEFAULT_MODEL
-from enums.core_enums import ModelEnum
+from core.config import DEFAULT_MODEL
+from core.enums import ModelEnum
 
 
 class ChatService:
