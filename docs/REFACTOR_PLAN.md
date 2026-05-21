@@ -249,6 +249,8 @@ api/main_api.py                → shim de compatibilidad
 
 **Criterio de done:** README actualizado; Hugging Face sigue usando `app.py`.
 
+**Estado:** completada — `core/`, `interfaces/`, `infrastructure/crypto/fernet.py`, shims en raíz.
+
 ---
 
 ### Fase 4 — Roadmap técnico (paralelo por feature)
@@ -336,7 +338,7 @@ flowchart LR
 [x] Fase 1.3: api/services + api/main.py + shim main_api.py
 [x] Fase 2.1: users repository
 [x] Fase 2.2: domain/chat + domain/users + slim JarvisSession
-[ ] Fase 3: interfaces/ + core/ + shims raíz
+[x] Fase 3: interfaces/ + core/ + shims raíz
 [ ] Fase 4+: una feature del roadmap por PR
 [ ] Fase 5: quitar shims, cache abstraction, settings validation
 ```
