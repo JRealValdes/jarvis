@@ -1,0 +1,52 @@
+---
+description: Use uv for Python env, dependencies, and all project commands
+alwaysApply: true
+---
+
+# uv (Python toolchain)
+
+This project is managed with [uv](https://docs.astral.sh/uv/). Use uv for installs, dependency changes, and running Python — not raw `pip`, `poetry`, or manual `venv` activation unless documenting an explicit fallback.
+
+## Setup and sync
+
+```bash
+uv sync --all-groups   # create/update .venv; install runtime + dev (pytest, httpx)
+```
+
+After changing `pyproject.toml` dependencies, run `uv sync` and commit `uv.lock` when dependencies change.
+
+## Run commands
+
+Prefix scripts, tests, and modules with `uv run` so they use the project environment:
+
+```bash
+uv run pytest
+uv run main.py
+uv run app.py
+uv run -m api.main
+```
+
+Do not suggest `python`, `pytest`, or `pip install -e .` as the default workflow when `uv run` applies.
+
+## Dependencies
+
+- Add runtime: `uv add <package>`
+- Add dev: `uv add --group dev <package>` (dev group in `[dependency-groups]`)
+- Remove: `uv remove <package>`
+
+Keep `[project].dependencies` and `[dependency-groups]` in `pyproject.toml` as the source of truth; avoid hand-editing `uv.lock`.
+
+## Export for non-uv deploys
+
+When a consumer needs `requirements.txt` (e.g. Hugging Face Spaces):
+
+```bash
+uv export --no-dev -o requirements.txt
+```
+
+## Agent / CI behavior
+
+- Install or refresh env: `uv sync --all-groups`
+- Run tests: `uv run pytest`
+- Prefer `uv` over `pip install -r requirements.txt` for local development
+- Document `pip` only as a documented alternative in README, not as the primary path in new instructions or scripts
