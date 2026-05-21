@@ -2,7 +2,6 @@
 
 import logging
 import os
-from pathlib import Path
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -12,8 +11,9 @@ logger = logging.getLogger(__name__)
 
 SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-GOOGLE_API_DIR = str(PROJECT_ROOT / "api" / "google_api")
+from core.paths import GOOGLE_CREDENTIALS_DIR
+
+GOOGLE_API_DIR = str(GOOGLE_CREDENTIALS_DIR)
 
 
 def _load_paths(user_dir: str) -> tuple[str | None, str | None]:

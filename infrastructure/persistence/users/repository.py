@@ -3,15 +3,13 @@
 import logging
 import os
 import sqlite3
-from pathlib import Path
-
 logger = logging.getLogger(__name__)
 
 from core.config import DB_DEBUG_MODE
+from core.paths import USERS_DB_PATH
 from infrastructure.crypto.fernet import decode_symm_crypt_key, encode_symm_crypt_key
 
-_PROJECT_ROOT = Path(__file__).resolve().parents[3]
-DB_PATH = os.path.join(_PROJECT_ROOT, "data", "users.db")
+DB_PATH = str(USERS_DB_PATH)
 
 _ALLOWED_QUERY_FIELDS = frozenset({"real_name", "access_name"})
 

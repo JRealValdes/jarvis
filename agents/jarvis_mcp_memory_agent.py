@@ -30,7 +30,9 @@ class State(TypedDict):
     real_name: str
 
 
-server_config_path = os.path.join("mcp", "server_config.json")
+from core.paths import MCP_SERVER_CONFIG_PATH
+
+server_config_path = str(MCP_SERVER_CONFIG_PATH)
 
 
 class JarvisMcpMemoryAgent:
