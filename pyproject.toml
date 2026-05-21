@@ -47,7 +47,7 @@ dev = ["pytest>=8.0", "httpx>=0.27"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["agents*", "api*", "database*", "domain*", "enums*", "infrastructure*", "tools*", "utils*", "mcp*"]
+include = ["agents*", "api*", "core*", "database*", "domain*", "enums*", "infrastructure*", "interfaces*", "tools*", "utils*", "mcp*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

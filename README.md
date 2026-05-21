@@ -48,7 +48,7 @@ uv run pytest
 uv run python main.py
 uv run python app.py
 uv run python -m api.main
-# o shim: uv run python api/main_api.py
+# shims legacy: api/main_api.py, config.py, enums/, utils/security.py
 ```
 
 Convención de docstrings en código de producción: módulo + **Args** / **Returns** / **Raises** (ver [docs/REFACTOR_PLAN.md](docs/REFACTOR_PLAN.md)).
@@ -67,7 +67,9 @@ FERNET_KEY=...
 
 ## Usage
 ```bash
-python main.py
+uv run python main.py              # CLI (shim → interfaces/cli.py)
+uv run python app.py               # Gradio (shim → interfaces/gradio_app.py)
+uv run python -m api.main          # API HTTP
 ```
 
 ## Architecture
@@ -111,6 +113,13 @@ jarvis/
 │   ├── users.db
 │   └── docs/
 │       └── attention_is_all_you_need.pdf
+├── core/
+│   ├── config.py
+│   └── enums/
+│       └── core_enums.py
+├── interfaces/
+│   ├── cli.py
+│   └── gradio_app.py
 ├── domain/
 │   ├── chat/
 │   │   └── chat_state.py
@@ -118,6 +127,8 @@ jarvis/
 │       ├── identification.py
 │       └── prompts.py
 ├── infrastructure/
+│   ├── crypto/
+│   │   └── fernet.py
 │   └── persistence/
 │       └── users/
 │           └── repository.py
@@ -133,8 +144,11 @@ jarvis/
 │   ├── generate_crypt_key.ipynb
 │   ├── google_api_demo.ipynb
 │   └── graphrag_demo.ipynb
-├── enums/
+├── enums/                 # shim → core.enums
 │   └── core_enums.py
+├── config.py              # shim → core.config
+├── main.py                # shim → interfaces.cli
+├── app.py                 # shim → interfaces.gradio_app
 ├── mcp/
 │   ├── server_config.json
 │   └── servers/
