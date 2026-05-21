@@ -7,8 +7,27 @@ from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 
 load_dotenv()
-FERNET_KEY: str | None = os.getenv("FERNET_KEY")
-fernet = Fernet(FERNET_KEY)
+
+_fernet: Fernet | None = None
+
+
+def _get_fernet() -> Fernet:
+    """
+    Return a lazily initialized Fernet instance.
+
+    Returns:
+        Fernet configured with ``FERNET_KEY``.
+
+    Raises:
+        RuntimeError: If ``FERNET_KEY`` is not set.
+    """
+    global _fernet
+    if _fernet is None:
+        key = os.getenv("FERNET_KEY")
+        if not key:
+            raise RuntimeError("FERNET_KEY is not set")
+        _fernet = Fernet(key)
+    return _fernet
 
 
 def hash_string_sha256_lowered(input_string: str) -> str:
@@ -34,7 +53,7 @@ def encode_symm_crypt_key(input_string: str) -> str:
     Returns:
         Encrypted token as a UTF-8 string.
     """
-    return fernet.encrypt(input_string.encode()).decode()
+    return _get_fernet().encrypt(input_string.encode()).decode()
 
 
 def decode_symm_crypt_key(encoded_string: str) -> str:
@@ -50,7 +69,7 @@ def decode_symm_crypt_key(encoded_string: str) -> str:
     Raises:
         cryptography.fernet.InvalidToken: If the key or token is invalid.
     """
-    return fernet.decrypt(encoded_string.encode()).decode()
+    return _get_fernet().decrypt(encoded_string.encode()).decode()
 
 
 def encode_multiple_strings_sck(strings: list[str]) -> list[str]:

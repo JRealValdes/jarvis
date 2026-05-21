@@ -2,8 +2,11 @@
 
 import asyncio
 import json
+import logging
 import os
 from contextlib import AsyncExitStack
+
+logger = logging.getLogger(__name__)
 from typing import Annotated
 
 from typing_extensions import TypedDict
@@ -109,7 +112,9 @@ class JarvisMcpMemoryAgent:
             None. Idempotent if already connected.
         """
         if self._is_connected:
-            print("[INFO] Initialize MCP Connection called, but agent MCP services are already initialized")
+            logger.info(
+                "Initialize MCP Connection called, but MCP services are already initialized"
+            )
             return
 
         self.exit_stack = AsyncExitStack()

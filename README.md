@@ -100,8 +100,9 @@ jarvis/
 │   │   ├── chat.py
 │   │   ├── webhooks.py
 │   │   └── admin.py
+│   ├── security/
+│   │   └── jwt.py
 │   └── google_api/
-│       ├── jarvis_google_authentication.py
 │       └── example_user/
 │           ├── jarvis_google_authentication.py
 │           └── example_account/
@@ -127,6 +128,8 @@ jarvis/
 ├── infrastructure/
 │   ├── crypto/
 │   │   └── fernet.py
+│   ├── google/
+│   │   └── calendar_auth.py
 │   └── persistence/
 │       └── users/
 │           └── repository.py

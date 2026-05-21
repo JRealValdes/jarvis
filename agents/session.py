@@ -1,8 +1,11 @@
 """Chat session orchestration, agent cache, and LLM invocation."""
 
 import json
+import logging
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+
+logger = logging.getLogger(__name__)
 
 from agents.factory import build_agent, models_with_memory
 from core.config import DEFAULT_MODEL, IDENTIFICATION_FAILED_PROTOCOL
@@ -179,10 +182,12 @@ def get_message_history(thread_id: str, model: ModelEnum = DEFAULT_MODEL) -> lis
     Returns:
         List of ``{role, content}`` messages; empty if no session or on failure.
     """
-    print(f"Sessions cache: {_sessions_cache}")
+    logger.debug("Sessions cache: %s", _sessions_cache)
     session_key = (model, thread_id)
     if session_key not in _sessions_cache:
-        print(f"[Warning] No session found for thread {thread_id} with model {model.name}.")
+        logger.warning(
+            "No session found for thread %s with model %s", thread_id, model.name
+        )
         return []
     try:
         agent = _sessions_cache[session_key].agent
@@ -192,7 +197,9 @@ def get_message_history(thread_id: str, model: ModelEnum = DEFAULT_MODEL) -> lis
         messages = last_snapshot.values.get("messages", [])
         return _parse_message_list(messages)
     except Exception as e:
-        print(f"[Error] Failed to retrieve message history for thread {thread_id}: {e}")
+        logger.error(
+            "Failed to retrieve message history for thread %s: %s", thread_id, e
+        )
         return []
 
 

@@ -4,7 +4,7 @@ import secrets
 
 from fastapi import HTTPException, status
 
-from api.dependencies import build_token_payload_from_user, encode_jwt
+from api.security.jwt import build_token_payload_from_user, encode_jwt
 from api.schemas.auth import TokenResponse
 from infrastructure.crypto.fernet import decode_symm_crypt_key
 from infrastructure.persistence.users.repository import get_user_by_field
@@ -34,7 +34,7 @@ class AuthService:
         ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid credentials",
+                detail="Credenciales no válidas",
                 headers={"WWW-Authenticate": "Basic"},
             )
 
@@ -53,7 +53,7 @@ class AuthService:
         """
         return {
             "status": "ok",
-            "message": "Token is valid",
+            "message": "El token es válido",
             "user": user,
         }
 

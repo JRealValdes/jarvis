@@ -1,8 +1,8 @@
-"""Tests for JWT utilities in api.dependencies."""
+"""Tests for JWT utilities in api.security.jwt."""
 
 import jwt
 
-from api.dependencies import (
+from api.security.jwt import (
     build_token_payload,
     build_token_payload_from_user,
     create_jwt_token,

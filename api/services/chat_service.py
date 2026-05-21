@@ -49,11 +49,9 @@ class ChatService:
             HTTPException: 403 if a non-admin resets another thread.
         """
         thread_id = payload.thread_id if payload else None
-        print(f"Realizando reset session con thread_id: {thread_id}")
         thread_id = self._resolve_thread_id(thread_id, user, action="reset")
         reset_session(thread_id)
-        print(f"Limpieza exitosa del thread id: {thread_id}")
-        return {"status": "ok", "message": "Memory reset"}
+        return {"status": "ok", "message": "Memoria reiniciada"}
 
     def individual_cache_exists(self, real_name: str) -> bool:
         """
@@ -119,9 +117,17 @@ class ChatService:
         """
         if thread_id:
             if not user.get("admin", False):
+                if action == "reset":
+                    detail = (
+                        "No tienes permiso para reiniciar la memoria de otros usuarios."
+                    )
+                else:
+                    detail = (
+                        "No tienes permiso para consultar el historial de otros usuarios."
+                    )
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="You do not have permission to reset memory for other users.",
+                    detail=detail,
                 )
             return thread_id
         return user["real_name"]

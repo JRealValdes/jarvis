@@ -1,8 +1,11 @@
 """SQLite user repository (data access only, no business rules)."""
 
+import logging
 import os
 import sqlite3
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 from core.config import DB_DEBUG_MODE
 from infrastructure.crypto.fernet import decode_symm_crypt_key, encode_symm_crypt_key
@@ -75,9 +78,10 @@ def insert_user(
             ))
             conn.commit()
     except sqlite3.IntegrityError:
-        print(
-            f"[Warning] IntegrityError: User with real_name '{real_name}' "
-            f"or access_name '{access_name}' already exists."
+        logger.warning(
+            "IntegrityError: user with real_name '%s' or access_name '%s' already exists",
+            real_name,
+            access_name,
         )
 
 
@@ -103,7 +107,7 @@ def insert_user_list(user_list: list[dict]) -> None:
                 admin=user.get("admin", False),
             )
         except KeyError as e:
-            print(f"[Error] Missing required field: {e} in user data: {user}")
+            logger.error("Missing required field %s in user data: %s", e, user)
 
 
 def get_user_by_field(field: str, value: str, is_sensitive: bool = False) -> dict | None:
@@ -137,7 +141,7 @@ def get_user_by_field(field: str, value: str, is_sensitive: bool = False) -> dic
                     if decrypted_value == value:
                         return dict(row)
                 except Exception as e:
-                    print(f"[Error] Decryption failed for {field}: {e}")
+                    logger.error("Decryption failed for %s: %s", field, e)
             return None
 
         cursor.execute(f"SELECT * FROM users WHERE {field} = ?", (value,))

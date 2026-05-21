@@ -4,7 +4,7 @@ import gradio as gr
 
 from agents.session import ask_jarvis, reset_cache
 from core.config import DEFAULT_MODEL
-from core.enums.core_enums import ModelEnum
+from core.enums import ModelEnum
 from tools.speech_to_text import speech_to_text_tool
 
 model_options = list(ModelEnum.__members__.keys())
@@ -52,12 +52,12 @@ def respond_audio(
         Tuple of (history, status or error message).
     """
     if audio_file is None:
-        return chat_history, "No audio file provided."
+        return chat_history, "No se proporcionó ningún archivo de audio."
 
     try:
         text = speech_to_text_tool.invoke({"file_path": audio_file})
     except Exception as e:
-        return chat_history, f"Error transcribing audio: {str(e)}"
+        return chat_history, f"Error al transcribir el audio: {e}"
 
     return respond(text, chat_history, model_name)
 
@@ -70,7 +70,7 @@ def reset_chat() -> tuple[str, list]:
         Tuple of (status message, empty history list).
     """
     reset_cache()
-    return "Chat cache resetted.", []
+    return "Memoria del chat reiniciada.", []
 
 
 demo = gr.Blocks()
@@ -78,17 +78,24 @@ with demo:
     chatbot = gr.Chatbot(height=500)
 
     with gr.Row():
-        message = gr.Textbox(placeholder="Write your message to Jarvis here...")
-        send_btn = gr.Button("Send")
+        message = gr.Textbox(
+            placeholder="Escribe aquí tu mensaje para Jarvis...",
+            label="Tu mensaje",
+        )
+        send_btn = gr.Button("Enviar")
 
     with gr.Row():
-        audio_input = gr.Audio(label="Speak to Jarvis", type="filepath", format="wav")
-        voice_btn = gr.Button("Send Voice")
+        audio_input = gr.Audio(label="Habla con Jarvis", type="filepath", format="wav")
+        voice_btn = gr.Button("Enviar voz")
 
-    model_dropdown = gr.Dropdown(choices=model_options, value=model_used.name, label="Select the model")
+    model_dropdown = gr.Dropdown(
+        choices=model_options,
+        value=model_used.name,
+        label="Modelo",
+    )
 
-    reset_btn = gr.Button("Reset memory")
-    status = gr.Textbox(label="Status", interactive=False)
+    reset_btn = gr.Button("Reiniciar memoria")
+    status = gr.Textbox(label="Estado", interactive=False)
 
     send_btn.click(fn=respond, inputs=[message, chatbot, model_dropdown], outputs=[chatbot, message])
     message.submit(fn=respond, inputs=[message, chatbot, model_dropdown], outputs=[chatbot, message])

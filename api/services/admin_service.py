@@ -14,8 +14,7 @@ class AdminService:
             Dict ``{status, message}``.
         """
         reset_cache_global()
-        print("Limpieza exitosa")
-        return {"status": "ok", "message": "Global memory reset"}
+        return {"status": "ok", "message": "Memoria global reiniciada"}
 
     def get_cache_status(self) -> dict:
         """
