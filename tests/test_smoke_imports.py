@@ -2,15 +2,15 @@
 
 import inspect
 
-from agents.factory import build_agent, models_with_memory
-from agents.session import (
+from jarvis.agents.factory import build_agent, models_with_memory
+from jarvis.agents.session import (
     ask_jarvis,
     check_individual_session_cache_exists,
     get_cache_status,
     reset_cache_global,
 )
-from core.config import DEFAULT_MODEL
-from core.enums import IdentificationFailedProtocolEnum, ModelEnum
+from jarvis.core.config import DEFAULT_MODEL
+from jarvis.core.enums import IdentificationFailedProtocolEnum, ModelEnum
 
 
 def test_model_enum_members():

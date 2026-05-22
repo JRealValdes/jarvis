@@ -4,9 +4,10 @@ import ast
 from pathlib import Path
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[1]
+_JARVIS_SRC = _PROJECT_ROOT / "src" / "jarvis"
 
-# Modules that must not depend on ``api`` (avoids tools → api → agents cycles).
-_ISOLATED_PREFIXES = ("tools/", "domain/", "infrastructure/", "core/")
+# Modules that must not depend on ``jarvis.api`` (avoids tools → api → agents cycles).
+_ISOLATED_PREFIXES = ("tools", "domain", "infrastructure", "core")
 
 
 def _imports_api(module_path: Path) -> bool:
@@ -15,10 +16,14 @@ def _imports_api(module_path: Path) -> bool:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name == "api" or alias.name.startswith("api."):
+                if alias.name in ("api", "jarvis.api") or alias.name.startswith(
+                    ("api.", "jarvis.api.")
+                ):
                     return True
         if isinstance(node, ast.ImportFrom) and node.module:
-            if node.module == "api" or node.module.startswith("api."):
+            if node.module in ("api", "jarvis.api") or node.module.startswith(
+                ("api.", "jarvis.api.")
+            ):
                 return True
     return False
 
@@ -26,7 +31,7 @@ def _imports_api(module_path: Path) -> bool:
 def test_lower_layers_do_not_import_api():
     offenders: list[str] = []
     for prefix in _ISOLATED_PREFIXES:
-        base = _PROJECT_ROOT / prefix.rstrip("/")
+        base = _JARVIS_SRC / prefix
         if not base.is_dir():
             continue
         for path in base.rglob("*.py"):

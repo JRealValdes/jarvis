@@ -47,7 +47,8 @@ Desde la raíz del proyecto:
 uv run pytest
 uv run main.py
 uv run app.py
-uv run -m api.main
+uv run -m jarvis.api
+# alternativas: uv run jarvis | uv run jarvis-api
 ```
 
 Convención de docstrings en código de producción: módulo + **Args** / **Returns** / **Raises**.
@@ -61,115 +62,43 @@ HF_TOKEN_INFERENCE=hf_...
 FERNET_KEY=...
 ```
 3. Define users if you want to stablish your own users database. Create a database/users/secret_users_info.csv file. You can find an example at database/users/example_users_info.csv. Use database/users/manage_users.ipynb to upload the data into a users database.
-4. Introduce your Google API Credentials in api/google/api as shown in the example_user. The demo at demos\google_api_demo.ipynb can help you define your authentication tokens.
-5. Copy your Firebase Project credentials to: api/firebase_project_secret_private_key.json
+4. Google Calendar: place OAuth files under `data/google/<username>/<account>/` (see `data/google/example_user/`). Run `examples/google_api_demo.ipynb` for the interactive flow.
+5. Copy your Firebase credentials to `data/firebase_project_secret_private_key.json` (gitignored if the filename contains `secret`).
 
 ## Usage
 ```bash
-uv run main.py              # CLI (entry → interfaces/cli.py)
-uv run app.py               # Gradio (entry → interfaces/gradio_app.py; HF Spaces)
-uv run -m api.main          # API HTTP
+uv run main.py              # CLI
+uv run app.py               # Gradio (Hugging Face Spaces)
+uv run -m jarvis.api        # API HTTP
 ```
 
 ## Architecture
 
-Layered layout: `core` (config, enums), `domain` (rules), `infrastructure` (DB, crypto), `agents`, `api`, `interfaces`.
+Installable package `jarvis` under `src/jarvis/`: `core`, `domain`, `infrastructure`, `agents`, `api`, `interfaces`, `tools`, `mcp`. Runtime data lives in `data/` at the repo root.
 
 ## Structure
 ```
-jarvis/
-├── agents/
-│   ├── factory.py
-│   ├── jarvis_basic_agent.py
-│   ├── jarvis_mcp_memory_agent.py
-│   ├── jarvis_memory_agent.py
-│   └── session.py
-├── api/
-│   ├── main.py              # bootstrap FastAPI
-│   ├── deployment.py
-│   ├── dependencies.py
-│   ├── services/
-│   │   ├── auth_service.py
-│   │   ├── chat_service.py
-│   │   └── admin_service.py
-│   ├── schemas/
-│   │   ├── auth.py
-│   │   └── chat.py
-│   ├── routers/
-│   │   ├── auth.py
-│   │   ├── chat.py
-│   │   └── admin.py
-│   ├── security/
-│   │   └── jwt.py
-│   └── google_api/
-│       └── example_user/
-│           ├── jarvis_google_authentication.py
-│           └── example_account/
-│               ├── credentials_example.json
-│               └── token_example.json
+jarvis/                          # repository root
+├── src/jarvis/                  # Python package
+│   ├── agents/
+│   ├── api/
+│   ├── core/
+│   ├── domain/
+│   ├── infrastructure/
+│   ├── interfaces/
+│   ├── tools/
+│   └── mcp/
 ├── data/
 │   ├── users.db
+│   ├── google/                  # OAuth credentials per user
+│   ├── firebase_project_secret_private_key.json  # (local, often gitignored)
 │   └── docs/
-│       └── attention_is_all_you_need.pdf
-├── core/
-│   ├── config.py
-│   └── enums/
-│       └── core_enums.py
-├── interfaces/
-│   ├── cli.py
-│   └── gradio_app.py
-├── domain/
-│   ├── chat/
-│   │   └── chat_state.py
-│   └── users/
-│       ├── identification.py
-│       └── prompts.py
-├── infrastructure/
-│   ├── crypto/
-│   │   └── fernet.py
-│   ├── google/
-│   │   └── calendar_auth.py
-│   └── persistence/
-│       └── users/
-│           └── repository.py
-├── database/
-│   └── users/
-│       ├── example_users_info.csv
-│       └── manage_users.ipynb
-├── demos/
-│   ├── basic_mcp_test.py
-│   ├── chatbot_with_tools_and_memory.py
-│   ├── chatbot_with_tools.py
-│   ├── generate_crypt_key.ipynb
-│   ├── google_api_demo.ipynb
-│   └── graphrag_demo.ipynb
-├── main.py                # CLI entry
-├── app.py                 # Gradio entry (Hugging Face Spaces)
-├── mcp/
-│   ├── server_config.json
-│   └── servers/
-│       └── math_server.py
-├── media/
-│   └── audio/
-│       └── hello_world.m4a
-├── tools/
-│   ├── calc.py
-│   ├── date_time.py
-│   ├── google_calendar.py
-│   ├── speech_to_text.py
-│   └── tools_registry.py
+├── database/users/              # CSV + notebook to seed users
+├── examples/                    # experimental scripts/notebooks
 ├── tests/
-│   ├── conftest.py
-│   ├── test_smoke_imports.py
-│   └── test_api_routes.py
-├── pyproject.toml
-├── requirements-dev.txt
-├── .env.example
-├── .gitignore
-├── app.py
-├── main.py
-├── README.md
-└── requirements.txt
+├── main.py                      # CLI entry
+├── app.py                       # Gradio entry (Hugging Face)
+└── pyproject.toml
 ```
 
 ## Roadmap

@@ -1,7 +1,7 @@
 """Tests for router registration on the FastAPI application."""
 
-from api.main import app
-from api.routers import admin, auth, chat
+from jarvis.api.main import app
+from jarvis.api.routers import admin, auth, chat
 
 
 def test_routers_have_expected_route_count():
