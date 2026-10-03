@@ -21,10 +21,10 @@ Prefix scripts, tests, and modules with `uv run` so they use the project environ
 
 ```bash
 uv run pytest
-uv run main.py
-uv run app.py
-uv run -m jarvis.api
-# alternatives: uv run jarvis | uv run jarvis-api
+uv run jarvis chat    # console chatbot
+uv run jarvis api     # FastAPI HTTP server
+uv run jarvis ui      # Gradio web UI
+# Hugging Face Spaces still uses root app.py
 ```
 
 Do not suggest `python`, `pytest`, or `pip install -e .` as the default workflow when `uv run` applies.
