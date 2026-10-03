@@ -2,8 +2,9 @@
 
 from jarvis.core.enums import IdentificationFailedProtocolEnum, ModelEnum
 
-DEFAULT_MODEL: ModelEnum = ModelEnum.GPT_3_5
+DEFAULT_MODEL: ModelEnum = ModelEnum.GPT_4O_MINI
 """LLM used when the client does not specify another model."""
+
 
 IDENTIFICATION_FAILED_PROTOCOL: IdentificationFailedProtocolEnum = (
     IdentificationFailedProtocolEnum.AUTOMATIC_RESPONSE
@@ -23,4 +24,4 @@ JWT_EXP_DELTA_SECONDS: int = 3600
 """JWT lifetime in seconds (one hour by default)."""
 
 USE_MCP: bool = False
-"""If True, the GPT-3.5 agent uses JarvisMcpMemoryAgent instead of JarvisMemoryAgent."""
+"""If True, OpenAI chat agents use JarvisMcpMemoryAgent instead of JarvisMemoryAgent."""

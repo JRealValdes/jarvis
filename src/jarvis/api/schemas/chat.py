@@ -13,7 +13,7 @@ class AskInput(BaseModel):
     message: str = Field(description="User message for Jarvis.")
     model_name: str = Field(
         default=DEFAULT_MODEL.name,
-        description="ModelEnum member name (e.g. GPT_3_5).",
+        description="ModelEnum member name (e.g. GPT_4O_MINI).",
     )
     thread_id: str | None = Field(
         default=None,

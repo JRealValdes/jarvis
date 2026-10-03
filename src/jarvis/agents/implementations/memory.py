@@ -1,15 +1,17 @@
-"""LangGraph agent with memory (MemorySaver) and tools for GPT-3.5."""
+"""LangGraph agent with memory (MemorySaver) and tools for OpenAI chat models."""
 
 from typing import Annotated
 
 from typing_extensions import TypedDict
 
-from jarvis.core.enums import ModelEnum
 from langchain_openai import ChatOpenAI
-from langgraph.graph import StateGraph
 from langgraph.checkpoint.memory import MemorySaver
-from langgraph.prebuilt import ToolNode, tools_condition
+from langgraph.graph import StateGraph
 from langgraph.graph.message import add_messages
+from langgraph.prebuilt import ToolNode, tools_condition
+
+from jarvis.core.enums import ModelEnum
+from jarvis.core.openai_models import resolve_openai_chat_model_id
 from jarvis.tools import local_tools
 
 
@@ -25,7 +27,7 @@ class JarvisMemoryAgent:
     Agent with chatbot ↔ tools loop and in-memory checkpointer.
 
     Attributes:
-        model_enum: Must be GPT_3_5.
+        model_enum: OpenAI-backed ModelEnum (e.g. GPT_4O_MINI, GPT_3_5).
         graph: Compiled graph.
         memory: MemorySaver for per-thread_id threads.
         tools: Registered local tools.
@@ -34,10 +36,10 @@ class JarvisMemoryAgent:
     def __init__(self, model_enum: ModelEnum) -> None:
         """
         Args:
-            model_enum: Only ModelEnum.GPT_3_5 is supported.
+            model_enum: OpenAI chat ModelEnum member.
 
         Raises:
-            ValueError: If the model is not GPT_3_5.
+            ValueError: If the model is not an OpenAI chat model.
         """
         self.model_enum = model_enum
         self.graph, self.memory, self.tools = self._build_agent(model_enum)
@@ -55,13 +57,13 @@ class JarvisMemoryAgent:
             Tuple (compiled graph, memory saver, tool list).
 
         Raises:
-            ValueError: If model_enum is not GPT_3_5.
+            ValueError: If model_enum is not an OpenAI chat model.
         """
         tools = local_tools
-        if model_enum == ModelEnum.GPT_3_5:
-            llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
-        else:
-            raise ValueError(f"Unsupported model: {model_enum}")
+        llm = ChatOpenAI(
+            model=resolve_openai_chat_model_id(model_enum),
+            temperature=0,
+        )
 
         graph_builder = StateGraph(State)
         llm_with_tools = llm.bind_tools(tools)

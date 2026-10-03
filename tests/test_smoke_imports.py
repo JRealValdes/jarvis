@@ -14,6 +14,7 @@ from jarvis.core.enums import IdentificationFailedProtocolEnum, ModelEnum
 
 
 def test_model_enum_members():
+    assert ModelEnum.GPT_4O_MINI.value == "gpt_4o_mini"
     assert ModelEnum.GPT_3_5.value == "chatgpt_3_5"
     assert len(ModelEnum) >= 3
 
@@ -23,7 +24,8 @@ def test_identification_failed_protocol_enum():
 
 
 def test_default_model_is_gpt_35():
-    assert DEFAULT_MODEL == ModelEnum.GPT_3_5
+    assert DEFAULT_MODEL == ModelEnum.GPT_4O_MINI
+
 
 
 def test_models_with_memory_includes_default():

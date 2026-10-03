@@ -6,7 +6,8 @@ from jarvis.infrastructure.crypto.fernet import decode_symm_crypt_key, encode_sy
 
 
 def test_core_config_defaults():
-    assert DEFAULT_MODEL == ModelEnum.GPT_3_5
+    assert DEFAULT_MODEL == ModelEnum.GPT_4O_MINI
+
     assert USE_MCP is False
 
 
