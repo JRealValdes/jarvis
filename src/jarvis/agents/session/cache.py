@@ -68,7 +68,7 @@ def reset_session(thread_id: str, model: ModelEnum = DEFAULT_MODEL) -> None:
     _sessions_cache.pop(session_key, None)
 
 
-def reset_cache_global() -> None:
+def reset_cache() -> None:
     """
     Clear agent and session caches completely.
 
@@ -77,7 +77,3 @@ def reset_cache_global() -> None:
     """
     _agents_cache.clear()
     _sessions_cache.clear()
-
-
-reset_cache = reset_cache_global
-"""Alias used by the Gradio UI."""

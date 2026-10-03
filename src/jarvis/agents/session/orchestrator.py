@@ -124,7 +124,7 @@ class JarvisSession:
             kwargs["config"] = {"configurable": {"thread_id": self.thread_id}}
         return kwargs
 
-    def _process_messages(self, messages: list) -> list[str] | str:
+    def _process_messages(self, messages: list) -> list[str]:
         """
         Invoke the agent and extract assistant replies from the state.
 
@@ -132,7 +132,7 @@ class JarvisSession:
             messages: Messages to send to the graph.
 
         Returns:
-            List of response strings, or an error message as str/list.
+            List of response strings (never empty on success path).
         """
         try:
             kwargs = self._build_agent_kwargs(messages)
@@ -153,12 +153,14 @@ class JarvisSession:
             return (
                 result
                 if result
-                else "I'm sorry, sir. I have no response for your request."
+                else ["I'm sorry, sir. I have no response for your request."]
             )
         except Exception as e:
-            return f"There was an error processing your request, sir. Error: {e}"
+            return [
+                f"There was an error processing your request, sir. Error: {e}"
+            ]
 
-    def ask(self, prompt: str) -> list[str] | str:
+    def ask(self, prompt: str) -> list[str]:
         """
         Process a user turn and return Jarvis's reply.
 
@@ -166,7 +168,7 @@ class JarvisSession:
             prompt: User message.
 
         Returns:
-            List of response strings or a single message depending on state.
+            List of response strings for the user.
         """
         self._update_chat_state(prompt)
 
@@ -216,8 +218,4 @@ def ask_jarvis(
     session_key = (model, thread_id)
     if session_key not in sessions_cache:
         sessions_cache[session_key] = JarvisSession(model, thread_id, user_info)
-    result = sessions_cache[session_key].ask(prompt)
-
-    if isinstance(result, list):
-        return result
-    return [result]
+    return sessions_cache[session_key].ask(prompt)

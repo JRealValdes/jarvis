@@ -1,6 +1,6 @@
 """Administrative use cases (global cache)."""
 
-from jarvis.agents.session import get_cache_status, reset_cache_global
+from jarvis.agents.session import get_cache_status, reset_cache
 
 
 class AdminService:
@@ -13,7 +13,7 @@ class AdminService:
         Returns:
             Dict ``{status, message}``.
         """
-        reset_cache_global()
+        reset_cache()
         return {"status": "ok", "message": "Global memory reset"}
 
     def get_cache_status(self) -> dict:

@@ -7,7 +7,7 @@ from jarvis.agents.session import (
     ask_jarvis,
     check_individual_session_cache_exists,
     get_cache_status,
-    reset_cache_global,
+    reset_cache,
 )
 from jarvis.core.config import DEFAULT_MODEL
 from jarvis.core.enums import IdentificationFailedProtocolEnum, ModelEnum
@@ -44,7 +44,7 @@ def test_ask_jarvis_is_callable():
 
 
 def test_get_cache_status_empty_initially():
-    reset_cache_global()
+    reset_cache()
     status = get_cache_status()
     assert status["agents_cache_count"] == 0
     assert status["sessions_cache_count"] == 0
@@ -53,5 +53,5 @@ def test_get_cache_status_empty_initially():
 
 
 def test_check_individual_session_cache_exists_false_when_empty():
-    reset_cache_global()
+    reset_cache()
     assert check_individual_session_cache_exists("pytest-thread-unknown") is False
