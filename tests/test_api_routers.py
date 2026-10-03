@@ -1,6 +1,6 @@
 """Tests for router registration on the FastAPI application."""
 
-from jarvis.api.main import app
+from jarvis.api.app import app
 from jarvis.api.routers import admin, auth, chat
 
 

@@ -130,7 +130,7 @@ class JarvisMcpMemoryAgent:
 
     async def initialize_mcp_connection(self) -> None:
         """
-        Read ``mcp/server_config.json`` and connect all MCP servers.
+        Read ``data/mcp/server_config.json`` and connect all MCP servers.
 
         Returns:
             None. Idempotent if already connected.
