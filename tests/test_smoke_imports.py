@@ -15,7 +15,7 @@ from jarvis.core.enums import IdentificationFailedProtocolEnum, ModelEnum
 
 def test_model_enum_members():
     assert ModelEnum.GPT_3_5.value == "chatgpt_3_5"
-    assert len(ModelEnum) >= 4
+    assert len(ModelEnum) >= 3
 
 
 def test_identification_failed_protocol_enum():

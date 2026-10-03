@@ -192,7 +192,9 @@ class JarvisMcpMemoryAgent:
 
     def invoke(self, **kwargs) -> dict:
         """
-        Synchronous wrapper that runs ainvoke and closes MCP when done.
+        Synchronous wrapper around ``ainvoke``.
+
+        Keeps the MCP connection open across turns; call ``cleanup`` when done.
 
         Args:
             **kwargs: Arguments for ``ainvoke``.
@@ -200,11 +202,9 @@ class JarvisMcpMemoryAgent:
         Returns:
             Final graph state.
         """
+        return asyncio.run(self.ainvoke(**kwargs))
 
-        async def _wrapped() -> dict:
-            try:
-                return await self.ainvoke(**kwargs)
-            finally:
-                await self.aclose()
-
-        return asyncio.run(_wrapped())
+    def cleanup(self) -> None:
+        """Close MCP sessions if connected."""
+        if self._is_connected:
+            asyncio.run(self.aclose())

@@ -1,4 +1,4 @@
-"""Chat session package: cache, history, and orchestration."""
+"""Public session façade used by CLI, Gradio, and the HTTP API."""
 
 from jarvis.agents.session.cache import (
     check_individual_session_cache_exists,
@@ -7,7 +7,7 @@ from jarvis.agents.session.cache import (
     reset_cache_global,
     reset_session,
 )
-from jarvis.agents.session.history import get_message_history, parse_message_list
+from jarvis.agents.session.history import get_message_history
 from jarvis.agents.session.orchestrator import JarvisSession, ask_jarvis
 
 __all__ = [
@@ -16,7 +16,6 @@ __all__ = [
     "check_individual_session_cache_exists",
     "get_cache_status",
     "get_message_history",
-    "parse_message_list",
     "reset_cache",
     "reset_cache_global",
     "reset_session",

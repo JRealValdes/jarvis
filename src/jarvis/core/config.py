@@ -13,8 +13,8 @@ IDENTIFICATION_FAILED_PROTOCOL: IdentificationFailedProtocolEnum = (
 DB_DEBUG_MODE: bool = False
 """If True, allows debug operations on the user database."""
 
-EXPOSE_API_WITH_CLOUDFLARED: bool = True
-"""If True, the API attempts cloudflared exposure on startup."""
+EXPOSE_API_WITH_CLOUDFLARED: bool = False
+"""If True, the API attempts cloudflared exposure on startup (opt-in)."""
 
 JWT_ALGORITHM: str = "HS256"
 """Signing algorithm for JWT tokens."""

@@ -1,13 +1,12 @@
 """Chat, session, and history use cases."""
 
-from fastapi import HTTPException, status
-
 from jarvis.agents.session import (
     ask_jarvis,
     check_individual_session_cache_exists,
     get_message_history,
     reset_session,
 )
+from jarvis.api.errors import ForbiddenError
 from jarvis.api.schemas.chat import AskInput, ThreadIdPayload
 from jarvis.core.enums import ModelEnum
 
@@ -45,7 +44,7 @@ class ChatService:
             Dict ``{status, message}``.
 
         Raises:
-            HTTPException: 403 if a non-admin resets another thread.
+            ForbiddenError: If a non-admin resets another thread.
         """
         thread_id = payload.thread_id if payload else None
         thread_id = self._resolve_thread_id(thread_id, user, action="reset")
@@ -76,7 +75,7 @@ class ChatService:
             Dict ``{thread_id, messages}``.
 
         Raises:
-            HTTPException: 403 if a non-admin queries another thread.
+            ForbiddenError: If a non-admin queries another thread.
         """
         thread_id = self._resolve_thread_id(thread_id, user, action="read")
         history = get_message_history(thread_id)
@@ -97,7 +96,7 @@ class ChatService:
             Effective thread_id.
 
         Raises:
-            HTTPException: 403 if a non-admin accesses another thread.
+            ForbiddenError: If a non-admin accesses another thread.
         """
         if thread_id:
             if not user.get("admin", False):
@@ -109,10 +108,7 @@ class ChatService:
                     detail = (
                         "You do not have permission to view other users' history."
                     )
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=detail,
-                )
+                raise ForbiddenError(detail)
             return thread_id
         return user["real_name"]
 

@@ -7,7 +7,6 @@ class ModelEnum(Enum):
     """Language models supported by the agent factory."""
 
     GPT_3_5 = "chatgpt_3_5"
-    GPT_4 = "chatgpt_4"
     ZEPHYR = "zephyr"
     MISTRAL = "mistral"
 

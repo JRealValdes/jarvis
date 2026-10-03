@@ -13,8 +13,6 @@ SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
 
 from jarvis.core.paths import GOOGLE_CREDENTIALS_DIR
 
-GOOGLE_API_DIR = str(GOOGLE_CREDENTIALS_DIR)
-
 
 def _load_paths(user_dir: str) -> tuple[str | None, str | None]:
     """
@@ -117,7 +115,7 @@ def get_authentications_for_user(
     """
     authentications: dict[str, Credentials] = {}
 
-    base_user_dir = os.path.join(GOOGLE_API_DIR, username)
+    base_user_dir = str(GOOGLE_CREDENTIALS_DIR / username)
     if not os.path.isdir(base_user_dir):
         raise FileNotFoundError(
             f"Directory does not exist for user '{username}'. Path checked: {base_user_dir}"

@@ -12,7 +12,7 @@ from jarvis.domain.chat.chat_state import (
     compute_next_chat_state,
     should_clear_agent_thread_on_identification,
 )
-from jarvis.domain.users.identification import find_user_by_prompt
+from jarvis.infrastructure.persistence.users.identification import find_user_by_prompt
 from jarvis.domain.users.prompts import (
     AUTOMATIC_RESPONSE_IF_ID_FAILED,
     build_background_prompt,
