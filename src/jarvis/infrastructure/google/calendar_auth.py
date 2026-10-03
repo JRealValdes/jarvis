@@ -106,7 +106,7 @@ def get_authentications_for_user(
     Load OAuth credentials for all Google accounts of a user.
 
     Args:
-        username: Folder name under ``api/google_api/<username>/``.
+        username: Folder name under ``data/google/<username>/``.
         allow_logging_popup: Allow browser OAuth flow if token is missing.
 
     Returns:
