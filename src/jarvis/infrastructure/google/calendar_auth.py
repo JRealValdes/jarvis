@@ -13,8 +13,6 @@ SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
 
 from jarvis.core.paths import GOOGLE_CREDENTIALS_DIR
 
-GOOGLE_API_DIR = str(GOOGLE_CREDENTIALS_DIR)
-
 
 def _load_paths(user_dir: str) -> tuple[str | None, str | None]:
     """
@@ -83,12 +81,12 @@ def _ensure_creds(
             return creds
         except Exception as e:
             logger.warning(
-                "Refresh fallido (%s). Intentando flujo interactivo...", e
+                "Refresh failed (%s). Trying interactive flow...", e
             )
 
     if not allow_logging_popup:
         raise RuntimeError(
-            "No se pudo autenticar y no se permite popup. Ejecuta el flujo interactivo una vez."
+            "Could not authenticate and popup is not allowed. Run the interactive flow once."
         )
 
     flow = InstalledAppFlow.from_client_secrets_file(credential_path, SCOPES)
@@ -106,7 +104,7 @@ def get_authentications_for_user(
     Load OAuth credentials for all Google accounts of a user.
 
     Args:
-        username: Folder name under ``api/google_api/<username>/``.
+        username: Folder name under ``data/google/<username>/``.
         allow_logging_popup: Allow browser OAuth flow if token is missing.
 
     Returns:
@@ -117,10 +115,10 @@ def get_authentications_for_user(
     """
     authentications: dict[str, Credentials] = {}
 
-    base_user_dir = os.path.join(GOOGLE_API_DIR, username)
+    base_user_dir = str(GOOGLE_CREDENTIALS_DIR / username)
     if not os.path.isdir(base_user_dir):
         raise FileNotFoundError(
-            f"No existe el directorio para el usuario '{username}'. Ruta comprobada: {base_user_dir}"
+            f"Directory does not exist for user '{username}'. Path checked: {base_user_dir}"
         )
 
     for account in os.listdir(base_user_dir):
@@ -130,13 +128,13 @@ def get_authentications_for_user(
 
         credential_path, token_path = _load_paths(account_dir)
         if not credential_path:
-            logger.warning("Falta credential_*.json en %s", account_dir)
+            logger.warning("Missing credential_*.json in %s", account_dir)
             continue
 
         try:
             creds = _ensure_creds(credential_path, token_path, allow_logging_popup)
             authentications[account] = creds
         except Exception as e:
-            logger.warning("No se pudo autenticar %s: %s", account, e)
+            logger.warning("Could not authenticate %s: %s", account, e)
 
     return authentications

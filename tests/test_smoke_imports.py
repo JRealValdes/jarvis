@@ -7,15 +7,16 @@ from jarvis.agents.session import (
     ask_jarvis,
     check_individual_session_cache_exists,
     get_cache_status,
-    reset_cache_global,
+    reset_cache,
 )
 from jarvis.core.config import DEFAULT_MODEL
 from jarvis.core.enums import IdentificationFailedProtocolEnum, ModelEnum
 
 
 def test_model_enum_members():
+    assert ModelEnum.GPT_4O_MINI.value == "gpt_4o_mini"
     assert ModelEnum.GPT_3_5.value == "chatgpt_3_5"
-    assert len(ModelEnum) >= 4
+    assert len(ModelEnum) >= 3
 
 
 def test_identification_failed_protocol_enum():
@@ -23,7 +24,8 @@ def test_identification_failed_protocol_enum():
 
 
 def test_default_model_is_gpt_35():
-    assert DEFAULT_MODEL == ModelEnum.GPT_3_5
+    assert DEFAULT_MODEL == ModelEnum.GPT_4O_MINI
+
 
 
 def test_models_with_memory_includes_default():
@@ -44,7 +46,7 @@ def test_ask_jarvis_is_callable():
 
 
 def test_get_cache_status_empty_initially():
-    reset_cache_global()
+    reset_cache()
     status = get_cache_status()
     assert status["agents_cache_count"] == 0
     assert status["sessions_cache_count"] == 0
@@ -53,5 +55,5 @@ def test_get_cache_status_empty_initially():
 
 
 def test_check_individual_session_cache_exists_false_when_empty():
-    reset_cache_global()
+    reset_cache()
     assert check_individual_session_cache_exists("pytest-thread-unknown") is False

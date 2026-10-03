@@ -11,16 +11,18 @@ from typing import Annotated
 
 from typing_extensions import TypedDict
 
-from jarvis.core.enums import ModelEnum
-from langchain_openai import ChatOpenAI
 from langchain_mcp_adapters.tools import load_mcp_tools
+from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
-from jarvis.tools.tools_registry import local_tools
+
+from jarvis.core.enums import ModelEnum
+from jarvis.core.openai_models import resolve_openai_chat_model_id
+from jarvis.tools import local_tools
 
 
 class State(TypedDict):
@@ -67,7 +69,7 @@ class JarvisMcpMemoryAgent:
     def __init__(self, model_enum: ModelEnum) -> None:
         """
         Args:
-            model_enum: Must be GPT_3_5.
+            model_enum: OpenAI chat ModelEnum member.
         """
         self.model_enum = model_enum
         self.exit_stack: AsyncExitStack | None = None
@@ -83,17 +85,17 @@ class JarvisMcpMemoryAgent:
         Compile the LangGraph with the given tools.
 
         Args:
-            model_enum: LLM model (GPT_3_5).
+            model_enum: OpenAI chat LLM model.
             tools: Local + MCP tools.
             memory: Checkpointer; MemorySaver is created if None.
 
         Raises:
-            ValueError: If the model is not GPT_3_5.
+            ValueError: If the model is not an OpenAI chat model.
         """
-        if model_enum == ModelEnum.GPT_3_5:
-            llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
-        else:
-            raise ValueError(f"Unsupported model: {model_enum}")
+        llm = ChatOpenAI(
+            model=resolve_openai_chat_model_id(model_enum),
+            temperature=0,
+        )
 
         graph_builder = StateGraph(State)
         llm_with_tools = llm.bind_tools(tools)
@@ -130,7 +132,7 @@ class JarvisMcpMemoryAgent:
 
     async def initialize_mcp_connection(self) -> None:
         """
-        Read ``mcp/server_config.json`` and connect all MCP servers.
+        Read ``data/mcp/server_config.json`` and connect all MCP servers.
 
         Returns:
             None. Idempotent if already connected.
@@ -192,7 +194,9 @@ class JarvisMcpMemoryAgent:
 
     def invoke(self, **kwargs) -> dict:
         """
-        Synchronous wrapper that runs ainvoke and closes MCP when done.
+        Synchronous wrapper around ``ainvoke``.
+
+        Keeps the MCP connection open across turns; call ``cleanup`` when done.
 
         Args:
             **kwargs: Arguments for ``ainvoke``.
@@ -200,11 +204,9 @@ class JarvisMcpMemoryAgent:
         Returns:
             Final graph state.
         """
+        return asyncio.run(self.ainvoke(**kwargs))
 
-        async def _wrapped() -> dict:
-            try:
-                return await self.ainvoke(**kwargs)
-            finally:
-                await self.aclose()
-
-        return asyncio.run(_wrapped())
+    def cleanup(self) -> None:
+        """Close MCP sessions if connected."""
+        if self._is_connected:
+            asyncio.run(self.aclose())

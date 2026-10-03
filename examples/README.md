@@ -13,6 +13,10 @@ uv run python examples/basic_mcp_test.py
 
 Notebooks: open in Jupyter/VS Code with the project `.venv` kernel.
 
+## Fixtures
+
+Sample audio and documents for future STT / RAG work live under [`fixtures/`](fixtures/).
+
 ## Google Calendar OAuth
 
 Place credentials under `data/google/<username>/<account>/` (see `data/google/example_user/`). Use `examples/google_api_demo.ipynb` for the interactive OAuth flow.

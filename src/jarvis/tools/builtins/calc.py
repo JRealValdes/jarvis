@@ -8,16 +8,16 @@ from langchain_core.tools import tool
 @tool
 def calculate_tool(expression: str) -> float | int:
     """
-    Evalúa una expresión matemática de forma restringida (solo literales y operadores).
+    Evaluate a math expression in a restricted way (literals and operators only).
 
     Args:
-        expression: Expresión Python válida en modo eval (ej. ``2 + 2 * 3``).
+        expression: Valid Python expression in eval mode (e.g. ``2 + 2 * 3``).
 
     Returns:
-        Resultado numérico; floats redondeados a 2 decimales.
+        Numeric result; floats rounded to 2 decimal places.
 
     Raises:
-        ValueError: Si la expresión no es válida o la evaluación falla.
+        ValueError: If the expression is invalid or evaluation fails.
     """
     try:
         node = ast.parse(expression, mode="eval")

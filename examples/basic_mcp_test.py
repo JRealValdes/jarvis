@@ -1,30 +1,33 @@
+import asyncio
+import sys
+from contextlib import AsyncExitStack
 from typing import Annotated
-from typing_extensions import TypedDict
-from jarvis.core.enums import ModelEnum
+
+from langchain_core.messages import HumanMessage
+from langchain_mcp_adapters.tools import load_mcp_tools
 from langchain_openai import ChatOpenAI
-from jarvis.tools.calc import calculate_tool
-from jarvis.tools.speech_to_text import speech_to_text_tool
-from langgraph.prebuilt import ToolNode, tools_condition
-from langgraph.graph import StateGraph
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import StateGraph
 from langgraph.graph.message import add_messages
+from langgraph.prebuilt import ToolNode, tools_condition
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
-from langchain_mcp_adapters.tools import load_mcp_tools
-import asyncio
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-from contextlib import AsyncExitStack
+from typing_extensions import TypedDict
+
+from jarvis.core.paths import MCP_DIR
+from jarvis.tools.builtins.calc import calculate_tool
+from jarvis.tools.builtins.speech_to_text import speech_to_text_tool
 
 local_tools = [calculate_tool, speech_to_text_tool]
+
 
 class State(TypedDict):
     messages: Annotated[list, add_messages]
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-script_path = os.path.abspath(os.path.join(script_dir, "..", "mcp", "servers", "math_server.py"))
 
-command = "python"
-command_args = [script_path]
+math_server = (MCP_DIR / "servers" / "math_server.py").resolve()
+command = sys.executable
+command_args = [str(math_server)]
 
 class AgentWithMCP:
     def __init__(self):
@@ -90,8 +93,8 @@ async def main():
     await agent.setup()
 
     try:
-        result = await agent.invoke("Me llamo Javier")
-        result = await agent.invoke("¿Cómo me llamo?")
+        result = await agent.invoke("My name is Javier")
+        result = await agent.invoke("What is my name?")
         for msg in result["messages"]:
             print("Jarvis:", msg.content)
     finally:

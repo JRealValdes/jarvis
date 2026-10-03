@@ -9,6 +9,9 @@ my_notes.txt
 # Secret databases
 *secret*.db
 
+# Local runtime user DB (seed via scripts/users/)
+data/users.db
+
 # Secret CSV files
 *secret*.csv
 
@@ -18,8 +21,8 @@ my_notes.txt
 # C extensions
 *.so
 
-# GraphRAG Workspace
-demos/graphrag_ws/
+# Example workspace junk
+examples/graphrag_ws/
 
 # Distribution / packaging
 .Python

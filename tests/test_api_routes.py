@@ -3,7 +3,7 @@
 import jwt
 from fastapi.testclient import TestClient
 
-from jarvis.api.main import app
+from jarvis.api.app import app
 from jarvis.core.config import JWT_ALGORITHM
 
 

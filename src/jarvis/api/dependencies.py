@@ -37,9 +37,9 @@ def verify_jwt_token(
             algorithms=[JWT_ALGORITHM],
         )
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expirado") from None
+        raise HTTPException(status_code=401, detail="Token expired") from None
     except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Token no válido") from None
+        raise HTTPException(status_code=401, detail="Invalid token") from None
 
 
 def require_admin(user: dict = Depends(verify_jwt_token)) -> dict:
@@ -58,6 +58,6 @@ def require_admin(user: dict = Depends(verify_jwt_token)) -> dict:
     if not user.get("admin", False):
         raise HTTPException(
             status_code=403,
-            detail="No tienes permiso para realizar esta acción.",
+            detail="You do not have permission to perform this action.",
         )
     return user

@@ -17,7 +17,7 @@ def find_project_root() -> Path:
     for directory in (current, *current.parents):
         if (directory / "pyproject.toml").is_file():
             return directory
-    raise RuntimeError("No se encontró pyproject.toml en ningún directorio padre.")
+    raise RuntimeError("pyproject.toml not found in any parent directory.")
 
 
 PROJECT_ROOT: Path = find_project_root()
@@ -27,4 +27,4 @@ USERS_DB_PATH: Path = DATA_DIR / "users.db"
 GOOGLE_CREDENTIALS_DIR: Path = DATA_DIR / "google"
 FIREBASE_PRIVATE_KEY_PATH: Path = DATA_DIR / "firebase_project_secret_private_key.json"
 MCP_DIR: Path = JARVIS_PACKAGE_DIR / "mcp"
-MCP_SERVER_CONFIG_PATH: Path = MCP_DIR / "server_config.json"
+MCP_SERVER_CONFIG_PATH: Path = DATA_DIR / "mcp" / "server_config.json"

@@ -5,9 +5,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
 from jarvis.api.deployment import API_PORT, run_with_optional_tunnel
+from jarvis.api.errors import ForbiddenError
 from jarvis.core.logging_config import configure_logging
 
 configure_logging()
@@ -26,6 +28,13 @@ def create_app() -> FastAPI:
         description="API backend for Jarvis",
         version="1.0.0",
     )
+
+    @application.exception_handler(ForbiddenError)
+    async def _forbidden_handler(
+        _request: Request, exc: ForbiddenError
+    ) -> JSONResponse:
+        return JSONResponse(status_code=403, content={"detail": exc.detail})
+
     application.include_router(auth.router)
     application.include_router(chat.router)
     application.include_router(admin.router)

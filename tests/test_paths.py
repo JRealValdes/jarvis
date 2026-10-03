@@ -21,4 +21,4 @@ def test_data_paths_under_project_root():
     assert USERS_DB_PATH == DATA_DIR / "users.db"
     assert GOOGLE_CREDENTIALS_DIR == DATA_DIR / "google"
     assert FIREBASE_PRIVATE_KEY_PATH == DATA_DIR / "firebase_project_secret_private_key.json"
-    assert MCP_SERVER_CONFIG_PATH == PROJECT_ROOT / "src" / "jarvis" / "mcp" / "server_config.json"
+    assert MCP_SERVER_CONFIG_PATH == DATA_DIR / "mcp" / "server_config.json"
