@@ -20,19 +20,19 @@ Hello, sir. How can I assist you today?
 
 ## Installation
 
-Requisito: [uv](https://docs.astral.sh/uv/) (`pip install uv` o instalador oficial).
+Requirement: [uv](https://docs.astral.sh/uv/) (`pip install uv` or the official installer).
 
 ```bash
-uv sync --all-groups    # crea .venv e instala dependencias + dev (pytest)
+uv sync --all-groups    # create .venv and install runtime + dev deps (pytest)
 ```
 
-Para despliegues que solo lean `requirements.txt` (p. ej. Hugging Face Spaces):
+For deploys that only read `requirements.txt` (e.g. Hugging Face Spaces):
 
 ```bash
 uv export --no-dev -o requirements.txt
 ```
 
-Instalación clásica sin uv (alternativa):
+Classic install without uv (alternative):
 
 ```bash
 pip install -r requirements.txt
@@ -41,17 +41,17 @@ pip install -e .
 
 ## Development
 
-Desde la raíz del proyecto:
+From the project root:
 
 ```bash
 uv run pytest
 uv run main.py
 uv run app.py
 uv run -m jarvis.api
-# alternativas: uv run jarvis | uv run jarvis-api
+# alternatives: uv run jarvis | uv run jarvis-api
 ```
 
-Convención de docstrings en código de producción: módulo + **Args** / **Returns** / **Raises**.
+Docstring convention in production code: module + **Args** / **Returns** / **Raises**.
 
 ## Configuration - If using OpenAI
 1. Copy `.env.example` to `.env`

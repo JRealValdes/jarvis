@@ -8,15 +8,12 @@ from langchain_core.tools import tool
 @tool
 def current_date_time_tool() -> str:
     """
-    Devuelve la fecha y hora actuales con día de la semana.
-
-    Args:
-        Ninguno.
+    Return the current date and time with weekday.
 
     Returns:
-        Cadena en español con día de la semana y timestamp ``YYYY-MM-DD HH:MM:SS``.
+        English string with weekday and timestamp ``YYYY-MM-DD HH:MM:SS``.
     """
     now = datetime.now()
     weekday = now.strftime("%A")
     formatted = now.strftime("%Y-%m-%d %H:%M:%S")
-    return f"Hoy es {weekday}, y la fecha y hora actual es: {formatted}"
+    return f"Today is {weekday}, and the current date and time is: {formatted}"

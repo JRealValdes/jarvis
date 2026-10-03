@@ -1,4 +1,4 @@
-"""Herramientas LangChain para leer y modificar Google Calendar por usuario."""
+"""LangChain tools to read and modify Google Calendar per user."""
 
 import datetime
 from langchain_core.tools import tool
@@ -13,17 +13,17 @@ from jarvis.infrastructure.google.calendar_auth import get_authentications_for_u
 
 def ensure_timezone(dt_string: str, fallback_tz: str = "+00:00") -> str:
     """
-    Normaliza una fecha ISO 8601 añadiendo zona horaria si falta.
+    Normalize an ISO 8601 datetime by adding a timezone if missing.
 
     Args:
-        dt_string: Fecha/hora en formato ISO.
-        fallback_tz: Sufijo de zona si no viene en la cadena (ej. ``+00:00``).
+        dt_string: Date/time in ISO format.
+        fallback_tz: Timezone suffix if absent (e.g. ``+00:00``).
 
     Returns:
-        Cadena ISO con zona horaria.
+        ISO string with timezone.
 
     Raises:
-        ValueError: Si el formato no es parseable.
+        ValueError: If the format is not parseable.
     """
     try:
         dt = parser.isoparse(dt_string)
@@ -31,7 +31,10 @@ def ensure_timezone(dt_string: str, fallback_tz: str = "+00:00") -> str:
             return dt.isoformat() + fallback_tz
         return dt.isoformat()
     except Exception:
-        raise ValueError(f"Formato de fecha inválido: '{dt_string}'. Usa ISO 8601 (e.g. 2025-07-22T00:00:00+02:00)")
+        raise ValueError(
+            f"Invalid date format: '{dt_string}'. Use ISO 8601 "
+            "(e.g. 2025-07-22T00:00:00+02:00)"
+        )
 
 
 @tool
@@ -57,7 +60,7 @@ def get_upcoming_events_tool(
         authentications = get_authentications_for_user(real_name, allow_logging_popup=True)
 
         if not authentications:
-            return "No se encontraron credenciales para acceder al calendario."
+            return "No credentials found to access the calendar."
 
         time_min = ensure_timezone(date_from) if date_from else datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
         time_max = ensure_timezone(date_to) if date_to else None
@@ -82,10 +85,10 @@ def get_upcoming_events_tool(
                 events.extend(events_result.get("items", []))
 
             except Exception as e:
-                return f"Error al consultar uno de los calendarios: {str(e)}"
+                return f"Error querying one of the calendars: {str(e)}"
 
         if not events:
-            return "No se encontraron eventos para las fechas indicadas."
+            return "No events found for the given dates."
 
         events = sorted(
             events,
@@ -95,28 +98,31 @@ def get_upcoming_events_tool(
         events = events[:num_events] if len(events) > num_events else events
 
         result = (
-            "Este es el resultado de la consulta de eventos.\n\n"
-            "📌 Nota para ti, agente: el campo 'ID del evento' es útil para el manejo interno, "
-            "pero normalmente no debe mostrarse al usuario a menos que lo solicite expresamente.\n\n"
-            "🔍 Revisa con atención el siguiente listado. Puede contener la información que necesitas "
-            "para responder correctamente a la petición del usuario.\n\n"
-            "📋 Formato:\n'Fecha y hora de inicio - Título del evento - ID del evento'\n\n"
+            "This is the result of the events query.\n\n"
+            "📌 Note for you, agent: the 'Event ID' field is useful for internal handling, "
+            "but should normally not be shown to the user unless they explicitly ask.\n\n"
+            "🔍 Review the following list carefully. It may contain the information you need "
+            "to answer the user's request correctly.\n\n"
+            "📋 Format:\n'Start date and time - Event title - Event ID'\n\n"
         )
 
         for event in events:
             start = event["start"].get("dateTime", event["start"].get("date"))
-            summary = event.get("summary", "Sin título")
-            event_id = event.get("id", "Sin ID")
+            summary = event.get("summary", "Untitled")
+            event_id = event.get("id", "No ID")
             result += f"{start} - {summary} - {event_id}\n"
 
         return result.strip()
 
     except FileNotFoundError as fnf:
-        return f"Error tipo FileNotFoundError. No se encontró el directorio de autenticación para el usuario '{real_name}'. Ruta comprobada: {fnf.filename}"
+        return (
+            f"FileNotFoundError. Authentication directory not found for user "
+            f"'{real_name}'. Path checked: {fnf.filename}"
+        )
     except ValueError as ve:
-        return f"Error tipo ValueError: {str(ve)}"
+        return f"ValueError: {str(ve)}"
     except Exception as e:
-        return f"Error desconocido. No fue posible obtener los eventos: {str(e)}"
+        return f"Unknown error. Could not retrieve events: {str(e)}"
 
 
 @tool
@@ -176,10 +182,13 @@ def create_calendar_event_tool(
             event["location"] = location.strip()
 
         created_event = service.events().insert(calendarId="primary", body=event).execute()
-        return f"Evento creado correctamente. Link: {created_event.get('htmlLink')}. ID: {created_event.get('id')}"
+        return (
+            f"Event created successfully. Link: {created_event.get('htmlLink')}. "
+            f"ID: {created_event.get('id')}"
+        )
 
     except Exception as e:
-        return f"Error al crear el evento: {str(e)}"
+        return f"Error creating event: {str(e)}"
 
 
 @tool
@@ -203,7 +212,7 @@ def delete_calendar_event_tool(
         service = build("calendar", "v3", credentials=authentication)
 
         service.events().delete(calendarId="primary", eventId=event_id).execute()
-        return f"Evento con ID '{event_id}' eliminado correctamente."
+        return f"Event with ID '{event_id}' deleted successfully."
 
     except Exception as e:
-        return f"No se pudo eliminar el evento con ID '{event_id}': {str(e)}"
+        return f"Could not delete event with ID '{event_id}': {str(e)}"

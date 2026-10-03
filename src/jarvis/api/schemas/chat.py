@@ -10,14 +10,14 @@ from jarvis.core.config import DEFAULT_MODEL
 class AskInput(BaseModel):
     """JSON body for POST /ask."""
 
-    message: str = Field(description="Mensaje del usuario para Jarvis.")
+    message: str = Field(description="User message for Jarvis.")
     model_name: str = Field(
         default=DEFAULT_MODEL.name,
-        description="Nombre del miembro ModelEnum (ej. GPT_3_5).",
+        description="ModelEnum member name (e.g. GPT_3_5).",
     )
     thread_id: str | None = Field(
         default=None,
-        description="Hilo de conversación; por defecto real_name del JWT.",
+        description="Conversation thread; defaults to JWT real_name.",
     )
 
 
@@ -26,5 +26,5 @@ class ThreadIdPayload(BaseModel):
 
     thread_id: Optional[str] = Field(
         default=None,
-        description="Hilo a reiniciar; solo admins pueden indicar otro usuario.",
+        description="Thread to reset; only admins may target another user.",
     )

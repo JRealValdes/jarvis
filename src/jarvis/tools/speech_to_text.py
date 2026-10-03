@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 class TranscribeAudioInput(BaseModel):
     """Argument schema for the transcription tool."""
 
-    file_path: str = Field(description="Ruta absoluta o relativa al archivo de audio.")
+    file_path: str = Field(description="Absolute or relative path to the audio file.")
 
 
 @tool("transcribe_audio", args_schema=TranscribeAudioInput)
@@ -21,17 +21,17 @@ def speech_to_text_tool(
     run_manager: Optional[CallbackManagerForToolRun] = None,
 ) -> str:
     """
-    Transcribe un archivo de audio (.mp3, .wav, etc.) con OpenAI Whisper.
+    Transcribe an audio file (.mp3, .wav, etc.) with OpenAI Whisper.
 
     Args:
-        file_path: Ruta al archivo de audio en disco.
-        run_manager: Callback manager de LangChain (opcional).
+        file_path: Path to the audio file on disk.
+        run_manager: Optional LangChain callback manager.
 
     Returns:
-        Texto transcrito.
+        Transcribed text.
 
     Raises:
-        ToolException: Si el archivo no existe o la API de OpenAI falla.
+        ToolException: If the file does not exist or the OpenAI API fails.
     """
     if not os.path.exists(file_path):
         raise ToolException(f"The file does not exist at the provided path: {file_path}")

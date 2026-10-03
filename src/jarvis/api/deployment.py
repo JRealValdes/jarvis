@@ -67,7 +67,7 @@ def expose_api_with_cloudflared() -> str | None:
                     break
             time.sleep(0.5)
     except Exception as e:
-        logger.error("Error al exponer con cloudflared: %s", e)
+        logger.error("Error exposing with cloudflared: %s", e)
     return public_url
 
 
@@ -83,7 +83,7 @@ def save_url_to_firebase(url: str) -> None:
     """
     firebase_url, firebase_path = _firebase_config()
     if not firebase_url:
-        logger.error("No está configurada la URL de Firebase.")
+        logger.error("Firebase URL is not configured.")
         return
 
     payload = {
@@ -102,9 +102,9 @@ def save_url_to_firebase(url: str) -> None:
         )
         data_ref = db.reference(firebase_path)
         data_ref.set(payload)
-        logger.info("URL guardada en Firebase.")
+        logger.info("URL saved to Firebase.")
     except Exception as e:
-        logger.error("Error al guardar en Firebase: %s", e)
+        logger.error("Error saving to Firebase: %s", e)
 
 
 def send_telegram_message(text: str) -> None:
@@ -119,7 +119,7 @@ def send_telegram_message(text: str) -> None:
     """
     bot_token, chat_id = _telegram_config()
     if not bot_token or not chat_id:
-        logger.warning("Falta configuración de Telegram.")
+        logger.warning("Telegram configuration is missing.")
         return
     url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     data = {"chat_id": chat_id, "text": text}
@@ -127,7 +127,7 @@ def send_telegram_message(text: str) -> None:
         response = requests.post(url, json=data)
         response.raise_for_status()
     except Exception as e:
-        logger.error("Error al enviar mensaje Telegram: %s", e)
+        logger.error("Error sending Telegram message: %s", e)
 
 
 def run_with_optional_tunnel(start_server) -> None:
@@ -143,11 +143,11 @@ def run_with_optional_tunnel(start_server) -> None:
     if EXPOSE_API_WITH_CLOUDFLARED:
         url = expose_api_with_cloudflared()
         if url:
-            logger.info("La API estará disponible públicamente en: %s", url)
-            send_telegram_message(f"🌐 Tu API ya está expuesta en: {url}")
+            logger.info("API will be publicly available at: %s", url)
+            send_telegram_message(f"🌐 Your API is now exposed at: {url}")
             save_url_to_firebase(url)
         else:
-            logger.error("No se pudo obtener URL pública.")
+            logger.error("Could not obtain a public URL.")
     else:
-        logger.warning("Exposición de API desactivada")
+        logger.warning("API exposure is disabled")
     start_server()

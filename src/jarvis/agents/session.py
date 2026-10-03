@@ -148,16 +148,16 @@ def _parse_message_list(messages: list) -> list[dict]:
                         result.append({
                             "role": "assistant",
                             "content": (
-                                f"Llamando a la función: {tool_call['function']['name']}. "
-                                f"Argumentos: {args_str}"
+                                f"Calling function: {tool_call['function']['name']}. "
+                                f"Arguments: {args_str}"
                             ),
                         })
                     else:
                         result.append({
                             "role": "assistant",
                             "content": (
-                                f"Llamando a la función: {tool_call['function']['name']}. "
-                                "Sin argumentos."
+                                f"Calling function: {tool_call['function']['name']}. "
+                                "No arguments."
                             ),
                         })
             else:
@@ -166,7 +166,7 @@ def _parse_message_list(messages: list) -> list[dict]:
             if msg.name not in not_verbosed_tools or "error" in msg.content.lower():
                 result.append({
                     "role": "assistant",
-                    "content": f"Resultado de la función {msg.name}: {msg.content}",
+                    "content": f"Function result {msg.name}: {msg.content}",
                 })
     return result
 
@@ -326,9 +326,9 @@ class JarvisSession:
             )
             msg_dict_list = _parse_message_list(response_messages[last_human_index + 1 :])
             result = [msg["content"] for msg in msg_dict_list]
-            return result if result else "Lo siento, señor. No tengo respuesta para su petición."
+            return result if result else "I'm sorry, sir. I have no response for your request."
         except Exception as e:
-            return f"Ha habido un error procesando su petición, señor. Error: {e}"
+            return f"There was an error processing your request, sir. Error: {e}"
 
     def ask(self, prompt: str) -> list[str] | str:
         """

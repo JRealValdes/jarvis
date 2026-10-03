@@ -34,7 +34,7 @@ class AuthService:
         ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Credenciales no válidas",
+                detail="Invalid credentials",
                 headers={"WWW-Authenticate": "Basic"},
             )
 
@@ -53,7 +53,7 @@ class AuthService:
         """
         return {
             "status": "ok",
-            "message": "El token es válido",
+            "message": "Token is valid",
             "user": user,
         }
 

@@ -1,4 +1,4 @@
-"""ChatService authorization messages (Spanish, action-specific)."""
+"""ChatService authorization messages (action-specific)."""
 
 import pytest
 from fastapi import HTTPException
@@ -11,7 +11,7 @@ def test_non_admin_cannot_reset_other_thread():
     with pytest.raises(HTTPException) as exc:
         ChatService()._resolve_thread_id("Bob", user, action="reset")
     assert exc.value.status_code == 403
-    assert "reiniciar la memoria" in exc.value.detail
+    assert "reset other users" in exc.value.detail.lower()
 
 
 def test_non_admin_cannot_read_other_thread_history():
@@ -19,4 +19,4 @@ def test_non_admin_cannot_read_other_thread_history():
     with pytest.raises(HTTPException) as exc:
         ChatService()._resolve_thread_id("Bob", user, action="read")
     assert exc.value.status_code == 403
-    assert "historial" in exc.value.detail
+    assert "history" in exc.value.detail.lower()

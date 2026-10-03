@@ -6,18 +6,22 @@ from jarvis.agents.session import ask_jarvis
 model_used = DEFAULT_MODEL
 thread_id = "1"
 
+_EXIT_COMMANDS = {"exit", "quit", "salir"}
+_FAREWELL_MARKERS = ("that's all", "eso es todo")
+
 
 def main() -> None:
     """
-    Run console chat until salir/exit/quit or a farewell phrase.
+    Run console chat until exit/quit/salir or a farewell phrase with ``jarvis``.
 
     Returns:
         None.
     """
     while True:
-        question = input("Usuario: ")
-        if question.lower() in ["salir", "exit", "quit"] or (
-            "eso es todo" in question.lower() and "jarvis" in question.lower()
+        question = input("User: ")
+        lowered = question.lower()
+        if lowered in _EXIT_COMMANDS or (
+            "jarvis" in lowered and any(marker in lowered for marker in _FAREWELL_MARKERS)
         ):
             break
         response = ask_jarvis(question, model_used, thread_id=thread_id)

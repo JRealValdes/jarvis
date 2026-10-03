@@ -90,8 +90,8 @@ async def main():
     await agent.setup()
 
     try:
-        result = await agent.invoke("Me llamo Javier")
-        result = await agent.invoke("¿Cómo me llamo?")
+        result = await agent.invoke("My name is Javier")
+        result = await agent.invoke("What is my name?")
         for msg in result["messages"]:
             print("Jarvis:", msg.content)
     finally:

@@ -60,7 +60,7 @@ class JarvisBasicAgent:
         elif model_enum == ModelEnum.MISTRAL:
             llm = ChatOllama(model="mistral")
         else:
-            raise ValueError("Modelo no soportado.")
+            raise ValueError("Unsupported model.")
         graph = create_agent(model=llm, tools=tools)
         return graph, None, tools
 

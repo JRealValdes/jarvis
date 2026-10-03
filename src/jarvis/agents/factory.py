@@ -29,4 +29,4 @@ def build_agent(model_used: ModelEnum) -> JarvisBasicAgent | JarvisMemoryAgent |
         if USE_MCP:
             return JarvisMcpMemoryAgent(model_used)
         return JarvisMemoryAgent(model_used)
-    raise ValueError("Modelo no soportado.")
+    raise ValueError("Unsupported model.")
