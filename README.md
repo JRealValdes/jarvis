@@ -67,22 +67,31 @@ uv run jarvis chat    # or api / ui
 
 Docstring convention in production code: module + **Args** / **Returns** / **Raises**.
 
-## Configuration - If using OpenAI
-1. Copy `.env.example` to `.env`
-2. Add your OpenAI key, HF token key and Fernet key:
-```
-OPENAI_API_KEY=sk-...
-HF_TOKEN_INFERENCE=hf_...
-FERNET_KEY=...
-```
-3. Define users if you want to establish your own users database. Create a `scripts/users/secret_users_info.csv` file. You can find an example at `scripts/users/example_users_info.csv`. Use `scripts/users/manage_users.ipynb` to load data into `data/users.db`.
-4. Google Calendar: place OAuth files under `data/google/<username>/<account>/` (see `data/google/example_user/`). Run `examples/google_api_demo.ipynb` for the interactive flow.
-5. Copy your Firebase credentials to `data/firebase_project_secret_private_key.json` (gitignored if the filename contains `secret`).
-6. MCP (optional): edit `data/mcp/server_config.json`; server scripts live under `src/jarvis/mcp/servers/`.
+## Configuration
+
+1. Copy `.env.example` to `.env` and fill in keys you use (OpenAI, HF, Fernet, JWT, optional Telegram/Firebase).
+2. Seed users into the local DB (see below).
+3. Google Calendar (optional): OAuth files under `data/google/<username>/<account>/` (see `data/google/example_user/`). Interactive flow: `examples/google_api_demo.ipynb`.
+4. MCP (optional): edit `data/mcp/server_config.json`; server scripts live under `src/jarvis/mcp/servers/`.
+5. Public API tunnel (optional): set `EXPOSE_API_WITH_CLOUDFLARED` in code/env workflow only when you want cloudflared (default is off).
+
+## Local runtime assets (not in git)
+
+These live on each machine and are required (or optional) for a full local setup. Copy/recreate them when moving to a new computer:
+
+| Asset | Path | Required? | How to obtain |
+|-------|------|-------------|---------------|
+| Environment secrets | `.env` | Yes for real LLM/API use | Copy `.env.example` |
+| Users database | `data/users.db` | Yes for identification / API login | Seed with `scripts/users/manage_users.ipynb` from CSV (`example_users_info.csv` / your `secret_users_info.csv`) |
+| Google OAuth | `data/google/<user>/<account>/` (`*secret*.json`) | Only for Calendar tools | Google Cloud OAuth client + `examples/google_api_demo.ipynb` |
+| Firebase private key | `data/firebase_project_secret_private_key.json` | Only if using Firebase URL share | Firebase console |
+| MCP config | `data/mcp/server_config.json` | Only if `USE_MCP` | Tracked example config is in repo; customize locally if needed |
+
+Gitignores cover `.env`, `data/users.db`, and `*secret*` files. Do not commit personal credentials.
 
 ## Architecture
 
-Installable package `jarvis` under `src/jarvis/`. Layers: `core`, `domain`, `infrastructure`, `agents` (factory, `session/`, `implementations/`), `tools` (`registry` + `builtins/`), `api`, `interfaces` (CLI + Gradio), `mcp` (server scripts). Runtime assets live in `data/`; seed/admin helpers in `scripts/`.
+Installable package `jarvis` under `src/jarvis/`. Layers: `core`, `domain`, `infrastructure`, `agents` (factory, `session/`, `implementations/`), `tools` (`registry` + `builtins/`), `api`, `interfaces` (CLI + Gradio), `mcp` (server scripts). Runtime assets live in `data/`; seed/admin helpers in `scripts/`; sample media/docs for future STT/RAG under `examples/fixtures/`.
 
 ## Structure
 ```
@@ -102,15 +111,13 @@ jarvis/                          # repository root
 │   │   ├── registry.py
 │   │   └── builtins/
 │   └── mcp/servers/             # MCP server scripts
-├── data/
-│   ├── users.db
+├── data/                        # local runtime (users.db gitignored)
 │   ├── google/                  # OAuth credentials per user
-│   ├── mcp/server_config.json
-│   ├── firebase_project_secret_private_key.json  # (local, often gitignored)
-│   └── docs/
+│   └── mcp/server_config.json
 ├── scripts/users/               # CSV + notebook to seed data/users.db
-├── examples/                    # experimental scripts/notebooks
+├── examples/                    # experimental scripts + fixtures/
 ├── tests/
+├── requirements.txt             # uv export for Hugging Face Spaces
 ├── app.py                       # Gradio shim for Hugging Face Spaces
 └── pyproject.toml
 ```
