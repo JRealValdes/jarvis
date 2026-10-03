@@ -2,15 +2,19 @@
 
 from jarvis.core.config import USE_MCP
 from jarvis.core.enums import ModelEnum
-from jarvis.agents.jarvis_memory_agent import JarvisMemoryAgent
-from jarvis.agents.jarvis_mcp_memory_agent import JarvisMcpMemoryAgent
-from jarvis.agents.jarvis_basic_agent import JarvisBasicAgent
+from jarvis.agents.implementations import (
+    JarvisBasicAgent,
+    JarvisMcpMemoryAgent,
+    JarvisMemoryAgent,
+)
 
 models_with_memory: list[ModelEnum] = [ModelEnum.GPT_3_5]
 """Models that persist conversation history with a checkpointer."""
 
 
-def build_agent(model_used: ModelEnum) -> JarvisBasicAgent | JarvisMemoryAgent | JarvisMcpMemoryAgent:
+def build_agent(
+    model_used: ModelEnum,
+) -> JarvisBasicAgent | JarvisMemoryAgent | JarvisMcpMemoryAgent:
     """
     Build and instantiate the agent for the given model.
 
