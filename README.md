@@ -39,16 +39,30 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-## Development
+## How to run
 
-From the project root:
+Jarvis has three modes. One CLI dispatches all of them:
+
+| Mode | Command | What it does |
+|------|---------|--------------|
+| **chat** | `uv run jarvis chat` | Interactive console chatbot |
+| **api** | `uv run jarvis api` | HTTP API (FastAPI + uvicorn) |
+| **ui** | `uv run jarvis ui` | Gradio web UI |
+
+```bash
+uv run jarvis --help
+uv run jarvis chat
+uv run jarvis api
+uv run jarvis ui
+```
+
+Hugging Face Spaces still launches Gradio via root `app.py` (`app_file` in the YAML header). Prefer `uv run jarvis ui` locally.
+
+## Development
 
 ```bash
 uv run pytest
-uv run main.py
-uv run app.py
-uv run -m jarvis.api
-# alternatives: uv run jarvis | uv run jarvis-api
+uv run jarvis chat    # or api / ui
 ```
 
 Docstring convention in production code: module + **Args** / **Returns** / **Raises**.
@@ -64,40 +78,40 @@ FERNET_KEY=...
 3. Define users if you want to establish your own users database. Create a `scripts/users/secret_users_info.csv` file. You can find an example at `scripts/users/example_users_info.csv`. Use `scripts/users/manage_users.ipynb` to load data into `data/users.db`.
 4. Google Calendar: place OAuth files under `data/google/<username>/<account>/` (see `data/google/example_user/`). Run `examples/google_api_demo.ipynb` for the interactive flow.
 5. Copy your Firebase credentials to `data/firebase_project_secret_private_key.json` (gitignored if the filename contains `secret`).
-
-## Usage
-```bash
-uv run main.py              # CLI
-uv run app.py               # Gradio (Hugging Face Spaces)
-uv run -m jarvis.api        # API HTTP
-```
+6. MCP (optional): edit `data/mcp/server_config.json`; server scripts live under `src/jarvis/mcp/servers/`.
 
 ## Architecture
 
-Installable package `jarvis` under `src/jarvis/`: `core`, `domain`, `infrastructure`, `agents`, `api`, `interfaces`, `tools`, `mcp`. Runtime data lives in `data/` at the repo root.
+Installable package `jarvis` under `src/jarvis/`. Layers: `core`, `domain`, `infrastructure`, `agents` (factory, `session/`, `implementations/`), `tools` (`registry` + `builtins/`), `api`, `interfaces` (CLI + Gradio), `mcp` (server scripts). Runtime assets live in `data/`; seed/admin helpers in `scripts/`.
 
 ## Structure
 ```
 jarvis/                          # repository root
 ├── src/jarvis/                  # Python package
+│   ├── __main__.py              # uv run jarvis {chat|api|ui}
 │   ├── agents/
-│   ├── api/
+│   │   ├── factory.py
+│   │   ├── session/             # cache, history, orchestrator
+│   │   └── implementations/     # basic, memory, mcp_memory
+│   ├── api/                     # FastAPI app (app.py)
 │   ├── core/
 │   ├── domain/
 │   ├── infrastructure/
-│   ├── interfaces/
+│   ├── interfaces/              # CLI + Gradio
 │   ├── tools/
-│   └── mcp/
+│   │   ├── registry.py
+│   │   └── builtins/
+│   └── mcp/servers/             # MCP server scripts
 ├── data/
 │   ├── users.db
 │   ├── google/                  # OAuth credentials per user
+│   ├── mcp/server_config.json
 │   ├── firebase_project_secret_private_key.json  # (local, often gitignored)
 │   └── docs/
-├── scripts/users/               # CSV + notebook to seed users into data/users.db
+├── scripts/users/               # CSV + notebook to seed data/users.db
 ├── examples/                    # experimental scripts/notebooks
 ├── tests/
-├── main.py                      # CLI entry
-├── app.py                       # Gradio entry (Hugging Face)
+├── app.py                       # Gradio shim for Hugging Face Spaces
 └── pyproject.toml
 ```
 
