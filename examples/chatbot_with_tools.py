@@ -7,7 +7,7 @@ from typing import Annotated
 from typing_extensions import TypedDict
 import json
 
-from jarvis.tools.calc import calculate_tool
+from jarvis.tools.builtins.calc import calculate_tool
 
 llm = ChatOllama(model="mistral")
 tools = [calculate_tool]

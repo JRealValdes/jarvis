@@ -7,7 +7,7 @@ from langchain.schema import AIMessage
 from typing import Annotated
 from typing_extensions import TypedDict
 
-from jarvis.tools.calc import calculate_tool
+from jarvis.tools.builtins.calc import calculate_tool
 
 llm = ChatOllama(model="mistral")
 tools = [calculate_tool]

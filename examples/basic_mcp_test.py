@@ -2,8 +2,8 @@ from typing import Annotated
 from typing_extensions import TypedDict
 from jarvis.core.enums import ModelEnum
 from langchain_openai import ChatOpenAI
-from jarvis.tools.calc import calculate_tool
-from jarvis.tools.speech_to_text import speech_to_text_tool
+from jarvis.tools.builtins.calc import calculate_tool
+from jarvis.tools.builtins.speech_to_text import speech_to_text_tool
 from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.graph import StateGraph
 from langgraph.checkpoint.memory import MemorySaver

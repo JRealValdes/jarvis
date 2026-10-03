@@ -5,7 +5,7 @@ import gradio as gr
 from jarvis.agents.session import ask_jarvis, reset_cache
 from jarvis.core.config import DEFAULT_MODEL
 from jarvis.core.enums import ModelEnum
-from jarvis.tools.speech_to_text import speech_to_text_tool
+from jarvis.tools.builtins.speech_to_text import speech_to_text_tool
 
 model_options = list(ModelEnum.__members__.keys())
 model_used = DEFAULT_MODEL

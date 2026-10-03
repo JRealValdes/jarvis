@@ -20,7 +20,7 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
-from jarvis.tools.tools_registry import local_tools
+from jarvis.tools import local_tools
 
 
 class State(TypedDict):
