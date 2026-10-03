@@ -61,7 +61,7 @@ OPENAI_API_KEY=sk-...
 HF_TOKEN_INFERENCE=hf_...
 FERNET_KEY=...
 ```
-3. Define users if you want to stablish your own users database. Create a database/users/secret_users_info.csv file. You can find an example at database/users/example_users_info.csv. Use database/users/manage_users.ipynb to upload the data into a users database.
+3. Define users if you want to establish your own users database. Create a `scripts/users/secret_users_info.csv` file. You can find an example at `scripts/users/example_users_info.csv`. Use `scripts/users/manage_users.ipynb` to load data into `data/users.db`.
 4. Google Calendar: place OAuth files under `data/google/<username>/<account>/` (see `data/google/example_user/`). Run `examples/google_api_demo.ipynb` for the interactive flow.
 5. Copy your Firebase credentials to `data/firebase_project_secret_private_key.json` (gitignored if the filename contains `secret`).
 
@@ -93,7 +93,7 @@ jarvis/                          # repository root
 │   ├── google/                  # OAuth credentials per user
 │   ├── firebase_project_secret_private_key.json  # (local, often gitignored)
 │   └── docs/
-├── database/users/              # CSV + notebook to seed users
+├── scripts/users/               # CSV + notebook to seed users into data/users.db
 ├── examples/                    # experimental scripts/notebooks
 ├── tests/
 ├── main.py                      # CLI entry
