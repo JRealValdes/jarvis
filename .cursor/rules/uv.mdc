@@ -1,11 +1,11 @@
 ---
-description: Use uv for Python env, dependencies, and all project commands
+description: Jarvis — use uv for Python env, dependencies, and all project commands
 alwaysApply: true
 ---
 
-# uv (Python toolchain)
+# uv (Python toolchain, Jarvis)
 
-This project is managed with [uv](https://docs.astral.sh/uv/). Use uv for installs, dependency changes, and running Python — not raw `pip`, `poetry`, or manual `venv` activation unless documenting an explicit fallback.
+This project confirms the global uv default and spells out Jarvis-specific commands. Use uv for installs, dependency changes, and running Python — not raw `pip`, `poetry`, or manual `venv` activation unless documenting an explicit fallback.
 
 ## Setup and sync
 
@@ -23,7 +23,8 @@ Prefix scripts, tests, and modules with `uv run` so they use the project environ
 uv run pytest
 uv run main.py
 uv run app.py
-uv run -m api.main
+uv run -m jarvis.api
+# alternatives: uv run jarvis | uv run jarvis-api
 ```
 
 Do not suggest `python`, `pytest`, or `pip install -e .` as the default workflow when `uv run` applies.

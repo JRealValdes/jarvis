@@ -1,11 +1,11 @@
 ---
-description: Use English for all project text, including user-facing copy
+description: Jarvis — English for all project text, including user-facing copy
 alwaysApply: true
 ---
 
-# Language conventions
+# Language conventions (Jarvis)
 
-Write **everything** in English from now on:
+This project overrides the global language default: write **everything** in English.
 
 - Source code (identifiers, comments, docstrings)
 - API response bodies and `detail` / error messages returned to clients
@@ -38,4 +38,4 @@ gr.Textbox(label="Tu mensaje")
 gr.Textbox(label="Your message")
 ```
 
-Existing Spanish strings may remain until touched; when editing a surface, prefer switching that surface to English rather than mixing languages.
+Existing Spanish strings may remain until a dedicated sweep or until that surface is edited; when editing, prefer English rather than mixing languages.
