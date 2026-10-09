@@ -8,7 +8,7 @@ class AdminService:
 
     async def reset_global_memory(self) -> dict:
         """
-        Clear all agent and session caches and close the MCP tool session.
+        Clear agent caches, delete persisted checkpoints, and close MCP.
 
         Returns:
             Dict ``{status, message}``.

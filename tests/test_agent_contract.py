@@ -1,13 +1,18 @@
 """Agent protocol, MCP session lifecycle, and factory guards (no network)."""
 
 import asyncio
+import sys
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from jarvis.agents.factory import build_agent
-from jarvis.agents.mcp_session import McpToolSession, _resolve_mcp_server_config
+from jarvis.agents.mcp_session import (
+    McpToolSession,
+    _resolve_mcp_server_config,
+    _with_serialized_calls,
+)
 from jarvis.agents.session import areset_cache, ask_jarvis, reset_cache
 from jarvis.agents.session.cache import get_agents_cache
 from jarvis.core.enums import ModelEnum
@@ -47,9 +52,51 @@ def test_resolve_mcp_server_config_makes_script_absolute():
         {"command": "python", "args": ["servers/math_server.py", "--flag"]}
     )
     script = resolved["args"][0]
+    assert resolved["command"] == sys.executable
     assert Path(script).is_absolute()
     assert script.endswith("math_server.py")
     assert resolved["args"][1] == "--flag"
+
+
+def test_resolve_mcp_server_config_keeps_explicit_interpreter(tmp_path: Path):
+    custom = str(tmp_path / "python.exe")
+    resolved = _resolve_mcp_server_config({"command": custom, "args": []})
+    assert resolved["command"] == custom
+
+
+def test_mcp_tool_calls_on_one_server_do_not_overlap():
+    order: list[str] = []
+    release = asyncio.Event()
+
+    async def slow(*_args: object, **_kwargs: object) -> str:
+        order.append("start")
+        if len(order) == 1:
+            await release.wait()
+        order.append("end")
+        return "ok"
+
+    class _Tool:
+        def __init__(self) -> None:
+            self.coroutine = slow
+
+        def model_copy(self, *, update: dict) -> "_Tool":
+            clone = _Tool()
+            clone.coroutine = update["coroutine"]
+            return clone
+
+    wrapped = _with_serialized_calls(_Tool(), asyncio.Lock())
+
+    async def _run() -> None:
+        first = asyncio.create_task(wrapped.coroutine())
+        await asyncio.sleep(0)
+        second = asyncio.create_task(wrapped.coroutine())
+        await asyncio.sleep(0)
+        assert order == ["start"]
+        release.set()
+        await asyncio.gather(first, second)
+
+    asyncio.run(_run())
+    assert order == ["start", "end", "start", "end"]
 
 
 def test_areset_cache_closes_mcp_and_agents():

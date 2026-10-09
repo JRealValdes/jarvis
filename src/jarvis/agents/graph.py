@@ -4,7 +4,6 @@ from typing import Annotated, Any
 
 from typing_extensions import TypedDict
 
-from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
@@ -21,22 +20,19 @@ def compile_tool_agent(
     llm: Any,
     tools: list,
     *,
-    checkpointer: MemorySaver | None = None,
-) -> tuple[Any, MemorySaver]:
+    checkpointer: Any,
+) -> tuple[Any, Any]:
     """
     Compile the chatbot ↔ tools graph used by Jarvis agents.
 
     Args:
         llm: Chat model that supports ``bind_tools``.
         tools: Tools available to the model.
-        checkpointer: Thread store. A new ``MemorySaver`` is created when omitted.
+        checkpointer: Thread store. Jarvis uses a SQLite saver per model.
 
     Returns:
         Tuple of (compiled graph, checkpointer).
     """
-    if checkpointer is None:
-        checkpointer = MemorySaver()
-
     graph_builder = StateGraph(AgentState)
     llm_with_tools = llm.bind_tools(tools)
 

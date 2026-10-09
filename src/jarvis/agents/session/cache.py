@@ -2,6 +2,7 @@
 
 import asyncio
 
+from jarvis.agents.checkpointer import clear_all_checkpoints, delete_persisted_thread
 from jarvis.agents.mcp_session import get_mcp_tool_session
 from jarvis.agents.protocol import JarvisAgent
 from jarvis.core.config import DEFAULT_MODEL
@@ -56,7 +57,7 @@ def check_individual_session_cache_exists(
 
 def reset_session(thread_id: str, model: ModelEnum = DEFAULT_MODEL) -> None:
     """
-    Remove the cached session and agent memory thread if applicable.
+    Remove the cached session and the persisted checkpoint thread.
 
     Args:
         thread_id: Thread to clear.
@@ -67,22 +68,25 @@ def reset_session(thread_id: str, model: ModelEnum = DEFAULT_MODEL) -> None:
     """
     session_key = (model, thread_id)
     agent = _agents_cache.get(model)
-    if agent and hasattr(agent, "memory") and agent.memory:
+    if agent is not None and agent.memory is not None:
         agent.memory.delete_thread(thread_id)
+    else:
+        delete_persisted_thread(model, thread_id)
     _sessions_cache.pop(session_key, None)
 
 
 def _drop_cached_agents() -> None:
-    """Call ``cleanup`` on each cached agent, then drop agents and sessions."""
+    """Close cached agents, drop sessions, and delete checkpoint files."""
     for agent in _agents_cache.values():
         agent.cleanup()
     _agents_cache.clear()
     _sessions_cache.clear()
+    clear_all_checkpoints()
 
 
 def reset_cache() -> None:
     """
-    Clear agent and session caches.
+    Clear agent and session caches and delete persisted checkpoints.
 
     Closes the MCP tool session when it is connected and this thread is not
     already inside a running event loop. On a running loop, use
@@ -110,7 +114,7 @@ def reset_cache() -> None:
 
 async def areset_cache() -> None:
     """
-    Clear agent and session caches and close the MCP tool session.
+    Clear agent and session caches, delete persisted checkpoints, and close MCP.
 
     Returns:
         None. Safe when MCP was never connected.

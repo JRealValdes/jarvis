@@ -2,9 +2,14 @@
 
 from typing import Any, Protocol
 
-from langgraph.checkpoint.memory import MemorySaver
-
 from jarvis.core.enums import ModelEnum
+
+
+class ConversationMemory(Protocol):
+    """Checkpointer surface the session layer uses to drop a thread."""
+
+    def delete_thread(self, thread_id: str) -> None:
+        """Delete every stored checkpoint for ``thread_id``."""
 
 
 class JarvisAgent(Protocol):
@@ -20,7 +25,7 @@ class JarvisAgent(Protocol):
 
     model_enum: ModelEnum
     graph: Any
-    memory: MemorySaver | None
+    memory: ConversationMemory | None
     tools: list
 
     def invoke(self, **kwargs: Any) -> dict:

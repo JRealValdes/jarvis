@@ -7,13 +7,19 @@ when the agent cache is reset.
 Tool coroutines are bound to the event loop that opened the session. Callers
 on that loop must use ``ainvoke`` / ``aask_jarvis``. Do not wrap each turn in
 ``asyncio.run``: that closes the loop and drops the stdio processes.
+
+Tools from one server share a lock, so concurrent turns wait instead of
+writing to the same stdio session at once. A bare ``python`` command in the
+config is replaced with the interpreter that is running Jarvis.
 """
 
 import asyncio
 import json
 import logging
 import os
+import sys
 from contextlib import AsyncExitStack
+from typing import Any
 
 from langchain_mcp_adapters.tools import load_mcp_tools
 from mcp import ClientSession, StdioServerParameters
@@ -23,18 +29,27 @@ from jarvis.core.paths import MCP_DIR, MCP_SERVER_CONFIG_PATH
 
 logger = logging.getLogger(__name__)
 
+_PYTHON_COMMANDS = frozenset({"python", "python3", "py", "python.exe", "python3.exe"})
+
 
 def _resolve_mcp_server_config(server_config: dict) -> dict:
     """
-    Normalize MCP server config paths relative to ``MCP_DIR``.
+    Normalize an MCP server entry for this process.
+
+    Relative ``.py`` arguments are resolved under ``MCP_DIR``. A bare Python
+    command (``python``, ``python3``, ``py``) is replaced with the interpreter
+    that is running Jarvis, so the server sees the project environment.
 
     Args:
         server_config: Raw entry from ``server_config.json``.
 
     Returns:
-        Config with absolute paths in ``args`` when they reference local scripts.
+        Config with an absolute interpreter and absolute script paths.
     """
     resolved = dict(server_config)
+    command = resolved.get("command")
+    if isinstance(command, str) and command.lower() in _PYTHON_COMMANDS:
+        resolved["command"] = sys.executable
     args = list(resolved.get("args", []))
     normalized: list[str] = []
     for arg in args:
@@ -44,6 +59,32 @@ def _resolve_mcp_server_config(server_config: dict) -> dict:
             normalized.append(arg)
     resolved["args"] = normalized
     return resolved
+
+
+def _with_serialized_calls(tool: Any, lock: asyncio.Lock) -> Any:
+    """
+    Return ``tool`` with its coroutine guarded by ``lock``.
+
+    Args:
+        tool: LangChain tool loaded from an MCP session.
+        lock: Lock shared by every tool on that stdio server.
+
+    Returns:
+        Tool whose ``coroutine`` waits for ``lock`` before calling the server.
+        The original tool when it has no coroutine.
+    """
+    coroutine = getattr(tool, "coroutine", None)
+    if coroutine is None:
+        return tool
+
+    async def _serialized(*args: Any, **kwargs: Any) -> Any:
+        async with lock:
+            return await coroutine(*args, **kwargs)
+
+    if hasattr(tool, "model_copy"):
+        return tool.model_copy(update={"coroutine": _serialized})
+    tool.coroutine = _serialized
+    return tool
 
 
 class McpToolSession:
@@ -57,6 +98,7 @@ class McpToolSession:
     def __init__(self) -> None:
         self._exit_stack: AsyncExitStack | None = None
         self._tools: list = []
+        self._call_locks: list[asyncio.Lock] = []
         self._connected = False
         self._lock = asyncio.Lock()
 
@@ -90,6 +132,7 @@ class McpToolSession:
             try:
                 await self._exit_stack.__aenter__()
                 self._tools = []
+                self._call_locks = []
                 with open(MCP_SERVER_CONFIG_PATH, "r", encoding="utf-8") as file:
                     data = json.load(file)
                 servers = data.get("mcpServers", {})
@@ -101,6 +144,7 @@ class McpToolSession:
                 await self._exit_stack.aclose()
                 self._exit_stack = None
                 self._tools = []
+                self._call_locks = []
                 self._connected = False
                 raise
 
@@ -115,12 +159,14 @@ class McpToolSession:
         if self._exit_stack is None:
             raise RuntimeError("MCP exit stack is not open.")
         logger.info("Connecting MCP server %s", server_name)
+        call_lock = asyncio.Lock()
+        self._call_locks.append(call_lock)
         server_params = StdioServerParameters(**_resolve_mcp_server_config(server_config))
         read, write = await self._exit_stack.enter_async_context(stdio_client(server_params))
         session = await self._exit_stack.enter_async_context(ClientSession(read, write))
         await session.initialize()
         mcp_tools = await load_mcp_tools(session)
-        self._tools.extend(mcp_tools)
+        self._tools.extend(_with_serialized_calls(tool, call_lock) for tool in mcp_tools)
 
     async def aclose(self) -> None:
         """
@@ -130,10 +176,14 @@ class McpToolSession:
             None. Safe to call when the session was never opened.
         """
         async with self._lock:
+            for call_lock in list(self._call_locks):
+                async with call_lock:
+                    pass
             if self._exit_stack is not None:
                 await self._exit_stack.aclose()
             self._exit_stack = None
             self._tools = []
+            self._call_locks = []
             self._connected = False
 
 
