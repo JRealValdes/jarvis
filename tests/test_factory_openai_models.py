@@ -35,5 +35,7 @@ def test_build_agent_returns_memory_agent_for_gpt_4o_mini(
 
     result = build_agent(ModelEnum.GPT_4O_MINI)
 
-    mock_memory_agent.assert_called_once_with(ModelEnum.GPT_4O_MINI)
+    mock_memory_agent.assert_called_once()
+    assert mock_memory_agent.call_args.args[0] == ModelEnum.GPT_4O_MINI
+    assert "tools" in mock_memory_agent.call_args.kwargs
     assert result is instance

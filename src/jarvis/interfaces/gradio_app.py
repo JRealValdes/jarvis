@@ -2,7 +2,7 @@
 
 import gradio as gr
 
-from jarvis.agents.session import ask_jarvis, reset_cache
+from jarvis.agents.session import aask_jarvis, areset_cache
 from jarvis.core.config import DEFAULT_MODEL
 from jarvis.core.enums import ModelEnum
 from jarvis.tools.builtins.speech_to_text import speech_to_text_tool
@@ -12,7 +12,9 @@ model_used = DEFAULT_MODEL
 thread_id = "1"
 
 
-def respond(message: str, chat_history: list, model_used: ModelEnum | str) -> tuple[list, str]:
+async def respond(
+    message: str, chat_history: list, model_used: ModelEnum | str
+) -> tuple[list, str]:
     """
     Send a text message to Jarvis and update the Gradio history.
 
@@ -27,7 +29,7 @@ def respond(message: str, chat_history: list, model_used: ModelEnum | str) -> tu
     if isinstance(model_used, str):
         model_used = ModelEnum[model_used]
 
-    response = ask_jarvis(message, model_used, thread_id=thread_id)
+    response = await aask_jarvis(message, model_used, thread_id=thread_id)
     chat_history = chat_history or []
     chat_history.append({"role": "user", "content": message})
 
@@ -37,7 +39,7 @@ def respond(message: str, chat_history: list, model_used: ModelEnum | str) -> tu
     return chat_history, ""
 
 
-def respond_audio(
+async def respond_audio(
     audio_file: str | None, chat_history: list, model_name: ModelEnum | str
 ) -> tuple[list, str]:
     """
@@ -59,17 +61,17 @@ def respond_audio(
     except Exception as e:
         return chat_history, f"Error transcribing audio: {e}"
 
-    return respond(text, chat_history, model_name)
+    return await respond(text, chat_history, model_name)
 
 
-def reset_chat() -> tuple[str, list]:
+async def reset_chat() -> tuple[str, list]:
     """
-    Reset the global session cache and clear the chat.
+    Reset the global session cache, close MCP, and clear the chat.
 
     Returns:
         Tuple of (status message, empty history list).
     """
-    reset_cache()
+    await areset_cache()
     return "Chat memory reset.", []
 
 

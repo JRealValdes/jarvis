@@ -19,7 +19,7 @@ async def reset_memory_global(user: dict = Depends(require_admin)) -> dict:
     Returns:
         Dict ``{status, message}``.
     """
-    return admin_service.reset_global_memory()
+    return await admin_service.reset_global_memory()
 
 
 @router.get("/admin/cache-status")

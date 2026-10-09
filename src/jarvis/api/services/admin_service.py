@@ -1,19 +1,19 @@
 """Administrative use cases (global cache)."""
 
-from jarvis.agents.session import get_cache_status, reset_cache
+from jarvis.agents.session import areset_cache, get_cache_status
 
 
 class AdminService:
     """Operations restricted to admin users."""
 
-    def reset_global_memory(self) -> dict:
+    async def reset_global_memory(self) -> dict:
         """
-        Clear all agent and session caches.
+        Clear all agent and session caches and close the MCP tool session.
 
         Returns:
             Dict ``{status, message}``.
         """
-        reset_cache()
+        await areset_cache()
         return {"status": "ok", "message": "Global memory reset"}
 
     def get_cache_status(self) -> dict:

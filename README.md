@@ -91,7 +91,7 @@ Gitignores cover `.env`, `data/users.db`, and `*secret*` files. Do not commit pe
 
 ## Architecture
 
-Installable package `jarvis` under `src/jarvis/`. Layers: `core`, `domain`, `infrastructure`, `agents` (factory, `session/`, `implementations/`), `tools` (`registry` + `builtins/`), `api`, `interfaces` (CLI + Gradio), `mcp` (server scripts). Runtime assets live in `data/`; seed/admin helpers in `scripts/`; sample media/docs for future STT/RAG under `examples/fixtures/`.
+Installable package `jarvis` under `src/jarvis/`. Layers: `core`, `domain`, `infrastructure`, `agents` (protocol, factory, shared graph, process-wide MCP tool session, `session/`, `implementations/`), `tools` (`registry` + `builtins/`), `api`, `interfaces` (CLI + Gradio), `mcp` (server scripts). Runtime assets live in `data/`; seed/admin helpers in `scripts/`; sample media/docs for future STT/RAG under `examples/fixtures/`.
 
 ## Structure
 ```
@@ -101,7 +101,10 @@ jarvis/                          # repository root
 │   ├── agents/
 │   │   ├── factory.py
 │   │   ├── session/             # cache, history, orchestrator
-│   │   └── implementations/     # basic, memory, mcp_memory
+│   │   ├── protocol.py          # JarvisAgent
+│   │   ├── graph.py             # shared tool-calling graph
+│   │   ├── mcp_session.py       # process-wide MCP tools
+│   │   └── implementations/     # memory agent
 │   ├── api/                     # FastAPI app (app.py)
 │   ├── core/
 │   ├── domain/

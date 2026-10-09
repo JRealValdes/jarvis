@@ -1,9 +1,11 @@
 """Smoke tests: core modules import and public session API is callable."""
 
 import inspect
+from unittest.mock import MagicMock, patch
 
 from jarvis.agents.factory import build_agent, models_with_memory
 from jarvis.agents.session import (
+    aask_jarvis,
     ask_jarvis,
     check_individual_session_cache_exists,
     get_cache_status,
@@ -16,7 +18,7 @@ from jarvis.core.enums import IdentificationFailedProtocolEnum, ModelEnum
 def test_model_enum_members():
     assert ModelEnum.GPT_4O_MINI.value == "gpt_4o_mini"
     assert ModelEnum.GPT_3_5.value == "chatgpt_3_5"
-    assert len(ModelEnum) >= 3
+    assert len(ModelEnum) == 2
 
 
 def test_identification_failed_protocol_enum():
@@ -32,14 +34,23 @@ def test_models_with_memory_includes_default():
     assert DEFAULT_MODEL in models_with_memory
 
 
-def test_build_agent_factory_returns_object():
-    agent = build_agent(ModelEnum.ZEPHYR)
-    assert agent is not None
-    assert hasattr(agent, "invoke")
+@patch("jarvis.agents.implementations.memory.ChatOpenAI")
+def test_build_agent_factory_returns_object(mock_chat_openai: MagicMock):
+    fake_llm = MagicMock()
+    fake_llm.bind_tools.return_value = fake_llm
+    mock_chat_openai.return_value = fake_llm
+
+    agent = build_agent(ModelEnum.GPT_4O_MINI)
+
+    assert callable(agent.invoke)
+    assert callable(agent.ainvoke)
+    assert callable(agent.cleanup)
+    assert agent.memory is not None
 
 
 def test_ask_jarvis_is_callable():
     assert callable(ask_jarvis)
+    assert callable(aask_jarvis)
     sig = inspect.signature(ask_jarvis)
     assert "prompt" in sig.parameters
     assert "thread_id" in sig.parameters

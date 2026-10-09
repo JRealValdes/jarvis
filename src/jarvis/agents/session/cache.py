@@ -1,10 +1,14 @@
 """In-memory caches for agents and chat sessions."""
 
+import asyncio
+
+from jarvis.agents.mcp_session import get_mcp_tool_session
+from jarvis.agents.protocol import JarvisAgent
 from jarvis.core.config import DEFAULT_MODEL
 from jarvis.core.enums import ModelEnum
 
 _sessions_cache: dict[tuple[ModelEnum, str], object] = {}
-_agents_cache: dict[ModelEnum, object] = {}
+_agents_cache: dict[ModelEnum, JarvisAgent] = {}
 
 
 def get_sessions_cache() -> dict[tuple[ModelEnum, str], object]:
@@ -12,7 +16,7 @@ def get_sessions_cache() -> dict[tuple[ModelEnum, str], object]:
     return _sessions_cache
 
 
-def get_agents_cache() -> dict[ModelEnum, object]:
+def get_agents_cache() -> dict[ModelEnum, JarvisAgent]:
     """Return the global agents cache (mutable)."""
     return _agents_cache
 
@@ -68,12 +72,48 @@ def reset_session(thread_id: str, model: ModelEnum = DEFAULT_MODEL) -> None:
     _sessions_cache.pop(session_key, None)
 
 
+def _drop_cached_agents() -> None:
+    """Call ``cleanup`` on each cached agent, then drop agents and sessions."""
+    for agent in _agents_cache.values():
+        agent.cleanup()
+    _agents_cache.clear()
+    _sessions_cache.clear()
+
+
 def reset_cache() -> None:
     """
-    Clear agent and session caches completely.
+    Clear agent and session caches.
+
+    Closes the MCP tool session when it is connected and this thread is not
+    already inside a running event loop. On a running loop, use
+    ``areset_cache`` so the session is closed on the loop that opened it.
 
     Returns:
         None.
+
+    Raises:
+        RuntimeError: If the MCP session is open on the current running loop.
     """
-    _agents_cache.clear()
-    _sessions_cache.clear()
+    _drop_cached_agents()
+    session = get_mcp_tool_session()
+    if not session.is_connected:
+        return
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        asyncio.run(session.aclose())
+        return
+    raise RuntimeError(
+        "MCP session is open on a running event loop. Use areset_cache()."
+    )
+
+
+async def areset_cache() -> None:
+    """
+    Clear agent and session caches and close the MCP tool session.
+
+    Returns:
+        None. Safe when MCP was never connected.
+    """
+    _drop_cached_agents()
+    await get_mcp_tool_session().aclose()

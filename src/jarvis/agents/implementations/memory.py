@@ -1,88 +1,47 @@
 """LangGraph agent with memory (MemorySaver) and tools for OpenAI chat models."""
 
-from typing import Annotated
-
-from typing_extensions import TypedDict
+from typing import Any
 
 from langchain_openai import ChatOpenAI
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph import StateGraph
-from langgraph.graph.message import add_messages
-from langgraph.prebuilt import ToolNode, tools_condition
 
+from jarvis.agents.graph import compile_tool_agent
 from jarvis.core.enums import ModelEnum
 from jarvis.core.openai_models import resolve_openai_chat_model_id
 from jarvis.tools import local_tools
 
 
-class State(TypedDict):
-    """Graph state: accumulated messages and real_name for tools."""
-
-    messages: Annotated[list, add_messages]
-    real_name: str
-
-
 class JarvisMemoryAgent:
     """
-    Agent with chatbot ↔ tools loop and in-memory checkpointer.
+    Agent with a chatbot ↔ tools loop and an in-memory checkpointer.
+
+    MCP tools, when enabled, are passed in by the factory. This class does not
+    open or close the process-wide MCP session.
 
     Attributes:
         model_enum: OpenAI-backed ModelEnum (e.g. GPT_4O_MINI, GPT_3_5).
         graph: Compiled graph.
         memory: MemorySaver for per-thread_id threads.
-        tools: Registered local tools.
+        tools: Tools bound into the graph.
     """
 
-    def __init__(self, model_enum: ModelEnum) -> None:
+    def __init__(self, model_enum: ModelEnum, tools: list | None = None) -> None:
         """
         Args:
             model_enum: OpenAI chat ModelEnum member.
+            tools: Tools to bind. Defaults to the local tool registry.
 
         Raises:
             ValueError: If the model is not an OpenAI chat model.
         """
         self.model_enum = model_enum
-        self.graph, self.memory, self.tools = self._build_agent(model_enum)
-
-    def _build_agent(
-        self, model_enum: ModelEnum
-    ) -> tuple[object, MemorySaver, list]:
-        """
-        Compile the StateGraph with chatbot and tools nodes.
-
-        Args:
-            model_enum: LLM model.
-
-        Returns:
-            Tuple (compiled graph, memory saver, tool list).
-
-        Raises:
-            ValueError: If model_enum is not an OpenAI chat model.
-        """
-        tools = local_tools
+        self.tools = list(local_tools if tools is None else tools)
         llm = ChatOpenAI(
             model=resolve_openai_chat_model_id(model_enum),
             temperature=0,
         )
+        self.graph, self.memory = compile_tool_agent(llm, self.tools)
 
-        graph_builder = StateGraph(State)
-        llm_with_tools = llm.bind_tools(tools)
-
-        def chatbot(state: State) -> dict:
-            return {"messages": [llm_with_tools.invoke(state["messages"])]}
-
-        graph_builder.add_node("chatbot", chatbot)
-        tool_node = ToolNode(tools=tools)
-        graph_builder.add_node("tools", tool_node)
-        graph_builder.add_conditional_edges("chatbot", tools_condition)
-        graph_builder.add_edge("tools", "chatbot")
-        graph_builder.set_entry_point("chatbot")
-
-        memory = MemorySaver()
-        graph = graph_builder.compile(checkpointer=memory)
-        return graph, memory, tools
-
-    def invoke(self, **kwargs) -> dict:
+    def invoke(self, **kwargs: Any) -> dict:
         """
         Invoke the graph (requires config with thread_id when memory is enabled).
 
@@ -94,6 +53,18 @@ class JarvisMemoryAgent:
         """
         return self.graph.invoke(**kwargs)
 
+    async def ainvoke(self, **kwargs: Any) -> dict:
+        """
+        Invoke the graph on the caller's event loop.
+
+        Args:
+            **kwargs: ``input``, ``config``, etc.
+
+        Returns:
+            Final graph state.
+        """
+        return await self.graph.ainvoke(**kwargs)
+
     def cleanup(self) -> None:
-        """Release agent resources (no-op)."""
-        pass
+        """Release agent resources. Does not close the shared MCP session."""
+        return None

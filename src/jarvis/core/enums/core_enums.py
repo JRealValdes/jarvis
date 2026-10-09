@@ -8,8 +8,6 @@ class ModelEnum(Enum):
 
     GPT_3_5 = "chatgpt_3_5"
     GPT_4O_MINI = "gpt_4o_mini"
-    ZEPHYR = "zephyr"
-    MISTRAL = "mistral"
 
 
 class IdentificationFailedProtocolEnum(Enum):

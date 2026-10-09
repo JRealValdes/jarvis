@@ -24,4 +24,4 @@ JWT_EXP_DELTA_SECONDS: int = 3600
 """JWT lifetime in seconds (one hour by default)."""
 
 USE_MCP: bool = False
-"""If True, OpenAI chat agents use JarvisMcpMemoryAgent instead of JarvisMemoryAgent."""
+"""If True, OpenAI agents also receive tools from the process-wide MCP session."""

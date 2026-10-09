@@ -25,7 +25,7 @@ async def ask_json(
     Returns:
         Dict with key ``response`` (list of strings).
     """
-    return chat_service.ask(input_data, user)
+    return await chat_service.ask(input_data, user)
 
 
 @router.post("/reset-session")

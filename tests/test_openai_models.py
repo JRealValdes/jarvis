@@ -1,5 +1,7 @@
 """Unit tests for OpenAI model id mapping (no network)."""
 
+from typing import cast
+
 import pytest
 
 from jarvis.core.enums import ModelEnum
@@ -17,12 +19,11 @@ def test_resolve_gpt_3_5_id():
     assert resolve_openai_chat_model_id(ModelEnum.GPT_3_5) == "gpt-3.5-turbo"
 
 
-def test_resolve_rejects_non_openai_models():
+def test_resolve_rejects_unknown_model():
     with pytest.raises(ValueError, match="Unsupported OpenAI chat model"):
-        resolve_openai_chat_model_id(ModelEnum.ZEPHYR)
+        resolve_openai_chat_model_id(cast(ModelEnum, "not-a-model"))
 
 
 def test_is_openai_chat_model():
     assert is_openai_chat_model(ModelEnum.GPT_4O_MINI) is True
     assert is_openai_chat_model(ModelEnum.GPT_3_5) is True
-    assert is_openai_chat_model(ModelEnum.MISTRAL) is False

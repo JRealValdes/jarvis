@@ -1,7 +1,7 @@
 """Chat, session, and history use cases."""
 
 from jarvis.agents.session import (
-    ask_jarvis,
+    aask_jarvis,
     check_individual_session_cache_exists,
     get_message_history,
     reset_session,
@@ -14,9 +14,9 @@ from jarvis.core.enums import ModelEnum
 class ChatService:
     """Orchestrates Jarvis conversations via the API."""
 
-    def ask(self, input_data: AskInput, user: dict) -> dict:
+    async def ask(self, input_data: AskInput, user: dict) -> dict:
         """
-        Send a message to Jarvis.
+        Send a message to Jarvis on the API event loop.
 
         Args:
             input_data: Message, model, and optional thread_id.
@@ -27,7 +27,9 @@ class ChatService:
         """
         model_enum = ModelEnum[input_data.model_name]
         thread_id = input_data.thread_id or user["real_name"]
-        answer = ask_jarvis(input_data.message, model_enum, thread_id, user_info=user)
+        answer = await aask_jarvis(
+            input_data.message, model_enum, thread_id, user_info=user
+        )
         return {"response": answer}
 
     def reset_session_for_user(
