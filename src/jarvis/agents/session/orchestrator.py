@@ -7,7 +7,11 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from jarvis.agents.factory import build_agent
 from jarvis.agents.mcp_session import get_mcp_tool_session
 from jarvis.agents.protocol import JarvisAgent
-from jarvis.agents.session.cache import get_agents_cache, get_sessions_cache
+from jarvis.agents.session.cache import (
+    get_agents_cache,
+    get_sessions_cache,
+    invalidate_agents_cache,
+)
 from jarvis.agents.session.history import parse_message_list
 from jarvis.core.config import DEFAULT_MODEL, IDENTIFICATION_FAILED_PROTOCOL, USE_MCP
 from jarvis.core.enums import ModelEnum
@@ -52,8 +56,16 @@ class JarvisSession:
         self.thread_id = thread_id
         self.valid_user = bool(user_info)
         self.user = user_info
-        self.agent = self._load_or_build_agent()
         self._chat_state = ChatState.NOT_INITIALIZED
+
+    @property
+    def agent(self) -> JarvisAgent:
+        """
+        Agent for this session's model.
+
+        Reloads from the global cache after MCP reconnect invalidates agents.
+        """
+        return self._load_or_build_agent()
 
     def _load_or_build_agent(self) -> JarvisAgent:
         """
@@ -319,6 +331,24 @@ def _session_for(
     return sessions_cache[session_key]
 
 
+async def _ensure_mcp_ready() -> None:
+    """
+    Connect or reconnect the process-wide MCP session when enabled.
+
+    Rebuilds cached agents after a reconnect so graphs bind the new tools.
+
+    Returns:
+        None.
+    """
+    if not USE_MCP:
+        return
+    session = get_mcp_tool_session()
+    was_broken = session.is_broken
+    await session.aensure_ready()
+    if was_broken:
+        invalidate_agents_cache()
+
+
 async def aask_jarvis(
     prompt: str,
     model: ModelEnum = DEFAULT_MODEL,
@@ -329,7 +359,8 @@ async def aask_jarvis(
     Async entry point to send a message to Jarvis.
 
     When MCP is enabled, connects the process-wide tool session first so the
-    graph is compiled against live tools and invoked on this event loop.
+    graph is compiled against live tools and invoked on this event loop. If a
+    previous turn marked the session broken, reconnects and rebuilds agents.
 
     Args:
         prompt: User message.
@@ -340,6 +371,5 @@ async def aask_jarvis(
     Returns:
         List of response text fragments for the user.
     """
-    if USE_MCP:
-        await get_mcp_tool_session().aconnect()
+    await _ensure_mcp_ready()
     return await _session_for(model, thread_id, user_info).aask(prompt)

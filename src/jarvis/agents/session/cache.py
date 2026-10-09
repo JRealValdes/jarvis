@@ -22,6 +22,21 @@ def get_agents_cache() -> dict[ModelEnum, JarvisAgent]:
     return _agents_cache
 
 
+def invalidate_agents_cache() -> None:
+    """
+    Close and drop cached agents so the next turn rebuilds them.
+
+    Keeps chat sessions and checkpoint files. Used when MCP reconnects and
+    the compiled graphs still hold tools from the dead stdio session.
+
+    Returns:
+        None.
+    """
+    for agent in _agents_cache.values():
+        agent.cleanup()
+    _agents_cache.clear()
+
+
 def get_cache_status() -> dict:
     """
     Summarize global agent and session cache state.

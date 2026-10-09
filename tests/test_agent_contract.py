@@ -10,6 +10,7 @@ import pytest
 from jarvis.agents.factory import build_agent
 from jarvis.agents.mcp_session import (
     McpToolSession,
+    _is_transport_failure,
     _resolve_mcp_server_config,
     _with_serialized_calls,
 )
@@ -96,7 +97,7 @@ def test_mcp_tool_calls_on_one_server_do_not_overlap():
             clone.coroutine = update["coroutine"]
             return clone
 
-    wrapped = _with_serialized_calls(_Tool(), asyncio.Lock())
+    wrapped = _with_serialized_calls(_Tool(), asyncio.Lock(), lambda _exc: None)
 
     async def _run() -> None:
         first = asyncio.create_task(wrapped.coroutine())
@@ -109,6 +110,75 @@ def test_mcp_tool_calls_on_one_server_do_not_overlap():
 
     asyncio.run(_run())
     assert order == ["start", "end", "start", "end"]
+
+
+def test_is_transport_failure_detects_connection_errors():
+    assert _is_transport_failure(ConnectionError("gone")) is True
+    assert _is_transport_failure(ValueError("bad args")) is False
+    assert _is_transport_failure(RuntimeError("ClosedResourceError: stream closed")) is True
+
+
+def test_tool_transport_failure_marks_session_broken():
+    session = McpToolSession()
+    seen: list[BaseException] = []
+
+    async def boom(*_args: object, **_kwargs: object) -> str:
+        raise ConnectionError("stdio closed")
+
+    class _Tool:
+        def __init__(self) -> None:
+            self.coroutine = boom
+
+        def model_copy(self, *, update: dict) -> "_Tool":
+            clone = _Tool()
+            clone.coroutine = update["coroutine"]
+            return clone
+
+    wrapped = _with_serialized_calls(
+        _Tool(),
+        asyncio.Lock(),
+        lambda exc: (seen.append(exc), session.mark_broken(exc)),
+    )
+
+    async def _run() -> None:
+        with pytest.raises(ConnectionError):
+            await wrapped.coroutine()
+
+    asyncio.run(_run())
+    assert session.is_broken is True
+    assert seen and isinstance(seen[0], ConnectionError)
+
+
+def test_aensure_ready_reconnects_when_broken():
+    session = McpToolSession()
+    session.mark_broken(ConnectionError("dead"))
+    session.areconnect = AsyncMock(return_value=["tool"])  # type: ignore[method-assign]
+
+    async def _run() -> None:
+        tools = await session.aensure_ready()
+        assert tools == ["tool"]
+
+    asyncio.run(_run())
+    session.areconnect.assert_awaited_once()
+
+
+def test_ensure_mcp_ready_invalidates_agents_after_broken_reconnect(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    from jarvis.agents.session import orchestrator
+
+    session = MagicMock()
+    session.is_broken = True
+    session.aensure_ready = AsyncMock(return_value=[])
+    invalidate = MagicMock()
+    monkeypatch.setattr(orchestrator, "USE_MCP", True)
+    monkeypatch.setattr(orchestrator, "get_mcp_tool_session", lambda: session)
+    monkeypatch.setattr(orchestrator, "invalidate_agents_cache", invalidate)
+
+    asyncio.run(orchestrator._ensure_mcp_ready())
+
+    session.aensure_ready.assert_awaited_once()
+    invalidate.assert_called_once()
 
 
 def test_areset_cache_closes_mcp_and_agents():
