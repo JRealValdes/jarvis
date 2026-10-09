@@ -72,7 +72,7 @@ Docstring convention in production code: module + **Args** / **Returns** / **Rai
 1. Copy `.env.example` to `.env` and fill in keys you use (OpenAI, HF, Fernet, JWT, optional Telegram/Firebase).
 2. Seed users into the local DB (see below).
 3. Google Calendar (optional): OAuth files under `data/google/<username>/<account>/` (see `data/google/example_user/`). Interactive flow: `examples/google_api_demo.ipynb`.
-4. MCP (optional): edit `data/mcp/server_config.json`; server scripts live under `src/jarvis/mcp/servers/`. A `command` of `python` is launched with the interpreter running Jarvis.
+4. MCP (optional): set `JARVIS_USE_MCP=1` in `.env`, edit `data/mcp/server_config.json`; server scripts live under `src/jarvis/mcp/servers/`. A `command` of `python` is launched with the interpreter running Jarvis.
 5. Public API tunnel (optional): set `EXPOSE_API_WITH_CLOUDFLARED` in code/env workflow only when you want cloudflared (default is off).
 
 ## Local runtime assets (not in git)
@@ -85,7 +85,7 @@ These live on each machine and are required (or optional) for a full local setup
 | Users database | `data/users.db` | Yes for identification / API login | Seed with `scripts/users/manage_users.ipynb` from CSV (`example_users_info.csv` / your `secret_users_info.csv`) |
 | Google OAuth | `data/google/<user>/<account>/` (`*secret*.json`) | Only for Calendar tools | Google Cloud OAuth client + `examples/google_api_demo.ipynb` |
 | Firebase private key | `data/firebase_project_secret_private_key.json` | Only if using Firebase URL share | Firebase console |
-| MCP config | `data/mcp/server_config.json` | Only if `USE_MCP` | Tracked example config is in repo; customize locally if needed |
+| MCP config | `data/mcp/server_config.json` | Only if `JARVIS_USE_MCP=1` | Tracked example config is in repo; customize locally if needed |
 | Conversation checkpoints | `data/checkpoints/{MODEL}.sqlite` | Created on first chat | Local SQLite; removed by a global memory reset |
 
 Gitignores cover `.env`, `data/users.db`, and `*secret*` files. Do not commit personal credentials.
