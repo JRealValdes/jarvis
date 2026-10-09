@@ -3,7 +3,7 @@
 import asyncio
 
 from jarvis.agents.mcp_session import get_mcp_tool_session
-from jarvis.agents.session import aask_jarvis, ask_jarvis
+from jarvis.agents.session import aask_jarvis
 from jarvis.core.config import DEFAULT_MODEL, USE_MCP
 
 model_used = DEFAULT_MODEL
@@ -40,28 +40,18 @@ def _print_replies(response: list[str]) -> None:
         print("Jarvis:", response_msg)
 
 
-def _sync_loop() -> None:
+async def _async_loop() -> None:
     """
-    Run the console chat without MCP.
+    Run the console chat on one event loop.
+
+    When MCP is enabled, opens the tool session for the whole conversation and
+    closes it on exit. Without MCP the loop still drives ``aask_jarvis``.
 
     Returns:
         None.
     """
-    while True:
-        question = input("User: ")
-        if _should_exit(question):
-            break
-        _print_replies(ask_jarvis(question, model_used, thread_id=thread_id))
-
-
-async def _async_loop() -> None:
-    """
-    Run the console chat on one event loop so the MCP session stays open.
-
-    Returns:
-        None. Closes the MCP session when the loop ends.
-    """
-    await get_mcp_tool_session().aconnect()
+    if USE_MCP:
+        await get_mcp_tool_session().aconnect()
     try:
         while True:
             question = await asyncio.to_thread(input, "User: ")
@@ -70,20 +60,15 @@ async def _async_loop() -> None:
             response = await aask_jarvis(question, model_used, thread_id=thread_id)
             _print_replies(response)
     finally:
-        await get_mcp_tool_session().aclose()
+        if USE_MCP:
+            await get_mcp_tool_session().aclose()
 
 
 def main() -> None:
     """
     Run console chat until exit/quit/salir or a farewell phrase with ``jarvis``.
 
-    When MCP is enabled, the whole loop shares one event loop with the stdio
-    session. Otherwise each turn uses the synchronous agent path.
-
     Returns:
         None.
     """
-    if USE_MCP:
-        asyncio.run(_async_loop())
-        return
-    _sync_loop()
+    asyncio.run(_async_loop())

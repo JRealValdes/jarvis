@@ -1,5 +1,7 @@
 """Chat session orchestration and LLM invocation."""
 
+import asyncio
+
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from jarvis.agents.factory import build_agent
@@ -260,7 +262,10 @@ def ask_jarvis(
     user_info: dict | None = None,
 ) -> list[str]:
     """
-    Main entry point to send a message to Jarvis.
+    Synchronous wrapper around ``aask_jarvis``.
+
+    Prefer ``aask_jarvis`` from CLI, API, and Gradio. This helper exists for
+    scripts that are not already on an event loop.
 
     Args:
         prompt: User message.
@@ -272,14 +277,23 @@ def ask_jarvis(
         List of response text fragments for the user.
 
     Raises:
-        RuntimeError: If ``USE_MCP`` is enabled. Use ``aask_jarvis`` instead.
+        RuntimeError: If ``USE_MCP`` is enabled (stdio needs a long-lived loop),
+            or if called from a running event loop.
     """
     if USE_MCP:
         raise RuntimeError(
-            "USE_MCP is enabled. Call aask_jarvis so MCP tools run on the "
-            "event loop that owns the stdio session."
+            "USE_MCP is enabled. Await aask_jarvis on the event loop that "
+            "owns the MCP stdio session."
         )
-    return _session_for(model, thread_id, user_info).ask(prompt)
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(
+            aask_jarvis(prompt, model=model, thread_id=thread_id, user_info=user_info)
+        )
+    raise RuntimeError(
+        "ask_jarvis cannot run inside an event loop. Await aask_jarvis instead."
+    )
 
 
 def _session_for(

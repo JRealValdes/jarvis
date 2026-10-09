@@ -40,6 +40,18 @@ def test_ask_jarvis_refuses_sync_call_when_mcp_enabled(
         ask_jarvis("hello")
 
 
+def test_ask_jarvis_refuses_call_inside_running_loop(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setattr("jarvis.agents.session.orchestrator.USE_MCP", False)
+
+    async def _inside_loop() -> None:
+        with pytest.raises(RuntimeError, match="event loop"):
+            ask_jarvis("hello")
+
+    asyncio.run(_inside_loop())
+
+
 def test_mcp_session_aclose_when_disconnected():
     session = McpToolSession()
     asyncio.run(session.aclose())

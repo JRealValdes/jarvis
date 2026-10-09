@@ -43,12 +43,13 @@ def test_build_agent_factory_returns_object(mock_chat_openai: MagicMock):
     assert agent.memory is not None
 
 
-def test_ask_jarvis_is_callable():
+def test_ask_and_aask_jarvis_are_callable():
     assert callable(ask_jarvis)
     assert callable(aask_jarvis)
-    sig = inspect.signature(ask_jarvis)
-    assert "prompt" in sig.parameters
-    assert "thread_id" in sig.parameters
+    for fn in (ask_jarvis, aask_jarvis):
+        sig = inspect.signature(fn)
+        assert "prompt" in sig.parameters
+        assert "thread_id" in sig.parameters
 
 
 def test_get_cache_status_empty_initially():
