@@ -3,7 +3,7 @@
 import inspect
 from unittest.mock import MagicMock, patch
 
-from jarvis.agents.factory import build_agent, models_with_memory
+from jarvis.agents.factory import build_agent
 from jarvis.agents.session import (
     aask_jarvis,
     ask_jarvis,
@@ -27,11 +27,6 @@ def test_identification_failed_protocol_enum():
 
 def test_default_model_is_gpt_35():
     assert DEFAULT_MODEL == ModelEnum.GPT_4O_MINI
-
-
-
-def test_models_with_memory_includes_default():
-    assert DEFAULT_MODEL in models_with_memory
 
 
 @patch("jarvis.agents.implementations.memory.ChatOpenAI")

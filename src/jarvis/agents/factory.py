@@ -8,12 +8,6 @@ from jarvis.core.enums import ModelEnum
 from jarvis.core.openai_models import is_openai_chat_model
 from jarvis.tools import local_tools
 
-models_with_memory: list[ModelEnum] = [
-    ModelEnum.GPT_3_5,
-    ModelEnum.GPT_4O_MINI,
-]
-"""Models that persist conversation history with a checkpointer."""
-
 
 def build_agent(model_used: ModelEnum) -> JarvisAgent:
     """

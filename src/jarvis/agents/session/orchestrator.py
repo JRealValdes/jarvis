@@ -2,7 +2,7 @@
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from jarvis.agents.factory import build_agent, models_with_memory
+from jarvis.agents.factory import build_agent
 from jarvis.agents.mcp_session import get_mcp_tool_session
 from jarvis.agents.protocol import JarvisAgent
 from jarvis.agents.session.cache import get_agents_cache, get_sessions_cache
@@ -118,13 +118,13 @@ class JarvisSession:
             messages: LangChain message list.
 
         Returns:
-            Dict with ``input`` and optionally ``config`` (thread_id).
+            Dict with ``input`` and ``config`` (thread_id for the checkpointer).
         """
         real_name = self.user["real_name"] if self.user else ""
-        kwargs = {"input": {"messages": messages, "real_name": real_name}}
-        if self.model_enum in models_with_memory:
-            kwargs["config"] = {"configurable": {"thread_id": self.thread_id}}
-        return kwargs
+        return {
+            "input": {"messages": messages, "real_name": real_name},
+            "config": {"configurable": {"thread_id": self.thread_id}},
+        }
 
     def _direct_reply(self, prompt: str) -> list[str] | None:
         """
