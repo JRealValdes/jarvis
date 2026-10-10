@@ -23,7 +23,7 @@ Hello, sir. How can I assist you today?
 Requirement: [uv](https://docs.astral.sh/uv/) (`pip install uv` or the official installer).
 
 ```bash
-uv sync --all-groups    # create .venv and install runtime + dev deps (pytest)
+uv sync    # create .venv and install runtime + dev deps (pytest)
 ```
 
 For deploys that only read `requirements.txt` (e.g. Hugging Face Spaces):
@@ -130,7 +130,7 @@ jarvis/                          # repository root
 
 ## Roadmap
 - [x] Basic chatbot
-- [x] Zephyr, Ollama Mistral and GPT models implemented
+- [x] GPT models implemented (OpenAI)
 - [x] Conversational memory. Cache management
 - [x] Tools functionality
 - [x] Gradio UI

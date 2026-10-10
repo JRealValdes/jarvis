@@ -36,9 +36,6 @@ dev = [
     "pytest>=8.0",
     "httpx>=0.27",
 ]
-examples = [
-    "langchain-ollama>=1.1.0",
-]
 
 [project.scripts]
 jarvis = "jarvis.__main__:main"
