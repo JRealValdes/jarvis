@@ -3,24 +3,36 @@ name: github-feature-flow
 description: >-
   Create and maintain Jarvis GitHub issues, feature branches named
   feature/X-slug, and PRs into main with titles ending in (#X). Use when
-  starting work from main, creating or updating an issue for a feature,
-  opening a feature branch, linking a PR to an issue, or when the user asks
-  to start the issue/branch/PR workflow.
+  starting work from main, solving or continuing an existing GitHub issue,
+  creating or updating an issue for a feature, opening a feature branch,
+  linking a PR to an issue, or when the user asks to start the
+  issue/branch/PR workflow.
 ---
 
 # GitHub feature flow (Jarvis)
 
 Issue + feature branch + PR into `main`. All GitHub text in **English**.
 
-## Start from `main` (propose first)
+## Start from `main` — new work (propose first)
 
-If the user asks for a change while on `main`, **propose** then wait for confirmation:
+If the user asks for a **new** change while on `main` (no issue number), **propose** then wait for confirmation:
 
 1. Create GitHub issue
 2. Create branch `feature/<N>-<slug>` from up-to-date `main`
 3. Develop on that branch
 
 Do not create the issue or branch until they agree (unless they already ordered the full flow).
+
+## Work on an existing issue `#N` (from `main` or elsewhere)
+
+If the user asks to solve, implement, or continue issue `#N`:
+
+1. **Read the issue:** `gh issue view <N>` (and comments if needed). Treat the issue body/checklist as the source of requirements.
+2. **Use the development branch:**
+   - Look for an existing local or remote branch matching `feature/<N>-*` (or the branch linked under the issue’s Development section).
+   - If it exists: check it out and pull latest (`git fetch` / `git pull`).
+   - If it does not exist: create `feature/<N>-<slug>` from up-to-date `main` (slug from the issue title). Prefer `gh issue develop <N> --name feature/<N>-<slug> --checkout` when available; otherwise `git checkout -b` + `git push -u`.
+3. **Develop on that branch** only — do not implement `#N` on `main`. Update the issue body when new scope materially helps tracking.
 
 ## 1. Create the issue
 
@@ -84,8 +96,8 @@ Push with `-u` if the branch has no upstream yet.
 ## Checklist
 
 ```
-- [ ] Issue exists (#N), English
-- [ ] Branch name is feature/<N>-<slug>
+- [ ] Issue exists (#N), English; read before coding when working an existing issue
+- [ ] On feature/<N>-* (checked out or created), not on main
 - [ ] Work landed on that branch
 - [ ] Issue body updated only when useful
 - [ ] PR title ends with (#N); body links Closes/Refs #N

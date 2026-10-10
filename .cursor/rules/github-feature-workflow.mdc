@@ -18,7 +18,7 @@ feature/<issue-number>-<slug-from-issue-title>
 
 Examples: issue `#8` “Fix session history and ChatState vs checkpoints” → `feature/8-fix-session-history-and-chatstate`.
 
-## When on `main` and the user asks for a change
+## When on `main` and the user asks for a **new** change
 
 **Propose** (do not start until they confirm) this flow:
 
@@ -27,6 +27,16 @@ Examples: issue `#8` “Fix session history and ChatState vs checkpoints” → 
 3. Develop on that branch
 
 Then follow [`.cursor/skills/github-feature-flow/SKILL.md`](../skills/github-feature-flow/SKILL.md).
+
+## When on `main` and the user asks to solve / work on issue `#X`
+
+Do **not** create a new issue. Proceed (no need to re-propose the full flow):
+
+1. Read the issue with `gh issue view X` (title, body, checklist).
+2. Check out the existing development branch for `#X`, or create it if missing (`feature/X-<slug>` from up-to-date `main`).
+3. Develop there against the issue requirements; expand the issue body when useful.
+
+Details: same skill file, section “Work on an existing issue”.
 
 ## Already on a feature branch
 
