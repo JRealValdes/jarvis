@@ -12,9 +12,9 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from jarvis.agents.mcp_session import get_mcp_tool_session
-from jarvis.api.deployment import API_PORT, run_with_optional_tunnel
+from jarvis.api.deployment import run_with_optional_tunnel
 from jarvis.api.errors import ForbiddenError
-from jarvis.core.config import USE_MCP
+from jarvis.core.config import API_PORT, USE_MCP
 from jarvis.core.logging_config import configure_logging
 
 configure_logging()

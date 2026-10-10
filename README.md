@@ -69,11 +69,13 @@ Docstring convention in production code: module + **Args** / **Returns** / **Rai
 
 ## Configuration
 
-1. Copy `.env.example` to `.env` and fill in keys you use (OpenAI, HF, Fernet, JWT, optional Telegram/Firebase).
+App settings live in `jarvis.core.config` as typed defaults. Override any of them in `.env` (see `.env.example`).
+
+1. Copy `.env.example` to `.env` and fill in secrets (OpenAI, Fernet, JWT) plus any optional flags.
 2. Seed users into the local DB (see below).
 3. Google Calendar (optional): OAuth files under `data/google/<username>/<account>/` (see `data/google/example_user/`). Interactive flow: `examples/google_api_demo.ipynb`.
-4. MCP (optional): set `JARVIS_USE_MCP=1` in `.env`, edit `data/mcp/server_config.json`; server scripts live under `src/jarvis/mcp/servers/`. A `command` of `python` is launched with the interpreter running Jarvis.
-5. Public API tunnel (optional): set `EXPOSE_API_WITH_CLOUDFLARED` in code/env workflow only when you want cloudflared (default is off).
+4. MCP (optional): `JARVIS_USE_MCP=1`, edit `data/mcp/server_config.json`; server scripts live under `src/jarvis/mcp/servers/`.
+5. Public API tunnel (optional): `JARVIS_EXPOSE_API_WITH_CLOUDFLARED=1`.
 
 ## Local runtime assets (not in git)
 
