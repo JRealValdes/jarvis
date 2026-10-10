@@ -2,10 +2,16 @@
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
-from jarvis.agents.factory import build_agent, models_with_memory
-from jarvis.agents.session.cache import get_agents_cache, get_sessions_cache
+from jarvis.agents.factory import build_agent
+from jarvis.agents.mcp_session import get_mcp_tool_session
+from jarvis.agents.protocol import JarvisAgent
+from jarvis.agents.session.cache import (
+    get_agents_cache,
+    get_sessions_cache,
+    invalidate_agents_cache,
+)
 from jarvis.agents.session.history import parse_message_list
-from jarvis.core.config import DEFAULT_MODEL, IDENTIFICATION_FAILED_PROTOCOL
+from jarvis.core.config import DEFAULT_MODEL, IDENTIFICATION_FAILED_PROTOCOL, USE_MCP
 from jarvis.core.enums import ModelEnum
 from jarvis.domain.chat.chat_state import (
     ChatState,
@@ -29,7 +35,7 @@ class JarvisSession:
         thread_id: Thread identifier.
         valid_user: Whether the user is identified or authenticated.
         user: User data dict (real_name, jarvis_name, etc.).
-        agent: Agent instance from the global cache.
+        agent: Agent from the global cache (``JarvisAgent``).
     """
 
     def __init__(
@@ -48,15 +54,23 @@ class JarvisSession:
         self.thread_id = thread_id
         self.valid_user = bool(user_info)
         self.user = user_info
-        self.agent = self._load_or_build_agent()
         self._chat_state = ChatState.NOT_INITIALIZED
 
-    def _load_or_build_agent(self) -> object:
+    @property
+    def agent(self) -> JarvisAgent:
+        """
+        Agent for this session's model.
+
+        Reloads from the global cache after MCP reconnect invalidates agents.
+        """
+        return self._load_or_build_agent()
+
+    def _load_or_build_agent(self) -> JarvisAgent:
         """
         Get the agent from the global cache or build it.
 
         Returns:
-            Agent instance (Basic, Memory, or MCP).
+            Agent that implements ``JarvisAgent``.
         """
         agents_cache = get_agents_cache()
         if self.model_enum not in agents_cache:
@@ -116,68 +130,43 @@ class JarvisSession:
             messages: LangChain message list.
 
         Returns:
-            Dict with ``input`` and optionally ``config`` (thread_id).
+            Dict with ``input`` and ``config`` (thread_id for the checkpointer).
         """
         real_name = self.user["real_name"] if self.user else ""
-        kwargs = {"input": {"messages": messages, "real_name": real_name}}
-        if self.model_enum in models_with_memory:
-            kwargs["config"] = {"configurable": {"thread_id": self.thread_id}}
-        return kwargs
+        return {
+            "input": {"messages": messages, "real_name": real_name},
+            "config": {"configurable": {"thread_id": self.thread_id}},
+        }
 
-    def _process_messages(self, messages: list) -> list[str]:
+    def _direct_reply(self, prompt: str) -> list[str] | None:
         """
-        Invoke the agent and extract assistant replies from the state.
-
-        Args:
-            messages: Messages to send to the graph.
-
-        Returns:
-            List of response strings (never empty on success path).
-        """
-        try:
-            kwargs = self._build_agent_kwargs(messages)
-            response = self.agent.invoke(**kwargs)
-            response_messages = response.get("messages", [])
-            last_human_index = max(
-                (
-                    i
-                    for i, msg in enumerate(response_messages)
-                    if isinstance(msg, HumanMessage)
-                ),
-                default=-1,
-            )
-            msg_dict_list = parse_message_list(
-                response_messages[last_human_index + 1 :]
-            )
-            result = [msg["content"] for msg in msg_dict_list]
-            return (
-                result
-                if result
-                else ["I'm sorry, sir. I have no response for your request."]
-            )
-        except Exception as e:
-            return [
-                f"There was an error processing your request, sir. Error: {e}"
-            ]
-
-    def ask(self, prompt: str) -> list[str]:
-        """
-        Process a user turn and return Jarvis's reply.
+        Advance chat state and return a reply that does not call the model.
 
         Args:
             prompt: User message.
 
         Returns:
-            List of response strings for the user.
+            Reply strings, or None when the model must run.
         """
         self._update_chat_state(prompt)
-
         if self._chat_state == ChatState.NOT_INITIALIZED:
             return [AUTOMATIC_RESPONSE_IF_ID_FAILED]
-
         if self._chat_state == ChatState.JARVIS_WELCOME_MESSAGE:
             return [get_welcome_message(self.user)]
+        if self._chat_state in (ChatState.STARTING_CHAT, ChatState.INITIALIZED):
+            return None
+        return [AUTOMATIC_RESPONSE_IF_ID_FAILED]
 
+    def _messages_for_model(self, prompt: str) -> list:
+        """
+        Build the LangChain messages for a model turn.
+
+        Args:
+            prompt: User message.
+
+        Returns:
+            Messages for ``STARTING_CHAT`` (with system context) or a single human turn.
+        """
         if self._chat_state == ChatState.STARTING_CHAT:
             messages = [
                 SystemMessage(
@@ -187,23 +176,118 @@ class JarvisSession:
             if self.valid_user:
                 messages.append(AIMessage(content=get_welcome_message(self.user)))
             messages.append(HumanMessage(content=prompt))
-            return self._process_messages(messages)
+            return messages
+        return [HumanMessage(content=prompt)]
 
-        if self._chat_state == ChatState.INITIALIZED:
-            messages = [HumanMessage(content=prompt)]
-            return self._process_messages(messages)
+    def _replies_from_state(self, response: dict) -> list[str]:
+        """
+        Extract assistant text that follows the latest human message.
 
-        return [AUTOMATIC_RESPONSE_IF_ID_FAILED]
+        Args:
+            response: Final graph state.
+
+        Returns:
+            Reply strings. A fallback sentence when the model returned nothing.
+        """
+        response_messages = response.get("messages", [])
+        last_human_index = max(
+            (
+                i
+                for i, msg in enumerate(response_messages)
+                if isinstance(msg, HumanMessage)
+            ),
+            default=-1,
+        )
+        msg_dict_list = parse_message_list(response_messages[last_human_index + 1 :])
+        result = [msg["content"] for msg in msg_dict_list]
+        return result if result else ["I'm sorry, sir. I have no response for your request."]
+
+    async def _run_model(self, messages: list) -> list[str]:
+        """
+        Await the agent and extract assistant replies from the state.
+
+        Args:
+            messages: Messages to send to the graph.
+
+        Returns:
+            List of response strings (never empty on success path).
+        """
+        try:
+            response = await self.agent.invoke(**self._build_agent_kwargs(messages))
+            return self._replies_from_state(response)
+        except Exception as e:
+            return [f"There was an error processing your request, sir. Error: {e}"]
+
+    async def handle_turn(self, prompt: str) -> list[str]:
+        """
+        Run one conversation turn for this session.
+
+        Advances the chat state machine and, when needed, invokes the model.
+
+        Args:
+            prompt: User message.
+
+        Returns:
+            List of response strings for the user.
+        """
+        direct = self._direct_reply(prompt)
+        if direct is not None:
+            return direct
+        return await self._run_model(self._messages_for_model(prompt))
 
 
-def ask_jarvis(
+def _session_for(
+    model: ModelEnum,
+    thread_id: str,
+    user_info: dict | None,
+) -> JarvisSession:
+    """
+    Return the cached session for a model and thread, creating it if needed.
+
+    Args:
+        model: LLM model to use.
+        thread_id: Thread / session identifier.
+        user_info: Authenticated user dict, or None.
+
+    Returns:
+        Session stored under ``(model, thread_id)``.
+    """
+    sessions_cache = get_sessions_cache()
+    session_key = (model, thread_id)
+    if session_key not in sessions_cache:
+        sessions_cache[session_key] = JarvisSession(model, thread_id, user_info)
+    return sessions_cache[session_key]
+
+
+async def _ensure_mcp_ready() -> None:
+    """
+    Connect or reconnect the process-wide MCP session when enabled.
+
+    Rebuilds cached agents after a reconnect so graphs bind the new tools.
+
+    Returns:
+        None.
+    """
+    if not USE_MCP:
+        return
+    session = get_mcp_tool_session()
+    was_broken = session.is_broken
+    await session.ensure_ready()
+    if was_broken:
+        invalidate_agents_cache()
+
+
+async def ask_jarvis(
     prompt: str,
     model: ModelEnum = DEFAULT_MODEL,
     thread_id: str = "1",
     user_info: dict | None = None,
 ) -> list[str]:
     """
-    Main entry point to send a message to Jarvis.
+    Public entry point to send a message to Jarvis.
+
+    Resolves the cached session, ensures MCP is ready when enabled, and runs
+    one turn. Call from an async context (CLI loop, FastAPI, Gradio).
 
     Args:
         prompt: User message.
@@ -214,8 +298,5 @@ def ask_jarvis(
     Returns:
         List of response text fragments for the user.
     """
-    sessions_cache = get_sessions_cache()
-    session_key = (model, thread_id)
-    if session_key not in sessions_cache:
-        sessions_cache[session_key] = JarvisSession(model, thread_id, user_info)
-    return sessions_cache[session_key].ask(prompt)
+    await _ensure_mcp_ready()
+    return await _session_for(model, thread_id, user_info).handle_turn(prompt)

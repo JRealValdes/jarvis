@@ -1,10 +1,13 @@
 """In-memory caches for agents and chat sessions."""
 
+from jarvis.agents.checkpointer import clear_all_checkpoints, delete_persisted_thread
+from jarvis.agents.mcp_session import get_mcp_tool_session
+from jarvis.agents.protocol import JarvisAgent
 from jarvis.core.config import DEFAULT_MODEL
 from jarvis.core.enums import ModelEnum
 
 _sessions_cache: dict[tuple[ModelEnum, str], object] = {}
-_agents_cache: dict[ModelEnum, object] = {}
+_agents_cache: dict[ModelEnum, JarvisAgent] = {}
 
 
 def get_sessions_cache() -> dict[tuple[ModelEnum, str], object]:
@@ -12,9 +15,24 @@ def get_sessions_cache() -> dict[tuple[ModelEnum, str], object]:
     return _sessions_cache
 
 
-def get_agents_cache() -> dict[ModelEnum, object]:
+def get_agents_cache() -> dict[ModelEnum, JarvisAgent]:
     """Return the global agents cache (mutable)."""
     return _agents_cache
+
+
+def invalidate_agents_cache() -> None:
+    """
+    Close and drop cached agents so the next turn rebuilds them.
+
+    Keeps chat sessions and checkpoint files. Used when MCP reconnects and
+    the compiled graphs still hold tools from the dead stdio session.
+
+    Returns:
+        None.
+    """
+    for agent in _agents_cache.values():
+        agent.cleanup()
+    _agents_cache.clear()
 
 
 def get_cache_status() -> dict:
@@ -52,7 +70,7 @@ def check_individual_session_cache_exists(
 
 def reset_session(thread_id: str, model: ModelEnum = DEFAULT_MODEL) -> None:
     """
-    Remove the cached session and agent memory thread if applicable.
+    Remove the cached session and the persisted checkpoint thread.
 
     Args:
         thread_id: Thread to clear.
@@ -63,17 +81,28 @@ def reset_session(thread_id: str, model: ModelEnum = DEFAULT_MODEL) -> None:
     """
     session_key = (model, thread_id)
     agent = _agents_cache.get(model)
-    if agent and hasattr(agent, "memory") and agent.memory:
+    if agent is not None and agent.memory is not None:
         agent.memory.delete_thread(thread_id)
+    else:
+        delete_persisted_thread(model, thread_id)
     _sessions_cache.pop(session_key, None)
 
 
-def reset_cache() -> None:
-    """
-    Clear agent and session caches completely.
-
-    Returns:
-        None.
-    """
+def _drop_cached_agents() -> None:
+    """Close cached agents, drop sessions, and delete checkpoint files."""
+    for agent in _agents_cache.values():
+        agent.cleanup()
     _agents_cache.clear()
     _sessions_cache.clear()
+    clear_all_checkpoints()
+
+
+async def reset_cache() -> None:
+    """
+    Clear agent and session caches, delete persisted checkpoints, and close MCP.
+
+    Returns:
+        None. Safe when MCP was never connected.
+    """
+    _drop_cached_agents()
+    await get_mcp_tool_session().close()

@@ -8,18 +8,12 @@ import time
 from datetime import datetime, timezone
 
 import requests
-from dotenv import load_dotenv
 from firebase_admin import credentials, db, initialize_app
 
-from jarvis.core.config import EXPOSE_API_WITH_CLOUDFLARED
+from jarvis.core.config import API_PORT, EXPOSE_API_WITH_CLOUDFLARED
 from jarvis.core.paths import FIREBASE_PRIVATE_KEY_PATH
 
 logger = logging.getLogger(__name__)
-
-# Load .env file before reading variables (avoids None values when importing the module).
-load_dotenv()
-
-API_PORT = int(os.getenv("API_PORT", 8000))
 
 
 def _telegram_config() -> tuple[str | None, str | None]:

@@ -3,6 +3,7 @@
 from jarvis.agents.session.cache import (
     check_individual_session_cache_exists,
     get_cache_status,
+    invalidate_agents_cache,
     reset_cache,
     reset_session,
 )
@@ -15,6 +16,7 @@ __all__ = [
     "check_individual_session_cache_exists",
     "get_cache_status",
     "get_message_history",
+    "invalidate_agents_cache",
     "reset_cache",
     "reset_session",
 ]

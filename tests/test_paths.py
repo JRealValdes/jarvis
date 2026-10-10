@@ -1,7 +1,5 @@
 """Tests for core.paths project root resolution."""
 
-from pathlib import Path
-
 from jarvis.core.paths import (
     DATA_DIR,
     FIREBASE_PRIVATE_KEY_PATH,

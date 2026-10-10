@@ -12,6 +12,9 @@ my_notes.txt
 # Local runtime user DB (seed via scripts/users/)
 data/users.db
 
+# Conversation checkpoints (SQLite, per model)
+data/checkpoints/
+
 # Secret CSV files
 *secret*.csv
 

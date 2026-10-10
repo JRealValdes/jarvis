@@ -2,14 +2,9 @@
 
 from unittest.mock import MagicMock, patch
 
-from jarvis.agents.factory import build_agent, models_with_memory
+from jarvis.agents.factory import build_agent
 from jarvis.agents.implementations.memory import JarvisMemoryAgent
 from jarvis.core.enums import ModelEnum
-
-
-def test_models_with_memory_includes_gpt_4o_mini():
-    assert ModelEnum.GPT_4O_MINI in models_with_memory
-    assert ModelEnum.GPT_3_5 in models_with_memory
 
 
 @patch("jarvis.agents.implementations.memory.ChatOpenAI")
@@ -35,5 +30,7 @@ def test_build_agent_returns_memory_agent_for_gpt_4o_mini(
 
     result = build_agent(ModelEnum.GPT_4O_MINI)
 
-    mock_memory_agent.assert_called_once_with(ModelEnum.GPT_4O_MINI)
+    mock_memory_agent.assert_called_once()
+    assert mock_memory_agent.call_args.args[0] == ModelEnum.GPT_4O_MINI
+    assert "tools" in mock_memory_agent.call_args.kwargs
     assert result is instance
