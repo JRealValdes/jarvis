@@ -21,7 +21,7 @@ def build_agent(model_used: ModelEnum) -> JarvisAgent:
         model_used: OpenAI chat ModelEnum member (GPT_4O_MINI, GPT_3_5).
 
     Returns:
-        Agent ready for ``ainvoke``.
+        Agent ready for ``invoke``.
 
     Raises:
         ValueError: If the model is not an OpenAI chat model.

@@ -32,8 +32,8 @@ async def main() -> None:
     agent = build_agent(model)
     print(f"Agent type: {type(agent).__name__}")
 
-    print("Direct graph ainvoke (short prompt)...")
-    result = await agent.ainvoke(
+    print("Direct agent invoke (short prompt)...")
+    result = await agent.invoke(
         input={
             "messages": [HumanMessage(content="Reply with exactly: OK")],
             "real_name": "smoke",

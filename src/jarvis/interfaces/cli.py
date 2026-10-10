@@ -51,7 +51,7 @@ async def _async_loop() -> None:
         None.
     """
     if USE_MCP:
-        await get_mcp_tool_session().aconnect()
+        await get_mcp_tool_session().connect()
     try:
         while True:
             question = await asyncio.to_thread(input, "User: ")
@@ -61,7 +61,7 @@ async def _async_loop() -> None:
             _print_replies(response)
     finally:
         if USE_MCP:
-            await get_mcp_tool_session().aclose()
+            await get_mcp_tool_session().close()
 
 
 def main() -> None:

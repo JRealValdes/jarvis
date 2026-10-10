@@ -33,9 +33,9 @@ def test_build_agent_requires_connected_mcp_session(monkeypatch: pytest.MonkeyPa
         build_agent(ModelEnum.GPT_4O_MINI)
 
 
-def test_mcp_session_aclose_when_disconnected():
+def test_mcp_session_close_when_disconnected():
     session = McpToolSession()
-    asyncio.run(session.aclose())
+    asyncio.run(session.close())
     assert session.is_connected is False
     assert session.tools == []
 
@@ -129,17 +129,17 @@ def test_tool_transport_failure_marks_session_broken():
     assert seen and isinstance(seen[0], ConnectionError)
 
 
-def test_aensure_ready_reconnects_when_broken():
+def test_ensure_ready_reconnects_when_broken():
     session = McpToolSession()
     session.mark_broken(ConnectionError("dead"))
-    session.areconnect = AsyncMock(return_value=["tool"])  # type: ignore[method-assign]
+    session.reconnect = AsyncMock(return_value=["tool"])  # type: ignore[method-assign]
 
     async def _run() -> None:
-        tools = await session.aensure_ready()
+        tools = await session.ensure_ready()
         assert tools == ["tool"]
 
     asyncio.run(_run())
-    session.areconnect.assert_awaited_once()
+    session.reconnect.assert_awaited_once()
 
 
 def test_ensure_mcp_ready_invalidates_agents_after_broken_reconnect(
@@ -149,7 +149,7 @@ def test_ensure_mcp_ready_invalidates_agents_after_broken_reconnect(
 
     session = MagicMock()
     session.is_broken = True
-    session.aensure_ready = AsyncMock(return_value=[])
+    session.ensure_ready = AsyncMock(return_value=[])
     invalidate = MagicMock()
     monkeypatch.setattr(orchestrator, "USE_MCP", True)
     monkeypatch.setattr(orchestrator, "get_mcp_tool_session", lambda: session)
@@ -157,14 +157,14 @@ def test_ensure_mcp_ready_invalidates_agents_after_broken_reconnect(
 
     asyncio.run(orchestrator._ensure_mcp_ready())
 
-    session.aensure_ready.assert_awaited_once()
+    session.ensure_ready.assert_awaited_once()
     invalidate.assert_called_once()
 
 
 def test_reset_cache_closes_mcp_and_agents():
     agent = MagicMock()
     session = MagicMock()
-    session.aclose = AsyncMock()
+    session.close = AsyncMock()
     get_agents_cache()[ModelEnum.GPT_4O_MINI] = agent
     try:
         with patch(
@@ -172,7 +172,7 @@ def test_reset_cache_closes_mcp_and_agents():
         ):
             asyncio.run(reset_cache())
         agent.cleanup.assert_called_once()
-        session.aclose.assert_awaited()
+        session.close.assert_awaited()
         assert get_agents_cache() == {}
     finally:
         asyncio.run(reset_cache())

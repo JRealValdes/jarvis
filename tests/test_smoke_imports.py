@@ -37,7 +37,7 @@ def test_build_agent_factory_returns_object(mock_chat_openai: MagicMock):
 
     agent = build_agent(ModelEnum.GPT_4O_MINI)
 
-    assert callable(agent.ainvoke)
+    assert callable(agent.invoke)
     assert callable(agent.cleanup)
     assert agent.memory is not None
 

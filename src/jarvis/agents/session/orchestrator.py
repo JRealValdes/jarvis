@@ -124,7 +124,7 @@ class JarvisSession:
 
     def _build_agent_kwargs(self, messages: list) -> dict:
         """
-        Build kwargs for ``agent.ainvoke``.
+        Build kwargs for ``agent.invoke``.
 
         Args:
             messages: LangChain message list.
@@ -213,7 +213,7 @@ class JarvisSession:
             List of response strings (never empty on success path).
         """
         try:
-            response = await self.agent.ainvoke(**self._build_agent_kwargs(messages))
+            response = await self.agent.invoke(**self._build_agent_kwargs(messages))
             return self._replies_from_state(response)
         except Exception as e:
             return [f"There was an error processing your request, sir. Error: {e}"]
@@ -272,7 +272,7 @@ async def _ensure_mcp_ready() -> None:
         return
     session = get_mcp_tool_session()
     was_broken = session.is_broken
-    await session.aensure_ready()
+    await session.ensure_ready()
     if was_broken:
         invalidate_agents_cache()
 

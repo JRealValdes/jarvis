@@ -48,7 +48,7 @@ class JarvisMemoryAgent:
             llm, self.tools, checkpointer=opened.saver
         )
 
-    async def ainvoke(self, **kwargs: Any) -> dict:
+    async def invoke(self, **kwargs: Any) -> dict:
         """
         Invoke the graph on the caller's event loop.
 

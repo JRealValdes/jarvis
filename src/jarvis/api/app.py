@@ -30,11 +30,11 @@ async def _lifespan(_application: FastAPI) -> AsyncIterator[None]:
         _application: FastAPI instance (unused; required by the lifespan hook).
     """
     if USE_MCP:
-        await get_mcp_tool_session().aconnect()
+        await get_mcp_tool_session().connect()
     try:
         yield
     finally:
-        await get_mcp_tool_session().aclose()
+        await get_mcp_tool_session().close()
 
 
 def create_app() -> FastAPI:

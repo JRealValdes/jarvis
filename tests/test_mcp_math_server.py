@@ -40,13 +40,13 @@ def test_math_mcp_server_add_tool():
 
     async def _run() -> None:
         try:
-            tools = await session.aconnect()
+            tools = await session.connect()
             add = next((tool for tool in tools if tool.name == "add"), None)
             assert add is not None, f"add tool missing; got {[t.name for t in tools]}"
             result = await add.ainvoke({"a": 2, "b": 3})
             assert "5" in _tool_result_texts(result)
             assert session.is_broken is False
         finally:
-            await session.aclose()
+            await session.close()
 
     asyncio.run(_run())

@@ -5,7 +5,7 @@ API lifespan, the CLI, or the first async turn, and closed on shutdown and
 when the agent cache is reset.
 
 Tool coroutines are bound to the event loop that opened the session. Callers
-on that loop must use ``ask_jarvis`` / ``agent.ainvoke``. Do not wrap each turn
+on that loop must use ``ask_jarvis`` / ``agent.invoke``. Do not wrap each turn
 in ``asyncio.run``: that closes the loop and drops the stdio processes.
 
 Tools from one server share a lock, so concurrent turns wait instead of
@@ -13,7 +13,7 @@ writing to the same stdio session at once. A bare ``python`` command in the
 config is replaced with the interpreter that is running Jarvis.
 
 When a tool call fails because the stdio transport died, the session marks
-itself broken. The next ``aensure_ready`` closes and reopens every server so
+itself broken. The next ``ensure_ready`` closes and reopens every server so
 fresh tools can be bound into a new agent graph.
 """
 
@@ -152,7 +152,7 @@ class McpToolSession:
 
     @property
     def is_connected(self) -> bool:
-        """Return True after a successful ``aconnect`` until ``aclose``."""
+        """Return True after a successful ``connect`` until ``close``."""
         return self._connected
 
     @property
@@ -179,7 +179,7 @@ class McpToolSession:
                 logger.warning("MCP session marked broken: %s", exc)
         self._broken = True
 
-    async def aconnect(self) -> list:
+    async def connect(self) -> list:
         """
         Start every configured MCP server and load its tools.
 
@@ -195,10 +195,10 @@ class McpToolSession:
                 logger.info("MCP services are already connected")
                 return self.tools
             if self._connected and self._broken:
-                await self._aclose_unlocked()
-            return await self._aconnect_unlocked()
+                await self._close_unlocked()
+            return await self._connect_unlocked()
 
-    async def aensure_ready(self) -> list:
+    async def ensure_ready(self) -> list:
         """
         Ensure servers are connected, reconnecting when the session is broken.
 
@@ -213,10 +213,10 @@ class McpToolSession:
             return self.tools
         if self._broken:
             logger.info("Reconnecting MCP services after transport failure")
-            return await self.areconnect()
-        return await self.aconnect()
+            return await self.reconnect()
+        return await self.connect()
 
-    async def areconnect(self) -> list:
+    async def reconnect(self) -> list:
         """
         Close every MCP server and connect again.
 
@@ -224,10 +224,10 @@ class McpToolSession:
             Freshly loaded MCP tools.
         """
         async with self._lock:
-            await self._aclose_unlocked()
-            return await self._aconnect_unlocked()
+            await self._close_unlocked()
+            return await self._connect_unlocked()
 
-    async def _aconnect_unlocked(self) -> list:
+    async def _connect_unlocked(self) -> list:
         """Open servers while ``self._lock`` is already held."""
         self._exit_stack = AsyncExitStack()
         try:
@@ -274,7 +274,7 @@ class McpToolSession:
             for tool in mcp_tools
         )
 
-    async def aclose(self) -> None:
+    async def close(self) -> None:
         """
         Close MCP sessions and drop loaded tools.
 
@@ -282,9 +282,9 @@ class McpToolSession:
             None. Safe to call when the session was never opened.
         """
         async with self._lock:
-            await self._aclose_unlocked()
+            await self._close_unlocked()
 
-    async def _aclose_unlocked(self) -> None:
+    async def _close_unlocked(self) -> None:
         """Close servers while ``self._lock`` is already held."""
         for call_lock in list(self._call_locks):
             async with call_lock:

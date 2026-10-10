@@ -105,4 +105,4 @@ async def reset_cache() -> None:
         None. Safe when MCP was never connected.
     """
     _drop_cached_agents()
-    await get_mcp_tool_session().aclose()
+    await get_mcp_tool_session().close()
