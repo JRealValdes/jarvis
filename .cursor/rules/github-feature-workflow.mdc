@@ -1,0 +1,44 @@
+---
+description: Jarvis — feature branches tied to GitHub issues and PRs into main
+alwaysApply: true
+---
+
+# GitHub feature workflow (Jarvis)
+
+Default delivery path: **feature branch → PR → `main`**. Every feature branch has a matching GitHub issue. All issue/PR/branch text is **English**.
+
+## Naming
+
+```
+feature/<issue-number>-<slug-from-issue-title>
+```
+
+- `<issue-number>` = GitHub issue number (e.g. `8`)
+- `<slug-from-issue-title>` = issue title adapted to a short kebab-case slug (lowercase, hyphens, no punctuation)
+
+Examples: issue `#8` “Fix session history and ChatState vs checkpoints” → `feature/8-fix-session-history-and-chatstate`.
+
+## When on `main` and the user asks for a change
+
+**Propose** (do not start until they confirm) this flow:
+
+1. Create a GitHub issue for the work
+2. Create the associated feature branch from up-to-date `main`
+3. Develop on that branch
+
+Then follow [`.cursor/skills/github-feature-flow/SKILL.md`](../skills/github-feature-flow/SKILL.md).
+
+## Already on a feature branch
+
+- Implement the requested changes on the current branch.
+- When new scope genuinely belongs on the same issue, **expand the issue body** (English) without asking — only when it adds clear value; do not spam trivial edits.
+
+## Pull requests
+
+- Create a PR only when the user asks.
+- Title ends with a space and `(#X)` where `X` is the issue number, e.g. `Fix session history after restart (#8)`.
+- Link the PR to the issue as development work (`Closes #X` or Development sidebar / `gh` linking). Body in English.
+
+## Out of scope here
+
+Commit message format stays Conventional Commits (see global incremental-commits rules). Do not push or open PRs unless the user requests it.
