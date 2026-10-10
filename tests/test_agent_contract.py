@@ -14,7 +14,7 @@ from jarvis.agents.mcp_session import (
     _resolve_mcp_server_config,
     _with_serialized_calls,
 )
-from jarvis.agents.session import areset_cache, ask_jarvis, reset_cache
+from jarvis.agents.session import reset_cache
 from jarvis.agents.session.cache import get_agents_cache
 from jarvis.core.enums import ModelEnum
 
@@ -31,26 +31,6 @@ def test_build_agent_requires_connected_mcp_session(monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr("jarvis.agents.factory.USE_MCP", True)
     with pytest.raises(RuntimeError, match="not connected"):
         build_agent(ModelEnum.GPT_4O_MINI)
-
-
-def test_ask_jarvis_refuses_sync_call_when_mcp_enabled(
-    monkeypatch: pytest.MonkeyPatch,
-):
-    monkeypatch.setattr("jarvis.agents.session.orchestrator.USE_MCP", True)
-    with pytest.raises(RuntimeError, match="aask_jarvis"):
-        ask_jarvis("hello")
-
-
-def test_ask_jarvis_refuses_call_inside_running_loop(
-    monkeypatch: pytest.MonkeyPatch,
-):
-    monkeypatch.setattr("jarvis.agents.session.orchestrator.USE_MCP", False)
-
-    async def _inside_loop() -> None:
-        with pytest.raises(RuntimeError, match="event loop"):
-            ask_jarvis("hello")
-
-    asyncio.run(_inside_loop())
 
 
 def test_mcp_session_aclose_when_disconnected():
@@ -181,7 +161,7 @@ def test_ensure_mcp_ready_invalidates_agents_after_broken_reconnect(
     invalidate.assert_called_once()
 
 
-def test_areset_cache_closes_mcp_and_agents():
+def test_reset_cache_closes_mcp_and_agents():
     agent = MagicMock()
     session = MagicMock()
     session.aclose = AsyncMock()
@@ -190,18 +170,9 @@ def test_areset_cache_closes_mcp_and_agents():
         with patch(
             "jarvis.agents.session.cache.get_mcp_tool_session", return_value=session
         ):
-            asyncio.run(areset_cache())
+            asyncio.run(reset_cache())
         agent.cleanup.assert_called_once()
         session.aclose.assert_awaited()
         assert get_agents_cache() == {}
     finally:
-        reset_cache()
-
-
-def test_reset_cache_closes_mcp_without_running_loop():
-    session = MagicMock()
-    session.is_connected = True
-    session.aclose = AsyncMock()
-    with patch("jarvis.agents.session.cache.get_mcp_tool_session", return_value=session):
-        reset_cache()
-    session.aclose.assert_awaited()
+        asyncio.run(reset_cache())

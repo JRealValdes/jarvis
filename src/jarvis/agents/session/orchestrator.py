@@ -1,7 +1,5 @@
 """Chat session orchestration and LLM invocation."""
 
-import asyncio
-
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from jarvis.agents.factory import build_agent
@@ -126,7 +124,7 @@ class JarvisSession:
 
     def _build_agent_kwargs(self, messages: list) -> dict:
         """
-        Build kwargs for ``agent.invoke``.
+        Build kwargs for ``agent.ainvoke``.
 
         Args:
             messages: LangChain message list.
@@ -204,25 +202,9 @@ class JarvisSession:
         result = [msg["content"] for msg in msg_dict_list]
         return result if result else ["I'm sorry, sir. I have no response for your request."]
 
-    def _process_messages(self, messages: list) -> list[str]:
+    async def _run_model(self, messages: list) -> list[str]:
         """
-        Invoke the agent and extract assistant replies from the state.
-
-        Args:
-            messages: Messages to send to the graph.
-
-        Returns:
-            List of response strings (never empty on success path).
-        """
-        try:
-            response = self.agent.invoke(**self._build_agent_kwargs(messages))
-            return self._replies_from_state(response)
-        except Exception as e:
-            return [f"There was an error processing your request, sir. Error: {e}"]
-
-    async def _aprocess_messages(self, messages: list) -> list[str]:
-        """
-        Await the agent on the caller's event loop and extract replies.
+        Await the agent and extract assistant replies from the state.
 
         Args:
             messages: Messages to send to the graph.
@@ -236,9 +218,11 @@ class JarvisSession:
         except Exception as e:
             return [f"There was an error processing your request, sir. Error: {e}"]
 
-    def ask(self, prompt: str) -> list[str]:
+    async def handle_turn(self, prompt: str) -> list[str]:
         """
-        Process a user turn and return Jarvis's reply.
+        Run one conversation turn for this session.
+
+        Advances the chat state machine and, when needed, invokes the model.
 
         Args:
             prompt: User message.
@@ -249,63 +233,7 @@ class JarvisSession:
         direct = self._direct_reply(prompt)
         if direct is not None:
             return direct
-        return self._process_messages(self._messages_for_model(prompt))
-
-    async def aask(self, prompt: str) -> list[str]:
-        """
-        Process a user turn on the caller's event loop.
-
-        Args:
-            prompt: User message.
-
-        Returns:
-            List of response strings for the user.
-        """
-        direct = self._direct_reply(prompt)
-        if direct is not None:
-            return direct
-        return await self._aprocess_messages(self._messages_for_model(prompt))
-
-
-def ask_jarvis(
-    prompt: str,
-    model: ModelEnum = DEFAULT_MODEL,
-    thread_id: str = "1",
-    user_info: dict | None = None,
-) -> list[str]:
-    """
-    Synchronous wrapper around ``aask_jarvis``.
-
-    Prefer ``aask_jarvis`` from CLI, API, and Gradio. This helper exists for
-    scripts that are not already on an event loop.
-
-    Args:
-        prompt: User message.
-        model: LLM model to use.
-        thread_id: Thread / session identifier.
-        user_info: Authenticated user dict (API); None in CLI without JWT.
-
-    Returns:
-        List of response text fragments for the user.
-
-    Raises:
-        RuntimeError: If ``USE_MCP`` is enabled (stdio needs a long-lived loop),
-            or if called from a running event loop.
-    """
-    if USE_MCP:
-        raise RuntimeError(
-            "USE_MCP is enabled. Await aask_jarvis on the event loop that "
-            "owns the MCP stdio session."
-        )
-    try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        return asyncio.run(
-            aask_jarvis(prompt, model=model, thread_id=thread_id, user_info=user_info)
-        )
-    raise RuntimeError(
-        "ask_jarvis cannot run inside an event loop. Await aask_jarvis instead."
-    )
+        return await self._run_model(self._messages_for_model(prompt))
 
 
 def _session_for(
@@ -349,18 +277,17 @@ async def _ensure_mcp_ready() -> None:
         invalidate_agents_cache()
 
 
-async def aask_jarvis(
+async def ask_jarvis(
     prompt: str,
     model: ModelEnum = DEFAULT_MODEL,
     thread_id: str = "1",
     user_info: dict | None = None,
 ) -> list[str]:
     """
-    Async entry point to send a message to Jarvis.
+    Public entry point to send a message to Jarvis.
 
-    When MCP is enabled, connects the process-wide tool session first so the
-    graph is compiled against live tools and invoked on this event loop. If a
-    previous turn marked the session broken, reconnects and rebuilds agents.
+    Resolves the cached session, ensures MCP is ready when enabled, and runs
+    one turn. Call from an async context (CLI loop, FastAPI, Gradio).
 
     Args:
         prompt: User message.
@@ -372,4 +299,4 @@ async def aask_jarvis(
         List of response text fragments for the user.
     """
     await _ensure_mcp_ready()
-    return await _session_for(model, thread_id, user_info).aask(prompt)
+    return await _session_for(model, thread_id, user_info).handle_turn(prompt)

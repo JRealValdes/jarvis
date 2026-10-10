@@ -1,11 +1,11 @@
 """Smoke tests: core modules import and public session API is callable."""
 
+import asyncio
 import inspect
 from unittest.mock import MagicMock, patch
 
 from jarvis.agents.factory import build_agent
 from jarvis.agents.session import (
-    aask_jarvis,
     ask_jarvis,
     check_individual_session_cache_exists,
     get_cache_status,
@@ -37,23 +37,20 @@ def test_build_agent_factory_returns_object(mock_chat_openai: MagicMock):
 
     agent = build_agent(ModelEnum.GPT_4O_MINI)
 
-    assert callable(agent.invoke)
     assert callable(agent.ainvoke)
     assert callable(agent.cleanup)
     assert agent.memory is not None
 
 
-def test_ask_and_aask_jarvis_are_callable():
+def test_ask_jarvis_is_callable():
     assert callable(ask_jarvis)
-    assert callable(aask_jarvis)
-    for fn in (ask_jarvis, aask_jarvis):
-        sig = inspect.signature(fn)
-        assert "prompt" in sig.parameters
-        assert "thread_id" in sig.parameters
+    sig = inspect.signature(ask_jarvis)
+    assert "prompt" in sig.parameters
+    assert "thread_id" in sig.parameters
 
 
 def test_get_cache_status_empty_initially():
-    reset_cache()
+    asyncio.run(reset_cache())
     status = get_cache_status()
     assert status["agents_cache_count"] == 0
     assert status["sessions_cache_count"] == 0
@@ -62,5 +59,5 @@ def test_get_cache_status_empty_initially():
 
 
 def test_check_individual_session_cache_exists_false_when_empty():
-    reset_cache()
+    asyncio.run(reset_cache())
     assert check_individual_session_cache_exists("pytest-thread-unknown") is False

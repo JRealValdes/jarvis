@@ -1,5 +1,7 @@
 """SQLite conversation checkpoints survive a reopen and honor reset (no network)."""
 
+import asyncio
+
 from langchain_core.messages import AIMessage, HumanMessage
 
 from jarvis.agents.checkpointer import open_model_checkpointer
@@ -76,6 +78,6 @@ def test_reset_cache_deletes_checkpoint_files():
     opened.close()
     assert path.is_file()
 
-    reset_cache()
+    asyncio.run(reset_cache())
 
     assert not path.exists()

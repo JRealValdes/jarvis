@@ -2,7 +2,7 @@
 
 import gradio as gr
 
-from jarvis.agents.session import aask_jarvis, areset_cache
+from jarvis.agents.session import ask_jarvis, reset_cache
 from jarvis.core.config import DEFAULT_MODEL
 from jarvis.core.enums import ModelEnum
 from jarvis.tools.builtins.speech_to_text import speech_to_text_tool
@@ -29,7 +29,7 @@ async def respond(
     if isinstance(model_used, str):
         model_used = ModelEnum[model_used]
 
-    response = await aask_jarvis(message, model_used, thread_id=thread_id)
+    response = await ask_jarvis(message, model_used, thread_id=thread_id)
     chat_history = chat_history or []
     chat_history.append({"role": "user", "content": message})
 
@@ -71,7 +71,7 @@ async def reset_chat() -> tuple[str, list]:
     Returns:
         Tuple of (status message, empty history list).
     """
-    await areset_cache()
+    await reset_cache()
     return "Chat memory reset.", []
 
 

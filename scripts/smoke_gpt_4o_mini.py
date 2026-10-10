@@ -10,6 +10,8 @@ Delete this file after verifying the model works.
 
 from __future__ import annotations
 
+import asyncio
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -22,7 +24,7 @@ from jarvis.core.enums import ModelEnum
 from jarvis.core.openai_models import resolve_openai_chat_model_id
 
 
-def main() -> None:
+async def main() -> None:
     model = ModelEnum.GPT_4O_MINI
     model_id = resolve_openai_chat_model_id(model)
     print(f"Building agent for {model.name} ({model_id})...")
@@ -30,8 +32,8 @@ def main() -> None:
     agent = build_agent(model)
     print(f"Agent type: {type(agent).__name__}")
 
-    print("Direct graph invoke (short prompt)...")
-    result = agent.invoke(
+    print("Direct graph ainvoke (short prompt)...")
+    result = await agent.ainvoke(
         input={
             "messages": [HumanMessage(content="Reply with exactly: OK")],
             "real_name": "smoke",
@@ -42,14 +44,14 @@ def main() -> None:
     print(f"Direct reply: {getattr(last, 'content', last)!r}")
 
     print("ask_jarvis path (with authenticated stub user)...")
-    reset_cache()
+    await reset_cache()
     user_info = {
         "real_name": "SmokeTest",
         "jarvis_name": "sir",
         "is_female": False,
         "admin": False,
     }
-    welcome = ask_jarvis(
+    welcome = await ask_jarvis(
         "ignored on welcome turn",
         model=model,
         thread_id="smoke-user",
@@ -57,7 +59,7 @@ def main() -> None:
     )
     print(f"welcome: {welcome!r}")
 
-    llm_replies = ask_jarvis(
+    llm_replies = await ask_jarvis(
         "Reply with exactly: OK",
         model=model,
         thread_id="smoke-user",
@@ -67,6 +69,5 @@ def main() -> None:
     print("Smoke OK.")
 
 
-
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

@@ -1,7 +1,5 @@
 """In-memory caches for agents and chat sessions."""
 
-import asyncio
-
 from jarvis.agents.checkpointer import clear_all_checkpoints, delete_persisted_thread
 from jarvis.agents.mcp_session import get_mcp_tool_session
 from jarvis.agents.protocol import JarvisAgent
@@ -99,35 +97,7 @@ def _drop_cached_agents() -> None:
     clear_all_checkpoints()
 
 
-def reset_cache() -> None:
-    """
-    Clear agent and session caches and delete persisted checkpoints.
-
-    Closes the MCP tool session when it is connected and this thread is not
-    already inside a running event loop. On a running loop, use
-    ``areset_cache`` so the session is closed on the loop that opened it.
-
-    Returns:
-        None.
-
-    Raises:
-        RuntimeError: If the MCP session is open on the current running loop.
-    """
-    _drop_cached_agents()
-    session = get_mcp_tool_session()
-    if not session.is_connected:
-        return
-    try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        asyncio.run(session.aclose())
-        return
-    raise RuntimeError(
-        "MCP session is open on a running event loop. Use areset_cache()."
-    )
-
-
-async def areset_cache() -> None:
+async def reset_cache() -> None:
     """
     Clear agent and session caches, delete persisted checkpoints, and close MCP.
 

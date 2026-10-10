@@ -48,18 +48,6 @@ class JarvisMemoryAgent:
             llm, self.tools, checkpointer=opened.saver
         )
 
-    def invoke(self, **kwargs: Any) -> dict:
-        """
-        Invoke the graph (requires config with thread_id when memory is enabled).
-
-        Args:
-            **kwargs: ``input``, ``config``, etc.
-
-        Returns:
-            Final graph state.
-        """
-        return self.graph.invoke(**kwargs)
-
     async def ainvoke(self, **kwargs: Any) -> dict:
         """
         Invoke the graph on the caller's event loop.

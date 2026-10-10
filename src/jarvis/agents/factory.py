@@ -21,7 +21,7 @@ def build_agent(model_used: ModelEnum) -> JarvisAgent:
         model_used: OpenAI chat ModelEnum member (GPT_4O_MINI, GPT_3_5).
 
     Returns:
-        Agent ready for ``invoke`` / ``ainvoke``.
+        Agent ready for ``ainvoke``.
 
     Raises:
         ValueError: If the model is not an OpenAI chat model.
@@ -36,7 +36,7 @@ def build_agent(model_used: ModelEnum) -> JarvisAgent:
         if not session.is_connected:
             raise RuntimeError(
                 "MCP is enabled but the tool session is not connected. "
-                "Open it from the API lifespan, the CLI, or aask_jarvis "
+                "Open it from the API lifespan, the CLI, or ask_jarvis "
                 "before building an agent."
             )
         tools.extend(session.tools)

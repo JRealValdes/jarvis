@@ -28,11 +28,8 @@ class JarvisAgent(Protocol):
     memory: ConversationMemory | None
     tools: list
 
-    def invoke(self, **kwargs: Any) -> dict:
-        """Run one synchronous graph turn."""
-
     async def ainvoke(self, **kwargs: Any) -> dict:
-        """Run one graph turn on the caller's event loop."""
+        """Run one graph turn (LangGraph ``ainvoke``)."""
 
     def cleanup(self) -> None:
         """Release resources owned by this agent instance."""

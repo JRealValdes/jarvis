@@ -1,7 +1,7 @@
 """Chat, session, and history use cases."""
 
 from jarvis.agents.session import (
-    aask_jarvis,
+    ask_jarvis,
     check_individual_session_cache_exists,
     get_message_history,
     reset_session,
@@ -27,7 +27,7 @@ class ChatService:
         """
         model_enum = ModelEnum[input_data.model_name]
         thread_id = input_data.thread_id or user["real_name"]
-        answer = await aask_jarvis(
+        answer = await ask_jarvis(
             input_data.message, model_enum, thread_id, user_info=user
         )
         return {"response": answer}

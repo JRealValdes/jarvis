@@ -5,8 +5,8 @@ API lifespan, the CLI, or the first async turn, and closed on shutdown and
 when the agent cache is reset.
 
 Tool coroutines are bound to the event loop that opened the session. Callers
-on that loop must use ``ainvoke`` / ``aask_jarvis``. Do not wrap each turn in
-``asyncio.run``: that closes the loop and drops the stdio processes.
+on that loop must use ``ask_jarvis`` / ``agent.ainvoke``. Do not wrap each turn
+in ``asyncio.run``: that closes the loop and drops the stdio processes.
 
 Tools from one server share a lock, so concurrent turns wait instead of
 writing to the same stdio session at once. A bare ``python`` command in the
