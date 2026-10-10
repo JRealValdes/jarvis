@@ -1,8 +1,8 @@
 """SQLite user repository (data access only, no business rules)."""
 
 import logging
-import os
 import sqlite3
+
 logger = logging.getLogger(__name__)
 
 from jarvis.core.config import DB_DEBUG_MODE
