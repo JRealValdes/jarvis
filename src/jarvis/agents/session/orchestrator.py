@@ -1,5 +1,8 @@
 """Chat session orchestration and LLM invocation."""
 
+import logging
+import sqlite3
+
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from jarvis.agents.factory import build_agent
@@ -10,20 +13,28 @@ from jarvis.agents.session.cache import (
     get_sessions_cache,
     invalidate_agents_cache,
 )
-from jarvis.agents.session.history import parse_message_list
-from jarvis.core.config import DEFAULT_MODEL, IDENTIFICATION_FAILED_PROTOCOL, USE_MCP
+from jarvis.agents.session.history import load_thread_snapshot, parse_message_list
+from jarvis.core.config import (
+    DEFAULT_MODEL,
+    IDENTIFICATION_FAILED_PROTOCOL,
+    LOCAL_THREAD_ID,
+    USE_MCP,
+)
 from jarvis.core.enums import ModelEnum
 from jarvis.domain.chat.chat_state import (
     ChatState,
     compute_next_chat_state,
     should_clear_agent_thread_on_identification,
 )
-from jarvis.infrastructure.persistence.users.identification import find_user_by_prompt
 from jarvis.domain.users.prompts import (
     AUTOMATIC_RESPONSE_IF_ID_FAILED,
     build_background_prompt,
     get_welcome_message,
 )
+from jarvis.infrastructure.persistence.users.identification import find_user_by_prompt
+from jarvis.infrastructure.persistence.users.repository import get_user_by_field
+
+logger = logging.getLogger(__name__)
 
 
 class JarvisSession:
@@ -41,7 +52,7 @@ class JarvisSession:
     def __init__(
         self,
         model_enum: ModelEnum = DEFAULT_MODEL,
-        thread_id: str = "1",
+        thread_id: str = LOCAL_THREAD_ID,
         user_info: dict | None = None,
     ) -> None:
         """
@@ -55,6 +66,53 @@ class JarvisSession:
         self.valid_user = bool(user_info)
         self.user = user_info
         self._chat_state = ChatState.NOT_INITIALIZED
+        self._restore_from_checkpoint()
+
+    def apply_authenticated_user(self, user_info: dict) -> None:
+        """
+        Replace the session identity with a newly authenticated user.
+
+        Args:
+            user_info: Decoded JWT claims or equivalent user dict.
+
+        Returns:
+            None.
+        """
+        self.user = user_info
+        self.valid_user = True
+
+    def _restore_from_checkpoint(self) -> None:
+        """
+        Align in-memory chat state with a thread that already has messages.
+
+        A process restart used to rebuild ``ChatState.NOT_INITIALIZED`` and
+        send the welcome flow again. When the checkpointer already holds the
+        thread, continue from ``INITIALIZED``. If the caller did not pass a
+        user, restore one from the checkpoint ``real_name``.
+
+        Returns:
+            None. Leaves the session uninitialized when the thread is empty
+            or the checkpoint cannot be read.
+        """
+        try:
+            snapshot = load_thread_snapshot(self.model_enum, self.thread_id)
+        except Exception:
+            logger.exception(
+                "Could not read checkpoint for thread %s (%s)",
+                self.thread_id,
+                self.model_enum.name,
+            )
+            return
+        if snapshot is None:
+            return
+        self._chat_state = ChatState.INITIALIZED
+        if self.user is not None:
+            return
+        restored = _user_for_real_name(snapshot["real_name"])
+        if restored is None:
+            return
+        self.user = restored
+        self.valid_user = True
 
     @property
     def agent(self) -> JarvisAgent:
@@ -256,6 +314,8 @@ def _session_for(
     session_key = (model, thread_id)
     if session_key not in sessions_cache:
         sessions_cache[session_key] = JarvisSession(model, thread_id, user_info)
+    elif user_info:
+        sessions_cache[session_key].apply_authenticated_user(user_info)
     return sessions_cache[session_key]
 
 
@@ -277,10 +337,32 @@ async def _ensure_mcp_ready() -> None:
         invalidate_agents_cache()
 
 
+def _user_for_real_name(real_name: str) -> dict | None:
+    """
+    Look up a user row by ``real_name``.
+
+    Args:
+        real_name: Name stored on the checkpoint. Empty skips the lookup.
+
+    Returns:
+        User dict, or None when the name is blank or the users database
+        cannot be read.
+    """
+    if not real_name.strip():
+        return None
+    try:
+        return get_user_by_field("real_name", real_name, is_sensitive=False)
+    except sqlite3.Error:
+        logger.warning(
+            "Could not restore user %s from the users database", real_name
+        )
+        return None
+
+
 async def ask_jarvis(
     prompt: str,
     model: ModelEnum = DEFAULT_MODEL,
-    thread_id: str = "1",
+    thread_id: str = LOCAL_THREAD_ID,
     user_info: dict | None = None,
 ) -> list[str]:
     """

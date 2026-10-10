@@ -4,10 +4,10 @@ import asyncio
 
 from jarvis.agents.mcp_session import get_mcp_tool_session
 from jarvis.agents.session import ask_jarvis
-from jarvis.core.config import DEFAULT_MODEL, USE_MCP
+from jarvis.core.config import DEFAULT_MODEL, LOCAL_THREAD_ID, USE_MCP
 
 model_used = DEFAULT_MODEL
-thread_id = "1"
+thread_id = LOCAL_THREAD_ID
 
 _EXIT_COMMANDS = {"exit", "quit", "salir"}
 _FAREWELL_MARKERS = ("that's all", "eso es todo")

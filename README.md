@@ -76,6 +76,18 @@ App settings live in `jarvis.core.config` as typed defaults. Override any of the
 3. Google Calendar (optional): OAuth files under `data/google/<username>/<account>/` (see `data/google/example_user/`). Interactive flow: `examples/google_api_demo.ipynb`.
 4. MCP (optional): `JARVIS_USE_MCP=1`, edit `data/mcp/server_config.json`; server scripts live under `src/jarvis/mcp/servers/`.
 5. Public API tunnel (optional): `JARVIS_EXPOSE_API_WITH_CLOUDFLARED=1`.
+6. Local UI thread (optional): `JARVIS_LOCAL_THREAD_ID` (default `1`) is the checkpoint thread for the CLI and Gradio.
+
+### Conversation threads
+
+Each model stores threads in `data/checkpoints/{MODEL}.sqlite`. The same `thread_id` keeps one conversation across process restarts.
+
+| Entry | Default thread |
+|-------|----------------|
+| HTTP API | JWT `real_name` when the request omits `thread_id`. Admins may pass another thread. |
+| CLI and Gradio | `JARVIS_LOCAL_THREAD_ID` (default `1`) |
+
+Set `JARVIS_LOCAL_THREAD_ID` to a user's `real_name` when a local UI should continue that user's API thread. `/message-history` reads the checkpoint file, so history stays available after a restart.
 
 ## Local runtime assets (not in git)
 

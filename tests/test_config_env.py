@@ -17,6 +17,7 @@ def _restore_config_module(monkeypatch: pytest.MonkeyPatch):
     for name in (
         "JARVIS_USE_MCP",
         "JARVIS_DEFAULT_MODEL",
+        "JARVIS_LOCAL_THREAD_ID",
         "JARVIS_IDENTIFICATION_FAILED_PROTOCOL",
         "JARVIS_DB_DEBUG_MODE",
         "JARVIS_EXPOSE_API_WITH_CLOUDFLARED",
@@ -29,6 +30,7 @@ def _restore_config_module(monkeypatch: pytest.MonkeyPatch):
     for name in (
         "JARVIS_USE_MCP",
         "JARVIS_DEFAULT_MODEL",
+        "JARVIS_LOCAL_THREAD_ID",
         "JARVIS_IDENTIFICATION_FAILED_PROTOCOL",
         "JARVIS_DB_DEBUG_MODE",
         "JARVIS_EXPOSE_API_WITH_CLOUDFLARED",
@@ -51,6 +53,7 @@ def _reload_config():
 def test_config_defaults_when_unset(monkeypatch: pytest.MonkeyPatch):
     config = _reload_config()
     assert config.DEFAULT_MODEL == ModelEnum.GPT_4O_MINI
+    assert config.LOCAL_THREAD_ID == "1"
     assert (
         config.IDENTIFICATION_FAILED_PROTOCOL
         == IdentificationFailedProtocolEnum.AUTOMATIC_RESPONSE
@@ -73,6 +76,11 @@ def test_use_mcp_truthy_values(monkeypatch: pytest.MonkeyPatch, value: str):
 def test_use_mcp_falsy_values(monkeypatch: pytest.MonkeyPatch, value: str):
     monkeypatch.setenv("JARVIS_USE_MCP", value)
     assert _reload_config().USE_MCP is False
+
+
+def test_local_thread_id_from_env(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("JARVIS_LOCAL_THREAD_ID", "operator")
+    assert _reload_config().LOCAL_THREAD_ID == "operator"
 
 
 def test_default_model_from_env(monkeypatch: pytest.MonkeyPatch):
