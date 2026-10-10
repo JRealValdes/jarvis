@@ -16,7 +16,7 @@ Hello, sir. How can I assist you today?
 
 ## Requirements
 - Python 3.10+
-- OpenAI API key (optional)
+- OpenAI API key (required for chat / LLM use)
 
 ## Installation
 
