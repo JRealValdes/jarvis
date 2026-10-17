@@ -6,6 +6,7 @@ from jarvis.core.paths import (
     GOOGLE_CREDENTIALS_DIR,
     MCP_SERVER_CONFIG_PATH,
     PROJECT_ROOT,
+    USERS_DATA_DIR,
     USERS_DB_PATH,
 )
 
@@ -17,6 +18,7 @@ def test_project_root_contains_pyproject():
 def test_data_paths_under_project_root():
     assert DATA_DIR == PROJECT_ROOT / "data"
     assert USERS_DB_PATH == DATA_DIR / "users.db"
+    assert USERS_DATA_DIR == DATA_DIR / "users"
     assert GOOGLE_CREDENTIALS_DIR == DATA_DIR / "google"
     assert FIREBASE_PRIVATE_KEY_PATH == DATA_DIR / "firebase_project_secret_private_key.json"
     assert MCP_SERVER_CONFIG_PATH == DATA_DIR / "mcp" / "server_config.json"

@@ -35,7 +35,11 @@ def build_background_prompt(valid_user: bool, user: dict | None) -> str:
             "You are a friendly, elegant, and helpful butler named Jarvis. "
             f"When addressing the user, always use the name '{user['jarvis_name']}' "
             f"and speak formally (e.g. {honorific}). "
-            f"The user is {'a woman' if user['is_female'] else 'a man'}."
+            f"The user is {'a woman' if user['is_female'] else 'a man'}. "
+            "When the user asks to reply to a LinkedIn or recruiter message, "
+            "or pastes such a thread, call draft_linkedin_reply_tool and present "
+            "its output as a draft only. Never treat a reply as final or sent "
+            "until the user explicitly confirms."
         )
     return (
         "Your name is Jarvis. You are a very elegant and perceptive butler. "

@@ -74,8 +74,9 @@ App settings live in `jarvis.core.config` as typed defaults. Override any of the
 1. Copy `.env.example` to `.env` and fill in secrets (OpenAI, Fernet, JWT) plus any optional flags.
 2. Seed users into the local DB (see below).
 3. Google Calendar (optional): OAuth files under `data/google/<username>/<account>/` (see `data/google/example_user/`). Interactive flow: `examples/google_api_demo.ipynb`.
-4. MCP (optional): `JARVIS_USE_MCP=1`, edit `data/mcp/server_config.json`; server scripts live under `src/jarvis/mcp/servers/`.
-5. Public API tunnel (optional): `JARVIS_EXPOSE_API_WITH_CLOUDFLARED=1`.
+4. Job / LinkedIn reply preferences (optional): copy `data/users/example_user/job_preferences.yaml` to `data/users/<real_name>/job_preferences.yaml` and edit. Used by `draft_linkedin_reply_tool`.
+5. MCP (optional): `JARVIS_USE_MCP=1`, edit `data/mcp/server_config.json`; server scripts live under `src/jarvis/mcp/servers/`.
+6. Public API tunnel (optional): `JARVIS_EXPOSE_API_WITH_CLOUDFLARED=1`.
 
 ## Local runtime assets (not in git)
 
@@ -86,6 +87,7 @@ These live on each machine and are required (or optional) for a full local setup
 | Environment secrets | `.env` | Yes for real LLM/API use | Copy `.env.example` |
 | Users database | `data/users.db` | Yes for identification / API login | Seed with `scripts/users/manage_users.ipynb` from CSV (`example_users_info.csv` / your `secret_users_info.csv`) |
 | Google OAuth | `data/google/<user>/<account>/` (`*secret*.json`) | Only for Calendar tools | Google Cloud OAuth client + `examples/google_api_demo.ipynb` |
+| Job preferences | `data/users/<real_name>/job_preferences.yaml` | Only for LinkedIn reply drafting | Copy from `data/users/example_user/job_preferences.yaml` |
 | Firebase private key | `data/firebase_project_secret_private_key.json` | Only if using Firebase URL share | Firebase console |
 | MCP config | `data/mcp/server_config.json` | Only if `JARVIS_USE_MCP=1` | Tracked example config is in repo; customize locally if needed |
 | Conversation checkpoints | `data/checkpoints/{MODEL}.sqlite` | Created on first chat | Local SQLite; removed by a global memory reset |
@@ -142,6 +144,7 @@ jarvis/                          # repository root
 - [x] MCP - Jarvis MCP Memory Agent
 - [x] Upload to Render and expose API
 - [x] Google Calendar API
+- [x] LinkedIn reply drafting (Stage A: prefs YAML + draft tool + human confirmation)
 - [x] JWT Token Security
 - [x] Raspberry Pi / Server version
 - [x] Cloudflare API exposure - Firebase URL share

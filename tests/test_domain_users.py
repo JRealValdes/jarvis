@@ -27,6 +27,8 @@ def test_build_background_prompt_valid_user():
     assert "Sir" in text
     assert "friendly" in text.lower()
     assert "butler" in text.lower()
+    assert "draft_linkedin_reply_tool" in text
+    assert "confirm" in text.lower()
 
 
 def test_build_background_prompt_intruder():
