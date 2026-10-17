@@ -1,11 +1,14 @@
 """Parse LangChain message history for API / UI consumers."""
 
+import asyncio
 import json
 import logging
+from typing import Any
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
-from jarvis.agents.session.cache import get_sessions_cache
+from jarvis.agents.checkpointer import checkpoint_path, open_model_checkpointer
+from jarvis.agents.session.cache import get_agents_cache
 from jarvis.core.config import DEFAULT_MODEL
 from jarvis.core.enums import ModelEnum
 
@@ -70,36 +73,114 @@ def parse_message_list(messages: list) -> list[dict]:
     return result
 
 
+def _snapshot_from_values(values: dict[str, Any]) -> dict[str, Any] | None:
+    """
+    Build a thread snapshot from checkpoint channel values.
+
+    Args:
+        values: Checkpoint ``channel_values`` or graph state values.
+
+    Returns:
+        Dict with ``messages`` and ``real_name``, or None when the thread
+        has no messages yet.
+    """
+    messages = values.get("messages") or []
+    if not messages:
+        return None
+    real_name = values.get("real_name") or ""
+    if not isinstance(real_name, str):
+        real_name = ""
+    return {"messages": list(messages), "real_name": real_name}
+
+
+def load_thread_snapshot(model: ModelEnum, thread_id: str) -> dict[str, Any] | None:
+    """
+    Load the latest checkpoint for a thread.
+
+    Uses the live agent graph when that model is already cached and this
+    call is not on the loop that owns the async checkpointer. ``get_state``
+    on ``AsyncSqliteSaver`` fails on that loop, so a running loop reads the
+    checkpoint file instead. After a restart, reads the file directly.
+
+    Args:
+        model: Model whose checkpoint file stores the thread.
+        thread_id: Conversation id.
+
+    Returns:
+        Dict with ``messages`` and ``real_name``, or None when the thread
+        has no stored messages.
+
+    Raises:
+        OSError: If an existing checkpoint file cannot be opened.
+        Exception: If the checkpointer cannot decode the thread.
+    """
+    agent = get_agents_cache().get(model)
+    config = {"configurable": {"thread_id": thread_id}}
+    if _can_read_live_graph(agent):
+        snapshot = agent.graph.get_state(config)
+        values = snapshot.values if isinstance(snapshot.values, dict) else {}
+        return _snapshot_from_values(values)
+
+    path = checkpoint_path(model)
+    if not path.exists():
+        return None
+    opened = open_model_checkpointer(model)
+    try:
+        saved = opened.saver.get_tuple(config)
+    finally:
+        opened.close()
+    if saved is None:
+        return None
+    values = saved.checkpoint.get("channel_values") or {}
+    if not isinstance(values, dict):
+        return None
+    return _snapshot_from_values(values)
+
+
+def _can_read_live_graph(agent: object | None) -> bool:
+    """
+    Report whether ``agent.graph.get_state`` is safe to call.
+
+    Args:
+        agent: Cached agent, or None when this model has no live graph.
+
+    Returns:
+        True when the agent has a compiled graph and the caller is not on
+        a running event loop. False when the graph is not open yet, or when
+        the caller is on the loop that owns ``AsyncSqliteSaver``.
+    """
+    if agent is None or getattr(agent, "graph", None) is None:
+        return False
+    if getattr(agent, "memory", None) is None:
+        return False
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return True
+    return False
+
+
 def get_message_history(
     thread_id: str, model: ModelEnum = DEFAULT_MODEL
 ) -> list[dict]:
     """
-    Return parsed message history for a thread if the session is cached.
+    Return parsed message history for a thread from the checkpointer.
 
     Args:
         thread_id: Conversation identifier.
-        model: Cached agent model.
+        model: Model whose checkpoint file stores the thread.
 
     Returns:
-        List of ``{role, content}`` messages; empty if no session or on failure.
+        List of ``{role, content}`` messages. Empty when the thread has no
+        checkpoint or the checkpoint cannot be read.
     """
-    sessions_cache = get_sessions_cache()
-    logger.debug("Sessions cache: %s", sessions_cache)
-    session_key = (model, thread_id)
-    if session_key not in sessions_cache:
-        logger.warning(
-            "No session found for thread %s with model %s", thread_id, model.name
-        )
-        return []
     try:
-        agent = sessions_cache[session_key].agent
-        last_snapshot = list(
-            agent.graph.get_state_history({"configurable": {"thread_id": thread_id}})
-        )[0]
-        messages = last_snapshot.values.get("messages", [])
-        return parse_message_list(messages)
+        snapshot = load_thread_snapshot(model, thread_id)
     except Exception as e:
         logger.error(
             "Failed to retrieve message history for thread %s: %s", thread_id, e
         )
         return []
+    if snapshot is None:
+        return []
+    return parse_message_list(snapshot["messages"])

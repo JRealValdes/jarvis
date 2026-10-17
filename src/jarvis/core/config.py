@@ -106,6 +106,9 @@ DEFAULT_MODEL: ModelEnum = _env_enum(
 )
 """LLM used when the client does not specify another model."""
 
+LOCAL_THREAD_ID: str = _env_str("JARVIS_LOCAL_THREAD_ID", "1")
+"""Conversation thread for the CLI and Gradio. Override with ``JARVIS_LOCAL_THREAD_ID``."""
+
 IDENTIFICATION_FAILED_PROTOCOL: IdentificationFailedProtocolEnum = _env_enum(
     "JARVIS_IDENTIFICATION_FAILED_PROTOCOL",
     IdentificationFailedProtocolEnum,

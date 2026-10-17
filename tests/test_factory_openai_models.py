@@ -1,5 +1,6 @@
 """Factory / memory-agent wiring for OpenAI models (mocked LLM, no network)."""
 
+import asyncio
 from unittest.mock import MagicMock, patch
 
 from jarvis.agents.factory import build_agent
@@ -13,12 +14,18 @@ def test_memory_agent_builds_with_gpt_4o_mini_id(mock_chat_openai: MagicMock):
     fake_llm.bind_tools.return_value = fake_llm
     mock_chat_openai.return_value = fake_llm
 
-    agent = JarvisMemoryAgent(ModelEnum.GPT_4O_MINI)
+    async def _run() -> None:
+        agent = JarvisMemoryAgent(ModelEnum.GPT_4O_MINI)
+        await agent.ensure_ready()
+        try:
+            mock_chat_openai.assert_called_once_with(model="gpt-4o-mini", temperature=0)
+            assert agent.model_enum == ModelEnum.GPT_4O_MINI
+            assert agent.graph is not None
+            assert agent.memory is not None
+        finally:
+            await agent.cleanup()
 
-    mock_chat_openai.assert_called_once_with(model="gpt-4o-mini", temperature=0)
-    assert agent.model_enum == ModelEnum.GPT_4O_MINI
-    assert agent.graph is not None
-    assert agent.memory is not None
+    asyncio.run(_run())
 
 
 @patch("jarvis.agents.factory.JarvisMemoryAgent")
