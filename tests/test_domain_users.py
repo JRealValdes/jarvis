@@ -30,6 +30,8 @@ def test_build_background_prompt_valid_user():
     assert "draft_linkedin_reply_tool" in text
     assert "show_job_preferences_tool" in text
     assert "save_job_preferences_tool" in text
+    assert "add_linkedin_reply_example_tool" in text
+    assert "show_linkedin_reply_examples_tool" in text
     assert "confirm" in text.lower()
     assert "english" in text.lower()
 

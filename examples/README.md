@@ -22,4 +22,4 @@ Preferred: ask Jarvis in chat to set up or update your job / LinkedIn reply pref
 
 Alternatively, copy [`data/users/example_user/job_preferences.yaml`](../data/users/example_user/job_preferences.yaml) and edit by hand. The same file is used by `draft_linkedin_reply_tool`.
 
-Optional style samples: put complete messages you like in [`data/users/example_user/linkedin_reply_examples.yaml`](../data/users/example_user/linkedin_reply_examples.yaml) (copy to your user folder). The draft tool uses them as phrasing/structure references.
+Optional style samples: ask Jarvis to register a complete sample reply (`add_linkedin_reply_example_tool`), or put messages in [`data/users/example_user/linkedin_reply_examples.yaml`](../data/users/example_user/linkedin_reply_examples.yaml) (copy to your user folder). The draft tool uses them as phrasing/structure references.

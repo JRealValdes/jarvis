@@ -48,7 +48,12 @@ def build_background_prompt(valid_user: bool, user: dict | None) -> str:
             "summary. The preferences YAML content (keys and values) must always "
             "be written in English, even if the user spoke another language—"
             "translate their answers into clear English before saving. "
-            "Never overwrite preferences silently."
+            "Never overwrite preferences silently. "
+            "When the user wants to register a LinkedIn reply style sample "
+            "(a complete message as a writing example), use "
+            "show_linkedin_reply_examples_tool and "
+            "add_linkedin_reply_example_tool; keep the sample wording/language "
+            "as provided, and only save after they explicitly confirm."
         )
     return (
         "Your name is Jarvis. You are a very elegant and perceptive butler. "

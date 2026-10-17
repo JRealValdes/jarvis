@@ -1,4 +1,4 @@
-"""Load per-user sample LinkedIn replies used as style references when drafting."""
+"""Load and save per-user sample LinkedIn replies used as style references."""
 
 from __future__ import annotations
 
@@ -43,6 +43,52 @@ def _example_body(item: Any) -> str | None:
     return None
 
 
+def _example_label(item: Any) -> str:
+    """Extract an optional label from a mapping entry."""
+    if isinstance(item, dict):
+        label = item.get("label")
+        if isinstance(label, str) and label.strip():
+            return label.strip()
+    return ""
+
+
+def _raw_example_items(real_name: str) -> list[Any]:
+    """Return raw YAML example items for ``real_name``, or an empty list."""
+    if not normalize_real_name(real_name):
+        return []
+    path = linkedin_reply_examples_path(real_name)
+    if not path.is_file():
+        return []
+    with path.open(encoding="utf-8") as handle:
+        data = yaml.safe_load(handle)
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict):
+        examples = data.get("examples")
+        if isinstance(examples, list):
+            return examples
+    return []
+
+
+def load_linkedin_reply_example_entries(real_name: str) -> list[dict[str, str]]:
+    """
+    Load sample replies as ``{label, body}`` entries.
+
+    Args:
+        real_name: User identifier.
+
+    Returns:
+        List of entries with non-empty ``body``; ``label`` may be empty.
+    """
+    entries: list[dict[str, str]] = []
+    for item in _raw_example_items(real_name):
+        body = _example_body(item)
+        if body is None:
+            continue
+        entries.append({"label": _example_label(item), "body": body})
+    return entries
+
+
 def load_linkedin_reply_examples(real_name: str) -> list[str]:
     """
     Load complete sample reply texts for ``real_name`` if the file exists.
@@ -57,30 +103,83 @@ def load_linkedin_reply_examples(real_name: str) -> list[str]:
     Returns:
         List of non-empty sample message bodies, or an empty list if unset/invalid.
     """
-    if not normalize_real_name(real_name):
-        return []
-    path = linkedin_reply_examples_path(real_name)
-    if not path.is_file():
-        return []
-    with path.open(encoding="utf-8") as handle:
-        data = yaml.safe_load(handle)
-    raw_items: list[Any]
-    if isinstance(data, list):
-        raw_items = data
-    elif isinstance(data, dict):
-        examples = data.get("examples")
-        if not isinstance(examples, list):
-            return []
-        raw_items = examples
-    else:
-        return []
+    return [entry["body"] for entry in load_linkedin_reply_example_entries(real_name)]
 
-    bodies: list[str] = []
-    for item in raw_items:
-        body = _example_body(item)
-        if body is not None:
-            bodies.append(body)
-    return bodies
+
+def save_linkedin_reply_examples(
+    real_name: str,
+    entries: list[dict[str, str]],
+) -> Path:
+    """
+    Replace the sample-replies file with ``entries``.
+
+    Args:
+        real_name: User identifier.
+        entries: List of ``{label, body}`` mappings (``label`` optional).
+
+    Returns:
+        Path written.
+
+    Raises:
+        ValueError: If ``real_name`` is blank or no valid bodies remain.
+    """
+    normalized = normalize_real_name(real_name)
+    if not normalized:
+        raise ValueError("real_name is required to save LinkedIn reply examples.")
+
+    serialized: list[dict[str, str]] = []
+    for entry in entries:
+        body = (entry.get("body") or "").strip()
+        if not body:
+            continue
+        item: dict[str, str] = {"body": body}
+        label = (entry.get("label") or "").strip()
+        if label:
+            item = {"label": label, "body": body}
+        serialized.append(item)
+
+    if not serialized:
+        raise ValueError("At least one non-empty example body is required.")
+
+    path = linkedin_reply_examples_path(normalized)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        yaml.safe_dump(
+            {"examples": serialized},
+            sort_keys=False,
+            allow_unicode=True,
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+def append_linkedin_reply_example(
+    real_name: str,
+    body: str,
+    *,
+    label: str = "",
+) -> Path:
+    """
+    Append one sample reply to the user's examples file.
+
+    Args:
+        real_name: User identifier.
+        body: Complete sample message text.
+        label: Optional short label for the example.
+
+    Returns:
+        Path written.
+
+    Raises:
+        ValueError: If ``real_name`` or ``body`` is blank.
+    """
+    text = body.strip() if body else ""
+    if not text:
+        raise ValueError("Example body is empty.")
+    entries = load_linkedin_reply_example_entries(real_name)
+    entries.append({"label": label.strip(), "body": text})
+    return save_linkedin_reply_examples(real_name, entries)
 
 
 def format_reply_examples_for_prompt(examples: list[str]) -> str:
@@ -102,3 +201,4 @@ def format_reply_examples_for_prompt(examples: list[str]) -> str:
     for index, body in enumerate(examples, start=1):
         parts.append(f"### Example {index}\n{body}")
     return "\n\n".join(parts)
+

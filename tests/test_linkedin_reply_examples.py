@@ -3,9 +3,12 @@
 import yaml
 
 from jarvis.infrastructure.users.linkedin_reply_examples import (
+    append_linkedin_reply_example,
     format_reply_examples_for_prompt,
     linkedin_reply_examples_path,
+    load_linkedin_reply_example_entries,
     load_linkedin_reply_examples,
+    save_linkedin_reply_examples,
 )
 
 
@@ -83,3 +86,39 @@ def test_example_user_samples_file_exists():
     path = USERS_DATA_DIR / "example_user" / "linkedin_reply_examples.yaml"
     assert path.is_file()
     assert len(load_linkedin_reply_examples("example_user")) >= 1
+
+
+def test_append_and_save_examples(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        "jarvis.infrastructure.users.linkedin_reply_examples.USERS_DATA_DIR",
+        tmp_path,
+    )
+    path = append_linkedin_reply_example(
+        "alice",
+        "First complete sample.",
+        label="first",
+    )
+    assert path.is_file()
+    append_linkedin_reply_example("alice", "Second complete sample.")
+    entries = load_linkedin_reply_example_entries("alice")
+    assert len(entries) == 2
+    assert entries[0]["label"] == "first"
+    assert entries[1]["body"] == "Second complete sample."
+
+    save_linkedin_reply_examples(
+        "alice",
+        [{"label": "only", "body": "Replaced set."}],
+    )
+    assert load_linkedin_reply_examples("alice") == ["Replaced set."]
+
+
+def test_append_rejects_empty_body(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        "jarvis.infrastructure.users.linkedin_reply_examples.USERS_DATA_DIR",
+        tmp_path,
+    )
+    try:
+        append_linkedin_reply_example("alice", "   ")
+        assert False, "expected ValueError"
+    except ValueError as exc:
+        assert "empty" in str(exc).lower()

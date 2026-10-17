@@ -100,7 +100,7 @@ These live on each machine and are required (or optional) for a full local setup
 | Users database | `data/users.db` | Yes for identification / API login | Seed with `scripts/users/manage_users.ipynb` from CSV (`example_users_info.csv` / your `secret_users_info.csv`) |
 | Google OAuth | `data/google/<user>/<account>/` (`*secret*.json`) | Only for Calendar tools | Google Cloud OAuth client + `examples/google_api_demo.ipynb` |
 | Job preferences | `data/users/<real_name>/job_preferences.yaml` | Only for LinkedIn reply drafting | Ask Jarvis to set them up, or copy from `data/users/example_user/job_preferences.yaml` |
-| LinkedIn reply samples | `data/users/<real_name>/linkedin_reply_examples.yaml` | Optional style references for drafts | Copy from `data/users/example_user/linkedin_reply_examples.yaml` |
+| LinkedIn reply samples | `data/users/<real_name>/linkedin_reply_examples.yaml` | Optional style references for drafts | Ask Jarvis to add samples, or copy from `data/users/example_user/linkedin_reply_examples.yaml` |
 | Firebase private key | `data/firebase_project_secret_private_key.json` | Only if using Firebase URL share | Firebase console |
 | MCP config | `data/mcp/server_config.json` | Only if `JARVIS_USE_MCP=1` | Tracked example config is in repo; customize locally if needed |
 | Conversation checkpoints | `data/checkpoints/{MODEL}.sqlite` | Created on first chat | Local SQLite; removed by a global memory reset |
