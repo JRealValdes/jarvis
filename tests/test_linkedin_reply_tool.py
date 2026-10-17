@@ -7,11 +7,20 @@ from jarvis.tools.builtins.linkedin_reply import (
 
 
 def test_generate_linkedin_reply_draft_uses_complete_callable():
-    prefs = {"job_criteria": {"work_mode": "remote"}}
+    prefs = {
+        "job_criteria": {"work_mode": "remote"},
+        "tone_and_language": {
+            "avoid_phrases": "avoid 'I find it interesting, especially X'"
+        },
+    }
 
     def fake_complete(messages: list) -> str:
         assert len(messages) == 2
+        system = messages[0].content
         human = messages[1].content
+        assert "HARD CONSTRAINTS" in system
+        assert "Phrases and patterns to avoid" in human
+        assert "I find it interesting, especially X" in human
         assert "remote" in human
         assert "Hello from a recruiter" in human
         assert "ask about stack" in human

@@ -3,6 +3,8 @@
 import yaml
 
 from jarvis.infrastructure.users.job_preferences import (
+    extract_avoid_constraints,
+    format_avoid_constraints_for_prompt,
     format_preferences_for_prompt,
     job_preferences_path,
     load_job_preferences,
@@ -73,3 +75,28 @@ def test_example_user_preferences_file_exists():
     data = yaml.safe_load(example.read_text(encoding="utf-8"))
     assert isinstance(data, dict)
     assert "job_criteria" in data or "reply_style" in data
+
+
+def test_extract_avoid_constraints_from_nested_keys():
+    prefs = {
+        "reply_style": {"avoid": ["oversharing", "I find it interesting, especially X"]},
+        "tone_and_language": {
+            "avoid_phrases": (
+                "avoid phrases like 'I find it interesting, especially X' "
+                "or similar variations"
+            )
+        },
+    }
+    constraints = extract_avoid_constraints(prefs)
+    assert "oversharing" in constraints
+    assert "I find it interesting, especially X" in constraints
+    assert any("similar variations" in item for item in constraints)
+
+
+def test_format_avoid_constraints_marks_hard_and_any_language():
+    text = format_avoid_constraints_for_prompt(
+        ["I find it interesting, especially X"]
+    )
+    assert "HARD" in text
+    assert "ANY language" in text
+    assert "I find it interesting, especially X" in text

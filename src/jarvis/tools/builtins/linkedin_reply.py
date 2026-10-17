@@ -12,6 +12,8 @@ from langgraph.prebuilt import InjectedState
 from jarvis.core.enums import ModelEnum
 from jarvis.core.openai_models import resolve_openai_chat_model_id
 from jarvis.infrastructure.users.job_preferences import (
+    extract_avoid_constraints,
+    format_avoid_constraints_for_prompt,
     format_preferences_for_prompt,
     job_preferences_path,
     load_job_preferences,
@@ -28,6 +30,14 @@ Use the job preferences when present. Be honest about fit.
 When sample replies are provided, treat them as style references: match their
 structure, length, greeting/closing, and phrasing habits. Adapt the content to
 the new thread; do not copy an example verbatim unless it already fits.
+
+HARD CONSTRAINTS (highest priority, override style samples and default LinkedIn
+clichés): obey every item under "Phrases and patterns to avoid". Do not use those
+phrases, patterns, or close paraphrases in any language. For example, if the user
+forbids "I find it interesting, especially X", also forbid Spanish variants such
+as "suena muy interesante, especialmente…". Prefer a specific, personal
+appreciation instead of that template.
+
 Never claim the message was sent. This is a draft only.
 
 Respond in English with exactly these markdown sections:
@@ -39,6 +49,7 @@ One of: interested / maybe / decline. Brief reasons vs the preferences.
 A copy-paste-ready message body only (no quotes wrapping the whole reply).
 Match the recruiter language if the preferences say so; otherwise use a
 professional tone consistent with reply_style and the sample replies.
+The proposed reply must satisfy the hard avoid constraints.
 
 ## Confirmation required
 Remind the user this is a draft. They must review, edit if needed, and
@@ -69,9 +80,13 @@ def generate_linkedin_reply_draft(
         Structured draft text for the agent to show the user.
     """
     prefs_block = format_preferences_for_prompt(preferences)
+    avoid_block = format_avoid_constraints_for_prompt(
+        extract_avoid_constraints(preferences)
+    )
     examples_block = format_reply_examples_for_prompt(reply_examples or [])
     notes = user_notes.strip() or "(none)"
     human = (
+        f"## Phrases and patterns to avoid (HARD CONSTRAINTS)\n{avoid_block}\n\n"
         f"## Job preferences\n{prefs_block}\n\n"
         f"## Sample replies (style reference)\n{examples_block}\n\n"
         f"## Incoming message / thread\n{message_context.strip()}\n\n"

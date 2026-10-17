@@ -165,3 +165,87 @@ def format_preferences_for_prompt(preferences: dict[str, Any] | None) -> str:
             "Draft a generic professional reply and note that criteria are unset."
         )
     return yaml.safe_dump(preferences, sort_keys=False, allow_unicode=True).strip()
+
+
+_AVOID_KEY_NAMES = frozenset(
+    {
+        "avoid",
+        "avoid_phrases",
+        "avoid_phrase",
+        "do_not_use",
+        "phrases_to_avoid",
+    }
+)
+
+
+def _constraint_texts(value: Any) -> list[str]:
+    """Normalize a preferences value into constraint strings."""
+    if isinstance(value, str):
+        text = value.strip()
+        return [text] if text else []
+    if isinstance(value, list):
+        texts: list[str] = []
+        for item in value:
+            texts.extend(_constraint_texts(item))
+        return texts
+    return []
+
+
+def extract_avoid_constraints(preferences: dict[str, Any] | None) -> list[str]:
+    """
+    Collect phrasing constraints the draft must not violate.
+
+    Looks for known keys such as ``avoid``, ``avoid_phrases`` under
+    ``reply_style``, ``tone_and_language``, and nested mappings.
+
+    Args:
+        preferences: Loaded preferences mapping, or ``None``.
+
+    Returns:
+        Deduplicated list of constraint strings (order preserved).
+    """
+    if not preferences:
+        return []
+
+    found: list[str] = []
+
+    def walk(node: Any) -> None:
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if isinstance(key, str) and key.lower() in _AVOID_KEY_NAMES:
+                    found.extend(_constraint_texts(value))
+                else:
+                    walk(value)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(preferences)
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for text in found:
+        if text not in seen:
+            seen.add(text)
+            deduped.append(text)
+    return deduped
+
+
+def format_avoid_constraints_for_prompt(constraints: list[str]) -> str:
+    """
+    Render avoid constraints as a prominent prompt block.
+
+    Args:
+        constraints: Strings from ``extract_avoid_constraints``.
+
+    Returns:
+        Human-readable hard-constraint section, or a short note if empty.
+    """
+    if not constraints:
+        return "None specified beyond general professionalism."
+    lines = [
+        "These are HARD constraints. Do not use these phrases, patterns, or "
+        "close paraphrases in ANY language (including Spanish translations):",
+    ]
+    for item in constraints:
+        lines.append(f"- {item}")
+    return "\n".join(lines)
