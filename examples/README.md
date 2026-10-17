@@ -21,3 +21,5 @@ Place credentials under `data/google/<username>/<account>/` (see `data/google/ex
 Preferred: ask Jarvis in chat to set up or update your job / LinkedIn reply preferences. It interviews you and writes `data/users/<your_real_name>/job_preferences.yaml` via `save_job_preferences_tool` after you confirm.
 
 Alternatively, copy [`data/users/example_user/job_preferences.yaml`](../data/users/example_user/job_preferences.yaml) and edit by hand. The same file is used by `draft_linkedin_reply_tool`.
+
+Optional style samples: put complete messages you like in [`data/users/example_user/linkedin_reply_examples.yaml`](../data/users/example_user/linkedin_reply_examples.yaml) (copy to your user folder). The draft tool uses them as phrasing/structure references.

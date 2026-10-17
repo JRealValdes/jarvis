@@ -15,6 +15,8 @@ def test_generate_linkedin_reply_draft_uses_complete_callable():
         assert "remote" in human
         assert "Hello from a recruiter" in human
         assert "ask about stack" in human
+        assert "Sample replies" in human
+        assert "Thank you for considering my profile" in human
         return (
             "## Fit assessment\ninterested — remote fits.\n\n"
             "## Proposed reply\nThanks for reaching out.\n\n"
@@ -25,6 +27,7 @@ def test_generate_linkedin_reply_draft_uses_complete_callable():
         "Hello from a recruiter",
         "ask about stack",
         prefs,
+        reply_examples=["Thank you for considering my profile.\n\nBest,"],
         complete=fake_complete,
     )
     assert "## Fit assessment" in result
@@ -44,9 +47,20 @@ def test_draft_tool_missing_prefs_and_mocked_llm(monkeypatch, tmp_path):
         "jarvis.infrastructure.users.job_preferences.USERS_DATA_DIR",
         tmp_path,
     )
+    monkeypatch.setattr(
+        "jarvis.infrastructure.users.linkedin_reply_examples.USERS_DATA_DIR",
+        tmp_path,
+    )
 
-    def fake_generate(message_context, user_notes, preferences, complete=None):
+    def fake_generate(
+        message_context,
+        user_notes,
+        preferences,
+        reply_examples=None,
+        complete=None,
+    ):
         assert preferences is None
+        assert reply_examples == []
         assert "Role at Acme" in message_context
         return (
             "## Fit assessment\nmaybe\n\n"
@@ -75,16 +89,31 @@ def test_draft_tool_loads_prefs(monkeypatch, tmp_path):
         "jarvis.infrastructure.users.job_preferences.USERS_DATA_DIR",
         tmp_path,
     )
+    monkeypatch.setattr(
+        "jarvis.infrastructure.users.linkedin_reply_examples.USERS_DATA_DIR",
+        tmp_path,
+    )
     user_dir = tmp_path / "alice"
     user_dir.mkdir()
     (user_dir / "job_preferences.yaml").write_text(
         "job_criteria:\n  work_mode: remote\n",
         encoding="utf-8",
     )
+    (user_dir / "linkedin_reply_examples.yaml").write_text(
+        "examples:\n  - |\n    Sample full reply thank you.\n",
+        encoding="utf-8",
+    )
 
-    def fake_generate(message_context, user_notes, preferences, complete=None):
+    def fake_generate(
+        message_context,
+        user_notes,
+        preferences,
+        reply_examples=None,
+        complete=None,
+    ):
         assert preferences is not None
         assert preferences["job_criteria"]["work_mode"] == "remote"
+        assert reply_examples == ["Sample full reply thank you."]
         return "## Fit assessment\ninterested\n\n## Proposed reply\nHi\n\n## Confirmation required\nYes"
 
     monkeypatch.setattr(
@@ -99,7 +128,42 @@ def test_draft_tool_loads_prefs(monkeypatch, tmp_path):
         }
     )
     assert "Loaded preferences from" in result
+    assert "Loaded 1 sample reply" in result
     assert "DRAFT ONLY" in result
+
+
+def test_draft_tool_reports_missing_examples(monkeypatch, tmp_path):
+    monkeypatch.setattr(
+        "jarvis.infrastructure.users.job_preferences.USERS_DATA_DIR",
+        tmp_path,
+    )
+    monkeypatch.setattr(
+        "jarvis.infrastructure.users.linkedin_reply_examples.USERS_DATA_DIR",
+        tmp_path,
+    )
+
+    def fake_generate(
+        message_context,
+        user_notes,
+        preferences,
+        reply_examples=None,
+        complete=None,
+    ):
+        assert reply_examples == []
+        return "## Fit assessment\nmaybe\n\n## Proposed reply\nHi\n\n## Confirmation required\nYes"
+
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.linkedin_reply.generate_linkedin_reply_draft",
+        fake_generate,
+    )
+    result = draft_linkedin_reply_tool.invoke(
+        {
+            "message_context": "Any role",
+            "user_notes": "",
+            "real_name": "alice",
+        }
+    )
+    assert "No sample replies file found" in result
 
 
 def test_tool_registered_in_local_tools():

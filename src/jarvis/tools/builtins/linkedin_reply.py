@@ -16,10 +16,18 @@ from jarvis.infrastructure.users.job_preferences import (
     job_preferences_path,
     load_job_preferences,
 )
+from jarvis.infrastructure.users.linkedin_reply_examples import (
+    format_reply_examples_for_prompt,
+    linkedin_reply_examples_path,
+    load_linkedin_reply_examples,
+)
 
 _DRAFT_SYSTEM_PROMPT = """\
 You help the user draft a LinkedIn (or recruiter) reply.
 Use the job preferences when present. Be honest about fit.
+When sample replies are provided, treat them as style references: match their
+structure, length, greeting/closing, and phrasing habits. Adapt the content to
+the new thread; do not copy an example verbatim unless it already fits.
 Never claim the message was sent. This is a draft only.
 
 Respond in English with exactly these markdown sections:
@@ -30,7 +38,7 @@ One of: interested / maybe / decline. Brief reasons vs the preferences.
 ## Proposed reply
 A copy-paste-ready message body only (no quotes wrapping the whole reply).
 Match the recruiter language if the preferences say so; otherwise use a
-professional tone consistent with reply_style.
+professional tone consistent with reply_style and the sample replies.
 
 ## Confirmation required
 Remind the user this is a draft. They must review, edit if needed, and
@@ -43,6 +51,7 @@ def generate_linkedin_reply_draft(
     user_notes: str,
     preferences: dict[str, Any] | None,
     *,
+    reply_examples: list[str] | None = None,
     complete: Callable[[list], str] | None = None,
 ) -> str:
     """
@@ -52,6 +61,7 @@ def generate_linkedin_reply_draft(
         message_context: Pasted thread or description of the incoming message.
         user_notes: Optional extra instructions from the user.
         preferences: Loaded job preferences, or ``None``.
+        reply_examples: Optional complete sample replies for style matching.
         complete: Optional callable that takes a list of LangChain messages and
             returns the model text. Defaults to a ChatOpenAI completion.
 
@@ -59,9 +69,11 @@ def generate_linkedin_reply_draft(
         Structured draft text for the agent to show the user.
     """
     prefs_block = format_preferences_for_prompt(preferences)
+    examples_block = format_reply_examples_for_prompt(reply_examples or [])
     notes = user_notes.strip() or "(none)"
     human = (
         f"## Job preferences\n{prefs_block}\n\n"
+        f"## Sample replies (style reference)\n{examples_block}\n\n"
         f"## Incoming message / thread\n{message_context.strip()}\n\n"
         f"## Extra notes from the user\n{notes}\n"
     )
@@ -90,13 +102,16 @@ def draft_linkedin_reply_tool(
     Draft a LinkedIn or recruiter reply using the user's job preferences.
 
     Call this when the user asks to reply to a LinkedIn message, a recruiter
-    outreach, or pastes such a thread. The result is always a draft: the user
-    must confirm before treating it as final. Jarvis does not send messages.
+    outreach, or pastes such a thread. Loads job preferences and optional
+    sample replies from data/users/<real_name>/ for style matching. The result
+    is always a draft: the user must confirm before treating it as final.
+    Jarvis does not send messages.
 
     Parameters:
     - message_context: the incoming message or thread text (required)
     - user_notes: optional extra guidance (e.g. "politely decline", "ask for salary band")
-    - real_name: injected user id used to load data/users/<real_name>/job_preferences.yaml
+    - real_name: injected user id; loads job_preferences.yaml and
+      linkedin_reply_examples.yaml under data/users/<real_name>/
     """
     try:
         if not message_context or not message_context.strip():
@@ -106,7 +121,13 @@ def draft_linkedin_reply_tool(
             )
         normalized = (real_name or "").strip().lower()
         preferences = load_job_preferences(normalized) if normalized else None
+        examples = (
+            load_linkedin_reply_examples(normalized) if normalized else []
+        )
         path = job_preferences_path(normalized) if normalized else None
+        examples_path = (
+            linkedin_reply_examples_path(normalized) if normalized else None
+        )
         prefs_status = (
             f"Loaded preferences from {path}."
             if preferences is not None and path is not None
@@ -117,13 +138,25 @@ def draft_linkedin_reply_tool(
                 else "No real_name in session; drafting without personal criteria."
             )
         )
+        if examples and examples_path is not None:
+            examples_status = (
+                f"Loaded {len(examples)} sample reply(ies) from {examples_path}."
+            )
+        elif examples_path is not None:
+            examples_status = (
+                f"No sample replies file found (expected {examples_path}). "
+                "Drafting without style examples."
+            )
+        else:
+            examples_status = "No sample replies loaded."
         draft = generate_linkedin_reply_draft(
             message_context,
             user_notes,
             preferences,
+            reply_examples=examples,
         )
         return (
-            f"{prefs_status}\n\n{draft}\n\n"
+            f"{prefs_status}\n{examples_status}\n\n{draft}\n\n"
             "---\n"
             "DRAFT ONLY — wait for the user's confirmation before treating "
             "this reply as final. Do not claim it was sent on LinkedIn."
