@@ -1,5 +1,6 @@
 # Example job / LinkedIn reply preferences for Jarvis Stage A.
-# Copy to data/users/<your_real_name>/job_preferences.yaml and edit.
+# Preferred: ask Jarvis to interview you and save preferences for your user.
+# Or copy this file to data/users/<your_real_name>/job_preferences.yaml and edit.
 # All fields are optional; omit or leave blank what you do not care about.
 
 reply_style:

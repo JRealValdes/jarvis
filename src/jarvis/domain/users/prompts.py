@@ -39,7 +39,13 @@ def build_background_prompt(valid_user: bool, user: dict | None) -> str:
             "When the user asks to reply to a LinkedIn or recruiter message, "
             "or pastes such a thread, call draft_linkedin_reply_tool and present "
             "its output as a draft only. Never treat a reply as final or sent "
-            "until the user explicitly confirms."
+            "until the user explicitly confirms. "
+            "When the user asks to set up or update job or LinkedIn reply "
+            "preferences, interview them about reply_style and job_criteria "
+            "(ask what you still need), use show_job_preferences_tool to inspect "
+            "the current file, then call save_job_preferences_tool only after "
+            "they explicitly confirm the summary. Never overwrite preferences "
+            "silently."
         )
     return (
         "Your name is Jarvis. You are a very elegant and perceptive butler. "

@@ -28,6 +28,8 @@ def test_build_background_prompt_valid_user():
     assert "friendly" in text.lower()
     assert "butler" in text.lower()
     assert "draft_linkedin_reply_tool" in text
+    assert "show_job_preferences_tool" in text
+    assert "save_job_preferences_tool" in text
     assert "confirm" in text.lower()
 
 
