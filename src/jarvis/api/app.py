@@ -12,6 +12,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from jarvis.agents.mcp_session import get_mcp_tool_session
+from jarvis.agents.session import invalidate_agents_cache
 from jarvis.api.deployment import run_with_optional_tunnel
 from jarvis.api.errors import ForbiddenError
 from jarvis.core.config import API_PORT, USE_MCP
@@ -34,6 +35,7 @@ async def _lifespan(_application: FastAPI) -> AsyncIterator[None]:
     try:
         yield
     finally:
+        await invalidate_agents_cache()
         await get_mcp_tool_session().close()
 
 

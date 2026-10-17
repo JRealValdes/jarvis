@@ -20,7 +20,7 @@ def get_agents_cache() -> dict[ModelEnum, JarvisAgent]:
     return _agents_cache
 
 
-def invalidate_agents_cache() -> None:
+async def invalidate_agents_cache() -> None:
     """
     Close and drop cached agents so the next turn rebuilds them.
 
@@ -31,7 +31,7 @@ def invalidate_agents_cache() -> None:
         None.
     """
     for agent in _agents_cache.values():
-        agent.cleanup()
+        await agent.cleanup()
     _agents_cache.clear()
 
 
@@ -88,10 +88,10 @@ def reset_session(thread_id: str, model: ModelEnum = DEFAULT_MODEL) -> None:
     _sessions_cache.pop(session_key, None)
 
 
-def _drop_cached_agents() -> None:
+async def _drop_cached_agents() -> None:
     """Close cached agents, drop sessions, and delete checkpoint files."""
     for agent in _agents_cache.values():
-        agent.cleanup()
+        await agent.cleanup()
     _agents_cache.clear()
     _sessions_cache.clear()
     clear_all_checkpoints()
@@ -104,5 +104,5 @@ async def reset_cache() -> None:
     Returns:
         None. Safe when MCP was never connected.
     """
-    _drop_cached_agents()
+    await _drop_cached_agents()
     await get_mcp_tool_session().close()
