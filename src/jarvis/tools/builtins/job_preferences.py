@@ -62,9 +62,13 @@ def save_job_preferences_tool(
     Show a clear summary of what will be written, then call this tool only after
     they explicitly confirm. Never call with confirmed=true without that approval.
 
+    Always pass preferences_yaml in English: translate the user's answers into
+    English for every string value (and keep keys in English). Do not save
+    Spanish or other non-English preference text in the YAML file.
+
     Parameters:
-    - preferences_yaml: YAML mapping aligned with the example job_preferences.yaml
-      (top-level keys such as reply_style and job_criteria)
+    - preferences_yaml: English YAML mapping aligned with the example
+      job_preferences.yaml (top-level keys such as reply_style and job_criteria)
     - confirmed: must be true to write; false refuses the write (use after user OK)
     - replace_all: if true, replace the whole file; if false (default), merge
     - real_name: injected user id

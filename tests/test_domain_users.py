@@ -31,6 +31,7 @@ def test_build_background_prompt_valid_user():
     assert "show_job_preferences_tool" in text
     assert "save_job_preferences_tool" in text
     assert "confirm" in text.lower()
+    assert "english" in text.lower()
 
 
 def test_build_background_prompt_intruder():
