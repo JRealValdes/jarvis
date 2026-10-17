@@ -1,0 +1,33 @@
+# Complete sample LinkedIn replies for style reference when drafting.
+# Copy to data/users/<your_real_name>/linkedin_reply_examples.yaml and edit.
+# Prefer full messages you would actually send. English is recommended for
+# consistency with job_preferences.yaml; the draft tool still follows
+# reply_style.language for the outbound message language.
+#
+# Each entry may be a plain string, or a mapping with body/text/message.
+
+examples:
+  - label: polite interest remote role
+    body: |
+      Hi María,
+
+      Thank you for considering my profile and for sharing the role details.
+
+      The stack and the remote setup look like a strong match for what I am
+      looking for. I would be glad to learn more about the team and next steps
+      whenever it is convenient for you.
+
+      Best regards,
+      Javier
+
+  - label: polite decline onsite only
+    body: |
+      Hi Carlos,
+
+      Thank you for reaching out and for thinking of me for this opportunity.
+
+      At the moment I am focused on fully remote roles, so I will have to pass
+      on this one. I appreciate the contact and wish you a successful search.
+
+      Kind regards,
+      Javier

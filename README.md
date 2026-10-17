@@ -74,9 +74,10 @@ App settings live in `jarvis.core.config` as typed defaults. Override any of the
 1. Copy `.env.example` to `.env` and fill in secrets (OpenAI, Fernet, JWT) plus any optional flags.
 2. Seed users into the local DB (see below).
 3. Google Calendar (optional): OAuth files under `data/google/<username>/<account>/` (see `data/google/example_user/`). Interactive flow: `examples/google_api_demo.ipynb`.
-4. MCP (optional): `JARVIS_USE_MCP=1`, edit `data/mcp/server_config.json`; server scripts live under `src/jarvis/mcp/servers/`.
-5. Public API tunnel (optional): `JARVIS_EXPOSE_API_WITH_CLOUDFLARED=1`.
-6. Local UI thread (optional): `JARVIS_LOCAL_THREAD_ID` (default `1`) is the checkpoint thread for the CLI and Gradio.
+4. Job / LinkedIn reply preferences (optional): ask Jarvis to interview you and save them (`show_job_preferences_tool` / `save_job_preferences_tool`), or copy `data/users/example_user/job_preferences.yaml` to `data/users/<real_name>/job_preferences.yaml` and edit. Optional style samples: copy `data/users/example_user/linkedin_reply_examples.yaml` to the same user folder. Used by `draft_linkedin_reply_tool`.
+5. MCP (optional): `JARVIS_USE_MCP=1`, edit `data/mcp/server_config.json`; server scripts live under `src/jarvis/mcp/servers/`.
+6. Public API tunnel (optional): `JARVIS_EXPOSE_API_WITH_CLOUDFLARED=1`.
+7. Local UI thread (optional): `JARVIS_LOCAL_THREAD_ID` (default `1`) is the checkpoint thread for the CLI and Gradio.
 
 ### Conversation threads
 
@@ -98,6 +99,8 @@ These live on each machine and are required (or optional) for a full local setup
 | Environment secrets | `.env` | Yes for real LLM/API use | Copy `.env.example` |
 | Users database | `data/users.db` | Yes for identification / API login | Seed with `scripts/users/manage_users.ipynb` from CSV (`example_users_info.csv` / your `secret_users_info.csv`) |
 | Google OAuth | `data/google/<user>/<account>/` (`*secret*.json`) | Only for Calendar tools | Google Cloud OAuth client + `examples/google_api_demo.ipynb` |
+| Job preferences | `data/users/<real_name>/job_preferences.yaml` | Only for LinkedIn reply drafting | Ask Jarvis to set them up, or copy from `data/users/example_user/job_preferences.yaml` |
+| LinkedIn reply samples | `data/users/<real_name>/linkedin_reply_examples.yaml` | Optional style references for drafts | Ask Jarvis to add samples, or copy from `data/users/example_user/linkedin_reply_examples.yaml` |
 | Firebase private key | `data/firebase_project_secret_private_key.json` | Only if using Firebase URL share | Firebase console |
 | MCP config | `data/mcp/server_config.json` | Only if `JARVIS_USE_MCP=1` | Tracked example config is in repo; customize locally if needed |
 | Conversation checkpoints | `data/checkpoints/{MODEL}.sqlite` | Created on first chat | Local SQLite; removed by a global memory reset |
@@ -154,6 +157,7 @@ jarvis/                          # repository root
 - [x] MCP - Jarvis MCP Memory Agent
 - [x] Upload to Render and expose API
 - [x] Google Calendar API
+- [x] LinkedIn reply drafting (Stage A: prefs YAML + draft tool + human confirmation)
 - [x] JWT Token Security
 - [x] Raspberry Pi / Server version
 - [x] Cloudflare API exposure - Firebase URL share

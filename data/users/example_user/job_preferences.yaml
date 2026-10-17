@@ -1,0 +1,34 @@
+# Example job / LinkedIn reply preferences for Jarvis Stage A.
+# Preferred: ask Jarvis to interview you and save preferences for your user.
+# Or copy this file to data/users/<your_real_name>/job_preferences.yaml and edit.
+# Store all preference text in English (chat may be in another language).
+# All fields are optional; omit or leave blank what you do not care about.
+
+reply_style:
+  tone: professional, warm, concise
+  language: match the recruiter (Spanish or English)
+  length: short (a few sentences)
+  avoid:
+    - oversharing personal details
+    - committing to interviews without confirmation
+
+job_criteria:
+  expected_salary: "EUR 50k–65k gross/year (full-time)"
+  work_mode: remote preferred; hybrid OK if near Madrid
+  contract_types:
+    - full-time employment
+    - long-term freelance (B2B) considered
+  seniority: mid / mid-senior
+  location: Spain / EU remote
+  tech_likes:
+    - Python
+    - FastAPI
+    - LLM / AI tooling
+  tech_dislikes:
+    - pure PHP maintenance with no modern stack
+  dealbreakers:
+    - unpaid trial projects longer than a few hours
+    - on-site only outside my city with no remote option
+  notes: >
+    Prefer roles with clear ownership and async-friendly teams.
+    Open to contract-to-hire if the rate and scope are clear.

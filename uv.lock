@@ -1105,6 +1105,7 @@ dependencies = [
     { name = "pyjwt" },
     { name = "python-dateutil" },
     { name = "python-dotenv" },
+    { name = "pyyaml" },
     { name = "requests" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -1135,6 +1136,7 @@ requires-dist = [
     { name = "pyjwt" },
     { name = "python-dateutil" },
     { name = "python-dotenv" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "requests" },
     { name = "uvicorn", extras = ["standard"] },
 ]

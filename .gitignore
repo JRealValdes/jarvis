@@ -12,6 +12,11 @@ my_notes.txt
 # Local runtime user DB (seed via scripts/users/)
 data/users.db
 
+# Per-user preference files (keep tracked example_user template)
+data/users/*
+!data/users/example_user/
+!data/users/example_user/**
+
 # Conversation checkpoints (SQLite, per model)
 data/checkpoints/
 
