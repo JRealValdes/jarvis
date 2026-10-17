@@ -1,5 +1,6 @@
 """Parse LangChain message history for API / UI consumers."""
 
+import asyncio
 import json
 import logging
 from typing import Any
@@ -96,9 +97,10 @@ def load_thread_snapshot(model: ModelEnum, thread_id: str) -> dict[str, Any] | N
     """
     Load the latest checkpoint for a thread.
 
-    Uses the live agent graph when that model is already cached, so history
-    matches in-process state and a second SQLite connection is not opened.
-    After a restart, reads the model checkpoint file directly.
+    Uses the live agent graph when that model is already cached and this
+    call is not on the loop that owns the async checkpointer. ``get_state``
+    on ``AsyncSqliteSaver`` fails on that loop, so a running loop reads the
+    checkpoint file instead. After a restart, reads the file directly.
 
     Args:
         model: Model whose checkpoint file stores the thread.
@@ -114,7 +116,7 @@ def load_thread_snapshot(model: ModelEnum, thread_id: str) -> dict[str, Any] | N
     """
     agent = get_agents_cache().get(model)
     config = {"configurable": {"thread_id": thread_id}}
-    if agent is not None and getattr(agent, "memory", None) is not None:
+    if _can_read_live_graph(agent):
         snapshot = agent.graph.get_state(config)
         values = snapshot.values if isinstance(snapshot.values, dict) else {}
         return _snapshot_from_values(values)
@@ -133,6 +135,29 @@ def load_thread_snapshot(model: ModelEnum, thread_id: str) -> dict[str, Any] | N
     if not isinstance(values, dict):
         return None
     return _snapshot_from_values(values)
+
+
+def _can_read_live_graph(agent: object | None) -> bool:
+    """
+    Report whether ``agent.graph.get_state`` is safe to call.
+
+    Args:
+        agent: Cached agent, or None when this model has no live graph.
+
+    Returns:
+        True when the agent has a compiled graph and the caller is not on
+        a running event loop. False when the graph is not open yet, or when
+        the caller is on the loop that owns ``AsyncSqliteSaver``.
+    """
+    if agent is None or getattr(agent, "graph", None) is None:
+        return False
+    if getattr(agent, "memory", None) is None:
+        return False
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return True
+    return False
 
 
 def get_message_history(

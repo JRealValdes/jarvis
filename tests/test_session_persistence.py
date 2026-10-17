@@ -1,5 +1,7 @@
 """Checkpoint-backed history and session state (no network)."""
 
+import asyncio
+
 from langchain_core.messages import AIMessage, HumanMessage
 
 from jarvis.agents.checkpointer import open_model_checkpointer
@@ -90,6 +92,30 @@ def test_message_history_prefers_live_agent_graph():
     try:
         history = get_message_history("ada", ModelEnum.GPT_4O_MINI)
         assert history == [{"role": "user", "content": "in-memory"}]
+    finally:
+        cache.pop(ModelEnum.GPT_4O_MINI, None)
+
+
+def test_message_history_reads_disk_on_the_running_loop():
+    _seed_thread("ada", "on-disk", "Ada")
+
+    class _Graph:
+        def get_state(self, config: dict) -> object:
+            raise AssertionError("sync get_state on the running loop")
+
+    class _Agent:
+        graph = _Graph()
+        memory = object()
+
+    cache = get_agents_cache()
+    cache[ModelEnum.GPT_4O_MINI] = _Agent()
+    try:
+
+        async def _read() -> list[dict]:
+            return get_message_history("ada", ModelEnum.GPT_4O_MINI)
+
+        history = asyncio.run(_read())
+        assert history[0] == {"role": "user", "content": "on-disk"}
     finally:
         cache.pop(ModelEnum.GPT_4O_MINI, None)
 

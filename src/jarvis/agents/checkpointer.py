@@ -2,13 +2,19 @@
 
 Each model has its own file under ``data/checkpoints``. The file outlives the
 process, so a restart keeps the thread. Global cache reset deletes the files.
+
+Live agents compile the graph with ``AsyncSqliteSaver`` because turns run
+through ``graph.ainvoke``. Sync ``SqliteSaver`` remains for one-shot thread
+deletes and tests that call ``graph.invoke``.
 """
 
 import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 
+import aiosqlite
 from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 from jarvis.core.enums import ModelEnum
 from jarvis.core.paths import DATA_DIR
@@ -73,9 +79,58 @@ def open_model_checkpointer(model: ModelEnum) -> SqliteCheckpoint:
     return open_checkpointer(checkpoint_path(model))
 
 
+@dataclass
+class AsyncSqliteCheckpoint:
+    """Open aiosqlite connection and the async LangGraph saver that uses it."""
+
+    path: Path
+    connection: aiosqlite.Connection
+    saver: AsyncSqliteSaver
+
+    async def close(self) -> None:
+        """Close the aiosqlite connection."""
+        await self.connection.close()
+
+
+async def aopen_checkpointer(path: Path) -> AsyncSqliteCheckpoint:
+    """
+    Open an async SQLite checkpointer at ``path``, creating parent directories.
+
+    Must run on the event loop that will later ``ainvoke`` the graph.
+    ``AsyncSqliteSaver`` binds its lock to that loop.
+
+    Args:
+        path: Database file. Created on first setup.
+
+    Returns:
+        Connection and saver. Caller must ``await close``.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    connection = await aiosqlite.connect(str(path))
+    saver = AsyncSqliteSaver(connection)
+    await saver.setup()
+    return AsyncSqliteCheckpoint(path=path, connection=connection, saver=saver)
+
+
+async def aopen_model_checkpointer(model: ModelEnum) -> AsyncSqliteCheckpoint:
+    """
+    Open the async checkpointer file for ``model``.
+
+    Args:
+        model: Model whose thread store should be opened.
+
+    Returns:
+        Open async checkpoint handle.
+    """
+    return await aopen_checkpointer(checkpoint_path(model))
+
+
 def delete_persisted_thread(model: ModelEnum, thread_id: str) -> None:
     """
-    Delete one thread from disk when no live agent holds the file.
+    Delete one thread from the model's checkpoint file.
+
+    Opens a short-lived sync connection. That still works while an async saver
+    holds the same file, because both connections use WAL.
 
     Args:
         model: Model file to update.

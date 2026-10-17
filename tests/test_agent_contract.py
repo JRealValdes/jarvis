@@ -150,7 +150,7 @@ def test_ensure_mcp_ready_invalidates_agents_after_broken_reconnect(
     session = MagicMock()
     session.is_broken = True
     session.ensure_ready = AsyncMock(return_value=[])
-    invalidate = MagicMock()
+    invalidate = AsyncMock()
     monkeypatch.setattr(orchestrator, "USE_MCP", True)
     monkeypatch.setattr(orchestrator, "get_mcp_tool_session", lambda: session)
     monkeypatch.setattr(orchestrator, "invalidate_agents_cache", invalidate)
@@ -158,11 +158,12 @@ def test_ensure_mcp_ready_invalidates_agents_after_broken_reconnect(
     asyncio.run(orchestrator._ensure_mcp_ready())
 
     session.ensure_ready.assert_awaited_once()
-    invalidate.assert_called_once()
+    invalidate.assert_awaited_once()
 
 
 def test_reset_cache_closes_mcp_and_agents():
     agent = MagicMock()
+    agent.cleanup = AsyncMock()
     session = MagicMock()
     session.close = AsyncMock()
     get_agents_cache()[ModelEnum.GPT_4O_MINI] = agent

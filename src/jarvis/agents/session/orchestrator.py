@@ -334,7 +334,7 @@ async def _ensure_mcp_ready() -> None:
     was_broken = session.is_broken
     await session.ensure_ready()
     if was_broken:
-        invalidate_agents_cache()
+        await invalidate_agents_cache()
 
 
 def _user_for_real_name(real_name: str) -> dict | None:

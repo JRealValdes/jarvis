@@ -3,7 +3,7 @@
 import asyncio
 
 from jarvis.agents.mcp_session import get_mcp_tool_session
-from jarvis.agents.session import ask_jarvis
+from jarvis.agents.session import ask_jarvis, invalidate_agents_cache
 from jarvis.core.config import DEFAULT_MODEL, LOCAL_THREAD_ID, USE_MCP
 
 model_used = DEFAULT_MODEL
@@ -45,7 +45,9 @@ async def _async_loop() -> None:
     Run the console chat on one event loop.
 
     When MCP is enabled, opens the tool session for the whole conversation and
-    closes it on exit. Without MCP the loop still drives ``ask_jarvis``.
+    closes it on exit. Always closes cached agents so the async SQLite
+    connection does not keep the process alive. Without MCP the loop still
+    drives ``ask_jarvis``.
 
     Returns:
         None.
@@ -60,6 +62,7 @@ async def _async_loop() -> None:
             response = await ask_jarvis(question, model_used, thread_id=thread_id)
             _print_replies(response)
     finally:
+        await invalidate_agents_cache()
         if USE_MCP:
             await get_mcp_tool_session().close()
 

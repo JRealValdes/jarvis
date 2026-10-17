@@ -1,11 +1,13 @@
 """SQLite conversation checkpoints survive a reopen and honor reset (no network)."""
 
 import asyncio
+from unittest.mock import MagicMock, patch
 
 from langchain_core.messages import AIMessage, HumanMessage
 
 from jarvis.agents.checkpointer import open_model_checkpointer
 from jarvis.agents.graph import compile_tool_agent
+from jarvis.agents.implementations.memory import JarvisMemoryAgent
 from jarvis.agents.session import reset_cache, reset_session
 from jarvis.core.enums import ModelEnum
 
@@ -70,6 +72,40 @@ def test_thread_survives_reopen_and_reset_session_drops_it():
         assert _human_contents(state) == ["three"]
     finally:
         after_reset.close()
+
+
+@patch("jarvis.agents.implementations.memory.ChatOpenAI")
+def test_ainvoke_persists_thread_and_delete_drops_it(mock_chat_openai: MagicMock):
+    fake_llm = MagicMock()
+    fake_llm.bind_tools.return_value = fake_llm
+    fake_llm.invoke.return_value = AIMessage(content="ack")
+    mock_chat_openai.return_value = fake_llm
+
+    async def _turn(agent: JarvisMemoryAgent, text: str) -> dict:
+        return await agent.invoke(
+            input={"messages": [HumanMessage(content=text)], "real_name": "Ada"},
+            config={"configurable": {"thread_id": "ada"}},
+        )
+
+    async def _run() -> None:
+        opened = JarvisMemoryAgent(ModelEnum.GPT_4O_MINI)
+        try:
+            state = await _turn(opened, "one")
+            assert _human_contents(state) == ["one"]
+        finally:
+            await opened.cleanup()
+
+        reopened = JarvisMemoryAgent(ModelEnum.GPT_4O_MINI)
+        try:
+            state = await _turn(reopened, "two")
+            assert _human_contents(state) == ["one", "two"]
+            reopened.memory.delete_thread("ada")
+            state = await _turn(reopened, "three")
+            assert _human_contents(state) == ["three"]
+        finally:
+            await reopened.cleanup()
+
+    asyncio.run(_run())
 
 
 def test_reset_cache_deletes_checkpoint_files():
