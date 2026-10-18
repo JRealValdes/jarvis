@@ -80,6 +80,18 @@ def test_format_reply_examples_for_prompt_lists():
     assert "Second" in text
 
 
+def test_format_reply_examples_for_prompt_includes_labels():
+    text = format_reply_examples_for_prompt(
+        [
+            {"label": "clarify work mode", "body": "Hi,\n\nThanks."},
+            {"label": "", "body": "Plain body only."},
+        ]
+    )
+    assert "### Example 1 (clarify work mode)" in text
+    assert "Hi,\n\nThanks." in text
+    assert "### Example 2\nPlain body only." in text
+
+
 def test_example_user_samples_file_exists():
     from jarvis.core.paths import USERS_DATA_DIR
 
