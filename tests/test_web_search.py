@@ -153,11 +153,88 @@ def test_web_search_tool_query_only(monkeypatch):
             }
         ],
     )
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_search.fetch_public_page",
+        lambda url: {
+            "url": url,
+            "title": "Acme careers",
+            "text": "We are hiring engineers.",
+        },
+    )
     text = web_search_tool.invoke({"query": "Acme jobs", "url": ""})
     assert "## Search results" in text
     assert "https://acme.example/" in text
     assert "Hiring engineers" in text
-    assert "Glassdoor" in text
+    assert "## Fetched page" in text
+    assert "We are hiring engineers." in text
+    assert "stale" in text.lower()
+
+
+def test_web_search_tool_fetch_top_zero_skips_auto_fetch(monkeypatch):
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_search.search_public_web",
+        lambda query, max_results=5: [
+            {
+                "title": "Acme",
+                "url": "https://acme.example/",
+                "snippet": "Hiring engineers",
+            }
+        ],
+    )
+    calls: list[str] = []
+
+    def fake_fetch(url: str) -> dict[str, str]:
+        calls.append(url)
+        return {"url": url, "title": "x", "text": "y"}
+
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_search.fetch_public_page",
+        fake_fetch,
+    )
+    text = web_search_tool.invoke(
+        {"query": "Acme jobs", "url": "", "fetch_top": 0}
+    )
+    assert calls == []
+    assert "## Fetched page" not in text
+    assert "https://acme.example/" in text
+
+
+def test_web_search_tool_skips_blocked_then_fetches_next(monkeypatch):
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_search.search_public_web",
+        lambda query, max_results=5: [
+            {
+                "title": "Glassdoor",
+                "url": "https://www.glassdoor.com/Reviews/x.htm",
+                "snippet": "reviews",
+            },
+            {
+                "title": "Official",
+                "url": "https://example.com/season",
+                "snippet": "Season 10.5",
+            },
+        ],
+    )
+
+    def fake_fetch(url: str) -> dict[str, str]:
+        if "glassdoor" in url:
+            raise UrlPolicyError("Glassdoor blocked")
+        return {
+            "url": url,
+            "title": "Season hub",
+            "text": "Current season is 10.5",
+        }
+
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_search.fetch_public_page",
+        fake_fetch,
+    )
+    text = web_search_tool.invoke(
+        {"query": "Marvel Rivals current season", "fetch_top": 1}
+    )
+    assert "Skipped page" in text
+    assert "Current season is 10.5" in text
+
 
 
 def test_web_search_tool_url_blocked():

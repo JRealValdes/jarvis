@@ -40,6 +40,10 @@ def test_build_background_prompt_valid_user():
     assert "do not call draft_linkedin_reply_tool again" in text.lower()
     assert "approved wording" in text.lower()
     assert "stored in english" in text.lower()
+    assert "reply in the language of the user's latest message" in text.lower()
+    assert "web_search_tool" in text
+    assert "current_date_time_tool" in text
+
 
 
 def test_build_background_prompt_intruder():
