@@ -47,9 +47,10 @@ def test_add_tool_writes_when_confirmed(tmp_path, monkeypatch):
         "jarvis.infrastructure.users.linkedin_reply_examples.USERS_DATA_DIR",
         tmp_path,
     )
+    body = "Gracias por contactarme.\n\nUn saludo,"
     result = add_linkedin_reply_example_tool.invoke(
         {
-            "message_body": "Gracias por contactarme.\n\nUn saludo,",
+            "message_body": body,
             "label": "thanks es",
             "confirmed": True,
             "real_name": "alice",
@@ -60,7 +61,14 @@ def test_add_tool_writes_when_confirmed(tmp_path, monkeypatch):
     entries = load_linkedin_reply_example_entries("alice")
     assert len(entries) == 1
     assert entries[0]["label"] == "thanks es"
-    assert "Gracias por contactarme." in entries[0]["body"]
+    assert entries[0]["body"] == body
+
+
+def test_add_tool_description_requires_explicit_user_request():
+    description = add_linkedin_reply_example_tool.description.lower()
+    assert "explicitly asks" in description
+    assert "exact wording" in description
+    assert "do not regenerate" in description or "paraphrase" in description
 
 
 def test_example_tools_registered():

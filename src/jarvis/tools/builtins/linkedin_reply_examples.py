@@ -60,13 +60,15 @@ def add_linkedin_reply_example_tool(
     """
     Append one complete LinkedIn reply sample for style matching when drafting.
 
-    Use when the user pastes a full message they want Jarvis to treat as a
-    writing sample. Keep the message in the language and wording the user
-    provided (do not force English). Show the sample back, then call only after
-    they explicitly confirm. Never call with confirmed=true without approval.
+    Call only when the user explicitly asks to save a reply as a style example
+    (not when they merely approve a draft for copy-paste). Pass message_body as
+    the exact wording and language they approved—do not regenerate, paraphrase,
+    or call draft_linkedin_reply_tool again. Show the sample back, then call
+    only after they explicitly confirm the save. Never call with
+    confirmed=true without that approval.
 
     Parameters:
-    - message_body: the complete sample reply text (required)
+    - message_body: the complete sample reply text, verbatim (required)
     - label: optional short English label (e.g. "polite decline remote")
     - confirmed: must be true to write; false refuses the write
     - real_name: injected user id

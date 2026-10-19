@@ -29,10 +29,13 @@ def test_generate_linkedin_reply_draft_uses_complete_callable():
         assert "Sample replies" in human
         assert "Thank you for considering my profile" in human
         assert "polite interest" in human
+        assert "cannot send linkedin messages" in system.lower()
+        assert "## Next step" in system
+        assert "ready to send" in system.lower()
         return (
             "## Fit assessment\ninterested — remote fits.\n\n"
             "## Proposed reply\nThanks for reaching out.\n\n"
-            "## Confirmation required\nPlease confirm before sending."
+            "## Next step\nAsk only whether they want to adjust anything."
         )
 
     result = generate_linkedin_reply_draft(
@@ -49,7 +52,7 @@ def test_generate_linkedin_reply_draft_uses_complete_callable():
     )
     assert "## Fit assessment" in result
     assert "## Proposed reply" in result
-    assert "Confirmation required" in result
+    assert "## Next step" in result
 
 
 def test_generate_draft_forces_english_despite_spanish_style_sample():
@@ -73,7 +76,7 @@ def test_generate_draft_forces_english_despite_spanish_style_sample():
         return (
             "## Fit assessment\nmaybe\n\n"
             "## Proposed reply\nHi,\n\nThank you for reaching out.\n\n"
-            "## Confirmation required\nConfirm first."
+            "## Next step\nAsk only whether they want to adjust anything."
         )
 
     generate_linkedin_reply_draft(
@@ -100,7 +103,7 @@ def test_generate_draft_detects_spanish_and_allows_override():
             "Required language for the Proposed reply: Spanish"
             in messages[1].content
         )
-        return "## Fit assessment\nmaybe\n\n## Proposed reply\nHola\n\n## Confirmation required\nYes"
+        return "## Fit assessment\nmaybe\n\n## Proposed reply\nHola\n\n## Next step\nAsk only about adjustments."
 
     generate_linkedin_reply_draft(
         spanish_thread,
@@ -114,7 +117,7 @@ def test_generate_draft_detects_spanish_and_allows_override():
             "Required language for the Proposed reply: English"
             in messages[1].content
         )
-        return "## Fit assessment\nmaybe\n\n## Proposed reply\nHi\n\n## Confirmation required\nYes"
+        return "## Fit assessment\nmaybe\n\n## Proposed reply\nHi\n\n## Next step\nAsk only about adjustments."
 
     generate_linkedin_reply_draft(
         spanish_thread,
@@ -157,7 +160,7 @@ def test_draft_tool_missing_prefs_and_mocked_llm(monkeypatch, tmp_path):
         return (
             "## Fit assessment\nmaybe\n\n"
             "## Proposed reply\nHello.\n\n"
-            "## Confirmation required\nConfirm first."
+            "## Next step\nAsk only about adjustments."
         )
 
     monkeypatch.setattr(
@@ -174,6 +177,9 @@ def test_draft_tool_missing_prefs_and_mocked_llm(monkeypatch, tmp_path):
     assert "No job preferences file found" in result
     assert "Reply language: English" in result
     assert "DRAFT ONLY" in result
+    assert "cannot send LinkedIn messages" in result
+    assert "adjust anything" in result.lower()
+    assert "ready to send" in result.lower()
     assert "## Proposed reply" in result
 
 
@@ -211,7 +217,7 @@ def test_draft_tool_loads_prefs(monkeypatch, tmp_path):
             {"label": "", "body": "Sample full reply thank you."}
         ]
         assert reply_language == "English"
-        return "## Fit assessment\ninterested\n\n## Proposed reply\nHi\n\n## Confirmation required\nYes"
+        return "## Fit assessment\ninterested\n\n## Proposed reply\nHi\n\n## Next step\nAsk only about adjustments."
 
     monkeypatch.setattr(
         "jarvis.tools.builtins.linkedin_reply.generate_linkedin_reply_draft",
@@ -250,7 +256,7 @@ def test_draft_tool_reports_missing_examples(monkeypatch, tmp_path):
     ):
         assert reply_examples == []
         assert reply_language == "English"
-        return "## Fit assessment\nmaybe\n\n## Proposed reply\nHi\n\n## Confirmation required\nYes"
+        return "## Fit assessment\nmaybe\n\n## Proposed reply\nHi\n\n## Next step\nAsk only about adjustments."
 
     monkeypatch.setattr(
         "jarvis.tools.builtins.linkedin_reply.generate_linkedin_reply_draft",
@@ -265,6 +271,13 @@ def test_draft_tool_reports_missing_examples(monkeypatch, tmp_path):
     )
     assert "No sample replies file found" in result
     assert "Reply language: English" in result
+
+
+def test_draft_tool_description_is_copy_paste_only():
+    description = draft_linkedin_reply_tool.description.lower()
+    assert "cannot send" in description
+    assert "do not call again" in description
+    assert "style example" in description
 
 
 def test_tool_registered_in_local_tools():

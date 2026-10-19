@@ -34,6 +34,11 @@ def test_build_background_prompt_valid_user():
     assert "show_linkedin_reply_examples_tool" in text
     assert "confirm" in text.lower()
     assert "english" in text.lower()
+    assert "no tools to send" in text.lower()
+    assert "adjust" in text.lower()
+    assert "ready to send" in text.lower()
+    assert "do not call draft_linkedin_reply_tool again" in text.lower()
+    assert "exact wording" in text.lower()
 
 
 def test_build_background_prompt_intruder():
