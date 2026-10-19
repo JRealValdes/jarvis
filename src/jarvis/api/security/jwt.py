@@ -1,16 +1,19 @@
 """JWT payload building and signing (no FastAPI dependencies)."""
 
-import os
 from datetime import datetime, timedelta, timezone
 
 import jwt
 
-from jarvis.core.config import JWT_ALGORITHM, JWT_EXP_DELTA_SECONDS
+from jarvis.core.config import (
+    JWT_ALGORITHM,
+    JWT_EXP_DELTA_SECONDS,
+    get_jwt_secret_key as read_jwt_secret_key,
+)
 
 
 def get_jwt_secret_key() -> str:
     """
-    Read the JWT signing key from the environment.
+    Read the JWT signing key from Jarvis configuration.
 
     Returns:
         Value of ``JWT_SECRET_KEY``.
@@ -18,10 +21,7 @@ def get_jwt_secret_key() -> str:
     Raises:
         RuntimeError: If the variable is not set.
     """
-    secret = os.getenv("JWT_SECRET_KEY")
-    if not secret:
-        raise RuntimeError("JWT_SECRET_KEY is not set")
-    return secret
+    return read_jwt_secret_key()
 
 
 def build_token_payload(

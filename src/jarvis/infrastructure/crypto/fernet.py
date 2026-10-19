@@ -1,12 +1,10 @@
 """Symmetric encryption (Fernet) and hashing utilities for user data."""
 
 import hashlib
-import os
 
 from cryptography.fernet import Fernet
-from dotenv import load_dotenv
 
-load_dotenv()
+from jarvis.core.config import get_fernet_key
 
 _fernet: Fernet | None = None
 
@@ -23,10 +21,7 @@ def _get_fernet() -> Fernet:
     """
     global _fernet
     if _fernet is None:
-        key = os.getenv("FERNET_KEY")
-        if not key:
-            raise RuntimeError("FERNET_KEY is not set")
-        _fernet = Fernet(key)
+        _fernet = Fernet(get_fernet_key())
     return _fernet
 
 

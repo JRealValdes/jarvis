@@ -1,21 +1,21 @@
-"""FastAPI Jarvis application bootstrap."""
+"""FastAPI Jarvis application bootstrap.
+
+``jarvis.core.config`` is imported before other Jarvis modules so ``.env``
+loads once (see that module).
+"""
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-
-from dotenv import load_dotenv
-
-load_dotenv()
 
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from jarvis.core.config import API_PORT, USE_MCP
 from jarvis.agents.mcp_session import get_mcp_tool_session
 from jarvis.agents.session import invalidate_agents_cache
 from jarvis.api.deployment import run_with_optional_tunnel
 from jarvis.api.errors import ForbiddenError
-from jarvis.core.config import API_PORT, USE_MCP
 from jarvis.core.logging_config import configure_logging
 
 configure_logging()

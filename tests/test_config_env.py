@@ -112,3 +112,41 @@ def test_identification_protocol_from_env(monkeypatch: pytest.MonkeyPatch):
         _reload_config().IDENTIFICATION_FAILED_PROTOCOL
         == IdentificationFailedProtocolEnum.HOSTILE_RESPONSES
     )
+
+
+def test_secrets_and_deployment_settings_from_env(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("JWT_SECRET_KEY", "jwt-test")
+    monkeypatch.setenv("FERNET_KEY", "fernet-test")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "bot")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", " 99 ")
+    monkeypatch.setenv("FIREBASE_DB_URL", "https://example.firebaseio.com")
+    monkeypatch.setenv("FIREBASE_NODE_PATH", "jarvis/test")
+    config = _reload_config()
+    assert config.get_jwt_secret_key() == "jwt-test"
+    assert config.get_fernet_key() == "fernet-test"
+    assert config.get_telegram_bot_token() == "bot"
+    assert config.get_telegram_chat_id() == "99"
+    assert config.get_firebase_db_url() == "https://example.firebaseio.com"
+    assert config.get_firebase_node_path() == "jarvis/test"
+
+
+def test_optional_deployment_settings_default(monkeypatch: pytest.MonkeyPatch):
+    for name in (
+        "TELEGRAM_BOT_TOKEN",
+        "TELEGRAM_CHAT_ID",
+        "FIREBASE_DB_URL",
+        "FIREBASE_NODE_PATH",
+    ):
+        # Empty counts as unset, and blocks load_dotenv from refilling .env values.
+        monkeypatch.setenv(name, "")
+    config = _reload_config()
+    assert config.get_telegram_bot_token() is None
+    assert config.get_telegram_chat_id() is None
+    assert config.get_firebase_db_url() is None
+    assert config.get_firebase_node_path() == "jarvis/latest_url"
+
+
+def test_required_secret_raises_when_missing(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("JWT_SECRET_KEY", "  ")
+    with pytest.raises(RuntimeError, match="JWT_SECRET_KEY is not set"):
+        _reload_config().get_jwt_secret_key()
