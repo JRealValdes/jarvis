@@ -9,24 +9,37 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, Tool
 
 from jarvis.agents.checkpointer import checkpoint_path, open_model_checkpointer
 from jarvis.agents.session.cache import get_agents_cache
-from jarvis.core.config import DEFAULT_MODEL
+from jarvis.core.config import DEFAULT_MODEL, SHOW_TOOL_TRACES
 from jarvis.core.enums import ModelEnum
 
 logger = logging.getLogger(__name__)
 
-NOT_VERBOSED_TOOLS = ["get_upcoming_events_tool"]
 
-
-def parse_message_list(messages: list) -> list[dict]:
+def parse_message_list(
+    messages: list,
+    *,
+    show_tool_traces: bool | None = None,
+) -> list[dict]:
     """
     Convert LangChain messages to ``{role, content}`` dicts for the API.
 
+    When ``show_tool_traces`` is False (the default via config), tool call
+    announcements and tool results are omitted so the UI only shows the
+    final assistant replies. Enable ``JARVIS_SHOW_TOOL_TRACES`` (or pass
+    ``True``) to paint every tool the same way. For full agent/tool
+    inspection without chat noise, use LangSmith tracing (see README).
+
     Args:
         messages: List of SystemMessage, HumanMessage, AIMessage, ToolMessage.
+        show_tool_traces: Whether to include tool call/result messages.
+            ``None`` uses ``SHOW_TOOL_TRACES`` from config.
 
     Returns:
         List of dicts with roles ``system``, ``user``, or ``assistant``.
     """
+    include_tools = (
+        SHOW_TOOL_TRACES if show_tool_traces is None else show_tool_traces
+    )
     result = []
     for msg in messages:
         if isinstance(msg, SystemMessage):
@@ -34,36 +47,42 @@ def parse_message_list(messages: list) -> list[dict]:
         elif isinstance(msg, HumanMessage):
             result.append({"role": "user", "content": msg.content})
         elif isinstance(msg, AIMessage):
-            if "tool_calls" in msg.additional_kwargs:
-                for tool_call in msg.additional_kwargs["tool_calls"]:
-                    args_dict = json.loads(tool_call["function"]["arguments"])
-                    args_str = ", ".join(
-                        f"{key}={value}" for key, value in args_dict.items()
-                    )
-                    if args_str:
-                        result.append(
-                            {
-                                "role": "assistant",
-                                "content": (
-                                    f"Calling function: {tool_call['function']['name']}. "
-                                    f"Arguments: {args_str}"
-                                ),
-                            }
+            tool_calls = msg.additional_kwargs.get("tool_calls") or []
+            if tool_calls:
+                if include_tools:
+                    for tool_call in tool_calls:
+                        args_dict = json.loads(tool_call["function"]["arguments"])
+                        args_str = ", ".join(
+                            f"{key}={value}" for key, value in args_dict.items()
                         )
-                    else:
-                        result.append(
-                            {
-                                "role": "assistant",
-                                "content": (
-                                    f"Calling function: {tool_call['function']['name']}. "
-                                    "No arguments."
-                                ),
-                            }
-                        )
+                        if args_str:
+                            result.append(
+                                {
+                                    "role": "assistant",
+                                    "content": (
+                                        f"Calling function: "
+                                        f"{tool_call['function']['name']}. "
+                                        f"Arguments: {args_str}"
+                                    ),
+                                }
+                            )
+                        else:
+                            result.append(
+                                {
+                                    "role": "assistant",
+                                    "content": (
+                                        f"Calling function: "
+                                        f"{tool_call['function']['name']}. "
+                                        "No arguments."
+                                    ),
+                                }
+                            )
+                elif msg.content:
+                    result.append({"role": "assistant", "content": msg.content})
             else:
                 result.append({"role": "assistant", "content": msg.content})
         elif isinstance(msg, ToolMessage):
-            if msg.name not in NOT_VERBOSED_TOOLS or "error" in msg.content.lower():
+            if include_tools:
                 result.append(
                     {
                         "role": "assistant",

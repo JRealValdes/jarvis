@@ -6,8 +6,10 @@ Jarvis code so a local ``.env`` is applied before settings are read.
 
 Public variable names stay as documented in ``.env.example`` (``JARVIS_*``,
 ``JWT_*``, ``API_PORT``, ``TELEGRAM_*``, ``FIREBASE_*``, ``FERNET_KEY``).
-``OPENAI_API_KEY`` is read by the OpenAI client, not by Jarvis. Add new
-settings here instead of calling ``os.getenv`` elsewhere.
+``OPENAI_API_KEY`` is read by the OpenAI client, not by Jarvis.
+``LANGSMITH_*`` is read by the LangSmith SDK for optional tracing (documented
+in ``.env.example`` / README). Add new Jarvis settings here instead of
+calling ``os.getenv`` elsewhere.
 """
 
 from __future__ import annotations
@@ -173,6 +175,9 @@ JWT_EXP_DELTA_SECONDS: int = _env_int("JWT_EXP_DELTA_SECONDS", 3600)
 
 USE_MCP: bool = _env_flag("JARVIS_USE_MCP", default=False)
 """If True, OpenAI agents also receive tools from the process-wide MCP session."""
+
+SHOW_TOOL_TRACES: bool = _env_flag("JARVIS_SHOW_TOOL_TRACES", default=False)
+"""If True, chat history includes tool call/result messages. Default: final replies only."""
 
 API_PORT: int = _env_int("API_PORT", 8000)
 """HTTP port for the FastAPI server."""
