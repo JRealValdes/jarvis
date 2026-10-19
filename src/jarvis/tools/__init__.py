@@ -1,4 +1,4 @@
-"""Jarvis tools package: built-ins plus discovery registry."""
+"""Jarvis tools package: built-ins plus the explicit tool registry."""
 
 from jarvis.tools.registry import local_tools
 

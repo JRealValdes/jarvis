@@ -69,7 +69,7 @@ Docstring convention in production code: module + **Args** / **Returns** / **Rai
 
 ## Configuration
 
-App settings live in `jarvis.core.config` as typed defaults. Override any of them in `.env` (see `.env.example`).
+App settings live in `jarvis.core.config` as typed defaults. That module is the only place that calls `load_dotenv()` and the only place that reads environment variables. Entry points (`uv run jarvis`, root `app.py`, and the API) import it first. Override any setting in `.env` (see `.env.example`). Names stay public as written there (`JARVIS_*`, `JWT_*`, `API_PORT`, `TELEGRAM_*`, `FIREBASE_*`, `FERNET_KEY`). `OPENAI_API_KEY` is read by the OpenAI client, not by Jarvis code. Built-in tools are listed in `jarvis.tools.builtins.BUILTIN_TOOLS`.
 
 1. Copy `.env.example` to `.env` and fill in secrets (OpenAI, Fernet, JWT) plus any optional flags.
 2. Seed users into the local DB (see below).

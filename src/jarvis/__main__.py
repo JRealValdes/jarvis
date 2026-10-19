@@ -1,8 +1,13 @@
-"""Unified CLI: ``uv run jarvis chat|api|ui``."""
+"""Unified CLI: ``uv run jarvis chat|api|ui``.
+
+Imports ``jarvis.core.config`` first so ``.env`` loads before subcommands.
+"""
 
 from __future__ import annotations
 
 import argparse
+
+import jarvis.core.config  # noqa: F401  # load .env once before subcommands
 
 
 def _run_chat() -> None:

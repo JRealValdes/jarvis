@@ -1,7 +1,13 @@
-"""Jarvis settings: environment variables with typed defaults.
+"""Jarvis settings: the only module that loads ``.env`` and reads the environment.
 
-Import this module after secrets are available. ``load_dotenv()`` runs on
-import so a local ``.env`` is picked up for CLI, Gradio, and the API.
+``load_dotenv()`` runs once, on import. Entry points (``jarvis.__main__``,
+root ``app.py``, and ``jarvis.api.app``) import this module before other
+Jarvis code so a local ``.env`` is applied before settings are read.
+
+Public variable names stay as documented in ``.env.example`` (``JARVIS_*``,
+``JWT_*``, ``API_PORT``, ``TELEGRAM_*``, ``FIREBASE_*``, ``FERNET_KEY``).
+``OPENAI_API_KEY`` is read by the OpenAI client, not by Jarvis. Add new
+settings here instead of calling ``os.getenv`` elsewhere.
 """
 
 from __future__ import annotations
@@ -36,6 +42,22 @@ def _env_flag(name: str, default: bool = False) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _env_optional(name: str) -> str | None:
+    """
+    Read an optional string environment variable.
+
+    Args:
+        name: Environment variable name.
+
+    Returns:
+        Stripped value, or None when unset or empty.
+    """
+    raw = os.getenv(name)
+    if raw is None or raw.strip() == "":
+        return None
+    return raw.strip()
+
+
 def _env_str(name: str, default: str) -> str:
     """
     Read a string environment variable.
@@ -47,10 +69,29 @@ def _env_str(name: str, default: str) -> str:
     Returns:
         Stripped value, or ``default``.
     """
-    raw = os.getenv(name)
-    if raw is None or raw.strip() == "":
+    value = _env_optional(name)
+    if value is None:
         return default
-    return raw.strip()
+    return value
+
+
+def require_env(name: str) -> str:
+    """
+    Read a required string environment variable.
+
+    Args:
+        name: Environment variable name.
+
+    Returns:
+        Stripped value.
+
+    Raises:
+        RuntimeError: If the variable is unset or empty.
+    """
+    value = _env_optional(name)
+    if value is None:
+        raise RuntimeError(f"{name} is not set")
+    return value
 
 
 def _env_int(name: str, default: int) -> int:
@@ -135,3 +176,69 @@ USE_MCP: bool = _env_flag("JARVIS_USE_MCP", default=False)
 
 API_PORT: int = _env_int("API_PORT", 8000)
 """HTTP port for the FastAPI server."""
+
+
+def get_jwt_secret_key() -> str:
+    """
+    Read the JWT signing key.
+
+    Returns:
+        Value of ``JWT_SECRET_KEY``.
+
+    Raises:
+        RuntimeError: If the variable is not set.
+    """
+    return require_env("JWT_SECRET_KEY")
+
+
+def get_fernet_key() -> str:
+    """
+    Read the Fernet key used to encrypt user fields.
+
+    Returns:
+        Value of ``FERNET_KEY``.
+
+    Raises:
+        RuntimeError: If the variable is not set.
+    """
+    return require_env("FERNET_KEY")
+
+
+def get_telegram_bot_token() -> str | None:
+    """
+    Read the Telegram bot token.
+
+    Returns:
+        Token string, or None when notifications are not configured.
+    """
+    return _env_optional("TELEGRAM_BOT_TOKEN")
+
+
+def get_telegram_chat_id() -> str | None:
+    """
+    Read the Telegram chat id that receives deployment notices.
+
+    Returns:
+        Chat id, or None when notifications are not configured.
+    """
+    return _env_optional("TELEGRAM_CHAT_ID")
+
+
+def get_firebase_db_url() -> str | None:
+    """
+    Read the Firebase Realtime Database URL.
+
+    Returns:
+        Database URL, or None when URL sharing is not configured.
+    """
+    return _env_optional("FIREBASE_DB_URL")
+
+
+def get_firebase_node_path() -> str:
+    """
+    Read the Firebase node that stores the latest public API URL.
+
+    Returns:
+        Node path, defaulting to ``jarvis/latest_url``.
+    """
+    return _env_str("FIREBASE_NODE_PATH", "jarvis/latest_url")

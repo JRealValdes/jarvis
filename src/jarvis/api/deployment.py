@@ -1,7 +1,6 @@
 """Deployment utilities: cloudflared, Firebase, and Telegram."""
 
 import logging
-import os
 import re
 import subprocess
 import time
@@ -10,7 +9,14 @@ from datetime import datetime, timezone
 import requests
 from firebase_admin import credentials, db, initialize_app
 
-from jarvis.core.config import API_PORT, EXPOSE_API_WITH_CLOUDFLARED
+from jarvis.core.config import (
+    API_PORT,
+    EXPOSE_API_WITH_CLOUDFLARED,
+    get_firebase_db_url,
+    get_firebase_node_path,
+    get_telegram_bot_token,
+    get_telegram_chat_id,
+)
 from jarvis.core.paths import FIREBASE_PRIVATE_KEY_PATH
 
 logger = logging.getLogger(__name__)
@@ -23,7 +29,7 @@ def _telegram_config() -> tuple[str | None, str | None]:
     Returns:
         Tuple of (bot_token, chat_id).
     """
-    return os.getenv("TELEGRAM_BOT_TOKEN"), os.getenv("TELEGRAM_CHAT_ID")
+    return get_telegram_bot_token(), get_telegram_chat_id()
 
 
 def _firebase_config() -> tuple[str | None, str]:
@@ -33,7 +39,7 @@ def _firebase_config() -> tuple[str | None, str]:
     Returns:
         Tuple of (database_url, node_path). node_path has a default value.
     """
-    return os.getenv("FIREBASE_DB_URL"), os.getenv("FIREBASE_NODE_PATH", "jarvis/latest_url")
+    return get_firebase_db_url(), get_firebase_node_path()
 
 
 def expose_api_with_cloudflared() -> str | None:
