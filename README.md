@@ -79,6 +79,16 @@ App settings live in `jarvis.core.config` as typed defaults. That module is the 
 6. Public API tunnel (optional): `JARVIS_EXPOSE_API_WITH_CLOUDFLARED=1`.
 7. Local UI thread (optional): `JARVIS_LOCAL_THREAD_ID` (default `1`) is the checkpoint thread for the CLI and Gradio.
 
+### Web search and public pages (`web_search_tool`)
+
+Jarvis can search the public web (DuckDuckGo via `ddgs`) and read extracted text from public `http`/`https` pages (`requests` + `trafilatura`). No API key is required.
+
+**Can read:** public HTML pages that allow the Jarvis user-agent in `robots.txt`, within size and timeout caps. After a search, the tool fetches readable text from the top hit URLs by default (not snippets alone).
+
+**Cannot read:** login-walled content, pages behind captchas/paywalls, credentialed sessions, or Glassdoor (and similar blocked job boards). Search may still return snippets that *mention* those sites; Jarvis must not fetch them. Snippets can be stale—prefer fetched page text and cite the URL used. Jarvis should answer the user in the language of their latest message.
+
+
+
 ### Conversation threads
 
 Each model stores threads in `data/checkpoints/{MODEL}.sqlite`. The same `thread_id` keeps one conversation across process restarts.
@@ -158,6 +168,7 @@ jarvis/                          # repository root
 - [x] Upload to Render and expose API
 - [x] Google Calendar API
 - [x] LinkedIn reply drafting (Stage A: prefs YAML + draft tool + human confirmation)
+- [x] Web search and public-page reading (`web_search_tool`)
 - [x] JWT Token Security
 - [x] Raspberry Pi / Server version
 - [x] Cloudflare API exposure - Firebase URL share

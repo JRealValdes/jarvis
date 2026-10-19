@@ -24,6 +24,7 @@ from jarvis.tools.builtins.linkedin_reply_examples import (
     show_linkedin_reply_examples_tool,
 )
 from jarvis.tools.builtins.speech_to_text import speech_to_text_tool
+from jarvis.tools.builtins.web_search import web_search_tool
 
 BUILTIN_TOOLS: list[BaseTool] = [
     calculate_tool,
@@ -37,4 +38,5 @@ BUILTIN_TOOLS: list[BaseTool] = [
     show_linkedin_reply_examples_tool,
     add_linkedin_reply_example_tool,
     speech_to_text_tool,
+    web_search_tool,
 ]
