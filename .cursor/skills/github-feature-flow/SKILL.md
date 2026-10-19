@@ -93,6 +93,15 @@ Closes #<N>.
 
 Push with `-u` if the branch has no upstream yet.
 
+## 5. After merge — branch cleanup
+
+When a PR for `feature/<N>-*` is **merged**:
+
+1. Expect the **remote** branch to be deleted next (usually by the user on the GitHub PR UI).
+2. If `origin` still has the branch after merge, **propose** remote deletion and wait for confirmation — do not delete it unprompted.
+3. When the remote branch is gone (or the user says they deleted it), check out `main`, then **ask before** deleting the local branch (`git branch -d feature/<N>-…`). After a squash/rebase merge, safe `-d` may fail; with user confirmation, `git branch -D` is OK.
+4. End on `main` and **`git pull`** so local `main` includes the merge (`git fetch --prune` as needed).
+
 ## Checklist
 
 ```
@@ -101,4 +110,5 @@ Push with `-u` if the branch has no upstream yet.
 - [ ] Work landed on that branch
 - [ ] Issue body updated only when useful
 - [ ] PR title ends with (#N); body links Closes/Refs #N
+- [ ] After merge: remote branch deleted (user UI or confirmed agent delete); local branch deleted only after confirmation; on main and pulled
 ```

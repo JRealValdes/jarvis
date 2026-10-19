@@ -49,6 +49,16 @@ Details: same skill file, section “Work on an existing issue”.
 - Title ends with a space and `(#X)` where `X` is the issue number, e.g. `Fix session history after restart (#8)`.
 - Link the PR to the issue as development work (`Closes #X` or Development sidebar / `gh` linking). Body in English.
 
+## After merge — branch cleanup
+
+Once a PR is **merged**, the next expected step is to remove the feature branch.
+
+1. **Remote (`origin`)** — normally deleted by the user on the GitHub PR page (checkbox “Delete branch” / branch delete). If the remote branch is still present after merge, **propose** deleting it (`git push origin --delete feature/<N>-…` or `gh` equivalent) and wait for confirmation. Do not delete the remote branch unprompted.
+2. **Local** — after the remote branch is gone (or the user confirms they already deleted it), switch to `main`, then **ask for confirmation** before deleting the local feature branch (`git branch -d feature/<N>-…`). Prune stale remote-tracking refs (`git fetch --prune`) when useful.
+3. Leave the working tree on `main` and **`git pull`** (or `git pull origin main`) so local `main` matches the merge just landed.
+
+Prefer `git branch -d` (safe delete). After a squash/rebase merge, Git may claim the branch is “not fully merged”; if the PR is merged and the user confirmed cleanup, `git branch -D` is OK.
+
 ## Out of scope here
 
 Commit message format stays Conventional Commits (see global incremental-commits rules). Do not push or open PRs unless the user requests it.
