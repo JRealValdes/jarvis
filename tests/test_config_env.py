@@ -16,6 +16,7 @@ def _restore_config_module(monkeypatch: pytest.MonkeyPatch):
     """
     for name in (
         "JARVIS_USE_MCP",
+        "JARVIS_SHOW_TOOL_TRACES",
         "JARVIS_DEFAULT_MODEL",
         "JARVIS_LOCAL_THREAD_ID",
         "JARVIS_IDENTIFICATION_FAILED_PROTOCOL",
@@ -29,6 +30,7 @@ def _restore_config_module(monkeypatch: pytest.MonkeyPatch):
     yield
     for name in (
         "JARVIS_USE_MCP",
+        "JARVIS_SHOW_TOOL_TRACES",
         "JARVIS_DEFAULT_MODEL",
         "JARVIS_LOCAL_THREAD_ID",
         "JARVIS_IDENTIFICATION_FAILED_PROTOCOL",
@@ -63,6 +65,7 @@ def test_config_defaults_when_unset(monkeypatch: pytest.MonkeyPatch):
     assert config.JWT_ALGORITHM == "HS256"
     assert config.JWT_EXP_DELTA_SECONDS == 3600
     assert config.USE_MCP is False
+    assert config.SHOW_TOOL_TRACES is False
     assert config.API_PORT == 8000
 
 
@@ -76,6 +79,22 @@ def test_use_mcp_truthy_values(monkeypatch: pytest.MonkeyPatch, value: str):
 def test_use_mcp_falsy_values(monkeypatch: pytest.MonkeyPatch, value: str):
     monkeypatch.setenv("JARVIS_USE_MCP", value)
     assert _reload_config().USE_MCP is False
+
+
+@pytest.mark.parametrize("value", ["1", "true", "yes", "on"])
+def test_show_tool_traces_truthy_values(
+    monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    monkeypatch.setenv("JARVIS_SHOW_TOOL_TRACES", value)
+    assert _reload_config().SHOW_TOOL_TRACES is True
+
+
+@pytest.mark.parametrize("value", ["0", "false", "no", "off"])
+def test_show_tool_traces_falsy_values(
+    monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    monkeypatch.setenv("JARVIS_SHOW_TOOL_TRACES", value)
+    assert _reload_config().SHOW_TOOL_TRACES is False
 
 
 def test_local_thread_id_from_env(monkeypatch: pytest.MonkeyPatch):

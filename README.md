@@ -69,7 +69,7 @@ Docstring convention in production code: module + **Args** / **Returns** / **Rai
 
 ## Configuration
 
-App settings live in `jarvis.core.config` as typed defaults. That module is the only place that calls `load_dotenv()` and the only place that reads environment variables. Entry points (`uv run jarvis`, root `app.py`, and the API) import it first. Override any setting in `.env` (see `.env.example`). Names stay public as written there (`JARVIS_*`, `JWT_*`, `API_PORT`, `TELEGRAM_*`, `FIREBASE_*`, `FERNET_KEY`). `OPENAI_API_KEY` is read by the OpenAI client, not by Jarvis code. Built-in tools are listed in `jarvis.tools.builtins.BUILTIN_TOOLS`.
+App settings live in `jarvis.core.config` as typed defaults. That module is the only place that calls `load_dotenv()` and the only place that reads Jarvis environment variables. Entry points (`uv run jarvis`, root `app.py`, and the API) import it first. Override any setting in `.env` (see `.env.example`). Names stay public as written there (`JARVIS_*`, `JWT_*`, `API_PORT`, `TELEGRAM_*`, `FIREBASE_*`, `FERNET_KEY`). `OPENAI_API_KEY` is read by the OpenAI client, not by Jarvis code. Built-in tools are listed in `jarvis.tools.builtins.BUILTIN_TOOLS`.
 
 1. Copy `.env.example` to `.env` and fill in secrets (OpenAI, Fernet, JWT) plus any optional flags.
 2. Seed users into the local DB (see below).
@@ -78,6 +78,19 @@ App settings live in `jarvis.core.config` as typed defaults. That module is the 
 5. MCP (optional): `JARVIS_USE_MCP=1`, edit `data/mcp/server_config.json`; server scripts live under `src/jarvis/mcp/servers/`.
 6. Public API tunnel (optional): `JARVIS_EXPOSE_API_WITH_CLOUDFLARED=1`.
 7. Local UI thread (optional): `JARVIS_LOCAL_THREAD_ID` (default `1`) is the checkpoint thread for the CLI and Gradio.
+8. Tool traces in chat (optional): `JARVIS_SHOW_TOOL_TRACES=1` paints tool call/result lines into message history for the UI/API. Default is off (final assistant replies only).
+
+### Debug observability (LangSmith)
+
+To inspect agent and tool runs without flooding the chat UI, use [LangSmith](https://docs.langchain.com/langsmith/trace-with-langchain). It is the best fit here because Jarvis already runs on LangChain/LangGraph: set the env vars and traces appear in the LangSmith UI with no custom debug surface.
+
+```bash
+LANGSMITH_TRACING=true
+LANGSMITH_API_KEY=...
+# optional: LANGSMITH_PROJECT=jarvis
+```
+
+`load_dotenv()` (via `jarvis.core.config`) loads these into the process so the LangSmith SDK can pick them up. Alternatives considered: Langfuse (similar SaaS, less native LangGraph wiring), LangGraph Studio / checkpoint inspection (local, no hosted timeline of every tool call). Prefer LangSmith unless you already run Langfuse.
 
 ### Web search and public pages (`web_search_tool`)
 
