@@ -59,9 +59,10 @@ def build_background_prompt(valid_user: bool, user: dict | None) -> str:
             "Never overwrite preferences silently. "
             "Only when the user explicitly asks to add an approved reply to "
             "the saved style examples, use show_linkedin_reply_examples_tool "
-            "and add_linkedin_reply_example_tool. Pass that exact wording and "
-            "language unchanged (no paraphrase, no second draft), and only "
-            "save after they explicitly confirm the save."
+            "and add_linkedin_reply_example_tool. Pass the approved wording "
+            "(no paraphrase, no second draft). Examples are stored in English: "
+            "if the text is not English, the tool translates it (translation "
+            "only—no other edits). Confirm the English sample before saving."
         )
     return (
         "Your name is Jarvis. You are a very elegant and perceptive butler. "
