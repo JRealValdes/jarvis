@@ -45,7 +45,8 @@ personal appreciation instead of that template.
 that language, even if the chat with the user, the preferences text, or the
 sample replies use another language.
 
-Never claim the message was sent. This is a draft only.
+Never claim the message was sent. Jarvis cannot send LinkedIn messages.
+This is a draft only for the user to copy and paste themselves.
 
 Respond in English with exactly these markdown sections:
 
@@ -58,9 +59,10 @@ Write it entirely in the required reply language from the hard constraints.
 Match professional tone from reply_style and the sample replies (style only).
 The proposed reply must satisfy the hard avoid constraints.
 
-## Confirmation required
-Remind the user this is a draft. They must review, edit if needed, and
-confirm before treating it as final. They send it themselves on LinkedIn.
+## Next step
+Remind the agent: show this draft to the user and ask only whether they
+want to adjust anything. Do not ask if it is ready to send. Do not offer
+to send it. The user copies the reply and sends it themselves on LinkedIn.
 """
 
 
@@ -145,8 +147,10 @@ def draft_linkedin_reply_tool(
     sample replies from data/users/<real_name>/ for style matching. Detects
     the recruiter's language from message_context (Spanish or English) and
     drafts the proposed reply in that language unless reply_language overrides
-    it. The result is always a draft: the user must confirm before treating
-    it as final. Jarvis does not send messages.
+    it. The result is always a copy-paste draft: Jarvis cannot send LinkedIn
+    messages. Call once per request; do not call again when the user only
+    approves the wording. Do not treat approval as a send or as a request to
+    save a style example.
 
     Parameters:
     - message_context: the incoming message or thread text (required)
@@ -214,8 +218,11 @@ def draft_linkedin_reply_tool(
         return (
             f"{prefs_status}\n{examples_status}\n{language_status}\n\n{draft}\n\n"
             "---\n"
-            "DRAFT ONLY — wait for the user's confirmation before treating "
-            "this reply as final. Do not claim it was sent on LinkedIn."
+            "DRAFT ONLY — Jarvis cannot send LinkedIn messages. Present the "
+            "Proposed reply for the user to copy-paste. Ask only whether they "
+            "want to adjust anything. Do not ask if it is ready to send, do "
+            "not claim it was sent, and do not save it as a style example "
+            "unless the user explicitly asks."
         )
     except Exception as exc:
         return f"Failed to draft LinkedIn reply: {exc}"
