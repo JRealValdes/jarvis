@@ -1,10 +1,12 @@
 # Complete sample LinkedIn replies for style reference when drafting.
 # Copy to data/users/<your_real_name>/linkedin_reply_examples.yaml and edit.
-# Prefer full messages you would actually send. English is recommended for
-# consistency with job_preferences.yaml; the draft tool still follows
-# reply_style.language for the outbound message language.
+# Prefer full messages you would actually send. One language is enough (English
+# recommended): the draft tool detects the recruiter's language from the
+# incoming thread and writes the proposed reply in that language, using these
+# samples for structure/tone only.
 #
-# Each entry may be a plain string, or a mapping with body/text/message.
+# Each entry may be a plain string, or a mapping with optional label plus
+# body/text/message.
 
 examples:
   - label: polite interest remote role

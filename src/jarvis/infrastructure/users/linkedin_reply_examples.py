@@ -182,12 +182,15 @@ def append_linkedin_reply_example(
     return save_linkedin_reply_examples(real_name, entries)
 
 
-def format_reply_examples_for_prompt(examples: list[str]) -> str:
+def format_reply_examples_for_prompt(
+    examples: list[str] | list[dict[str, str]],
+) -> str:
     """
     Render sample replies for an LLM prompt.
 
     Args:
-        examples: Complete sample message bodies.
+        examples: Complete sample message bodies, or ``{label, body}`` entries.
+            Labels are optional scenario hints (e.g. work-mode clarification).
 
     Returns:
         Human-readable block, or a short note when there are no examples.
@@ -198,7 +201,23 @@ def format_reply_examples_for_prompt(examples: list[str]) -> str:
             "reply_style only."
         )
     parts: list[str] = []
-    for index, body in enumerate(examples, start=1):
-        parts.append(f"### Example {index}\n{body}")
+    for index, item in enumerate(examples, start=1):
+        if isinstance(item, dict):
+            body = (item.get("body") or "").strip()
+            label = (item.get("label") or "").strip()
+        else:
+            body = str(item).strip()
+            label = ""
+        if not body:
+            continue
+        heading = f"### Example {index}"
+        if label:
+            heading = f"{heading} ({label})"
+        parts.append(f"{heading}\n{body}")
+    if not parts:
+        return (
+            "No sample replies on file. Draft from job preferences and "
+            "reply_style only."
+        )
     return "\n\n".join(parts)
 
