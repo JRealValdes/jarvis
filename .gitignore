@@ -6,6 +6,9 @@ __pycache__/
 # Secret notes
 my_notes.txt
 
+# Pi deploy target (host/user/path); see deploy/pi.env.example
+deploy/pi.local.env
+
 # Secret databases
 *secret*.db
 

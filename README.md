@@ -67,6 +67,9 @@ uv run jarvis chat    # or api / ui
 
 Docstring convention in production code: module + **Args** / **Returns** / **Raises**.
 
+## Raspberry Pi (headless)
+
+Operator guide for SSH, systemd, secret sync, and code updates on a LAN Pi: [docs/raspberry-pi-ops.md](docs/raspberry-pi-ops.md). Helpers live under [`deploy/`](deploy/).
 ## Configuration
 
 App settings live in `jarvis.core.config` as typed defaults. That module is the only place that calls `load_dotenv()` and the only place that reads Jarvis environment variables. Entry points (`uv run jarvis`, root `app.py`, and the API) import it first. Override any setting in `.env` (see `.env.example`). Names stay public as written there (`JARVIS_*`, `JWT_*`, `API_PORT`, `TELEGRAM_*`, `FIREBASE_*`, `FERNET_KEY`). `OPENAI_API_KEY` is read by the OpenAI client, not by Jarvis code. Built-in tools are listed in `jarvis.tools.builtins.BUILTIN_TOOLS`.
@@ -130,6 +133,8 @@ These live on each machine and are required (or optional) for a full local setup
 
 Gitignores cover `.env`, `data/users.db`, and `*secret*` files. Do not commit personal credentials.
 
+**Raspberry Pi sync:** paths that must be pushed to the Pi are listed in [`deploy/secret_paths.py`](deploy/secret_paths.py). When you add a new secret/runtime file for the Pi, update that catalog in the same change (see `docs/raspberry-pi-ops.md`).
+
 ## Architecture
 
 Installable package `jarvis` under `src/jarvis/`. Layers: `core`, `domain`, `infrastructure`, `agents` (protocol, factory, shared graph, process-wide MCP tool session, `session/`, `implementations/`), `tools` (`registry` + `builtins/`), `api`, `interfaces` (CLI + Gradio), `mcp` (server scripts). Runtime assets live in `data/`; seed/admin helpers in `scripts/`; sample media/docs for future STT/RAG under `examples/fixtures/`.
@@ -159,6 +164,8 @@ jarvis/                          # repository root
 │   ├── google/                  # OAuth credentials per user
 │   └── mcp/server_config.json
 ├── scripts/users/               # CSV + notebook to seed data/users.db
+├── deploy/                      # Pi ops: sync secrets, update code, systemd unit
+├── docs/                        # operator docs (e.g. raspberry-pi-ops.md)
 ├── examples/                    # experimental scripts + fixtures/
 ├── tests/
 ├── requirements.txt             # uv export for Hugging Face Spaces
