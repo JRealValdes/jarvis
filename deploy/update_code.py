@@ -59,6 +59,8 @@ def build_remote_script(
 
     lines = [
         "set -eu",
+        # Non-interactive SSH has a minimal PATH; uv lives under ~/.local/bin.
+        'export PATH="$HOME/.local/bin:$PATH"',
         f"cd '{remote_dir}'",
         'echo "==> repo: $(pwd) branch=$(git rev-parse --abbrev-ref HEAD) '
         'sha=$(git rev-parse --short HEAD)"',
@@ -142,12 +144,18 @@ def update_code(
     )
     cmd = [*ssh_base(user, host, batch_mode=batch_mode), "bash", "-s"]
     print(f"+ ssh {user}@{host} bash -s  # remote update script")
+    # Always send LF newlines: Windows CRLF breaks `set -eu` / `for` on the Pi.
+    script_lf = script.replace("\r\n", "\n").replace("\r", "\n")
     if dry_run:
         print("--- remote script ---")
-        print(script)
+        print(script_lf)
         print("--- end ---")
         return
-    result = subprocess.run(cmd, input=script, text=True, check=False)
+    result = subprocess.run(
+        cmd,
+        input=script_lf.encode("utf-8"),
+        check=False,
+    )
     if result.returncode != 0:
         sys.exit(
             f"Remote update failed with exit code {result.returncode}. "
