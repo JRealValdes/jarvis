@@ -56,3 +56,16 @@ def test_remote_script_skips_systemd_without_restart():
     assert "git pull --ff-only" in script
     assert "systemctl stop" not in script
     assert "systemctl start" not in script
+
+
+def test_remote_script_payload_uses_lf_only():
+    script = update_code.build_remote_script(
+        "/home/jreal/jarvis",
+        restart=True,
+        service="jarvis",
+        health_port=8000,
+        health_path="/docs",
+    )
+    normalized = script.replace("\r\n", "\n").replace("\r", "\n")
+    assert "\r" not in normalized
+    assert normalized.split("\n")[0] == "set -eu"
