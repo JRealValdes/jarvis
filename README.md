@@ -133,6 +133,8 @@ These live on each machine and are required (or optional) for a full local setup
 
 Gitignores cover `.env`, `data/users.db`, and `*secret*` files. Do not commit personal credentials.
 
+**Raspberry Pi sync:** paths that must be pushed to the Pi are listed in [`deploy/secret_paths.py`](deploy/secret_paths.py). When you add a new secret/runtime file for the Pi, update that catalog in the same change (see `docs/raspberry-pi-ops.md`).
+
 ## Architecture
 
 Installable package `jarvis` under `src/jarvis/`. Layers: `core`, `domain`, `infrastructure`, `agents` (protocol, factory, shared graph, process-wide MCP tool session, `session/`, `implementations/`), `tools` (`registry` + `builtins/`), `api`, `interfaces` (CLI + Gradio), `mcp` (server scripts). Runtime assets live in `data/`; seed/admin helpers in `scripts/`; sample media/docs for future STT/RAG under `examples/fixtures/`.

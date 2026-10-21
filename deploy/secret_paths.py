@@ -1,6 +1,14 @@
 """Catalog of local secret / runtime paths to push to a headless Pi.
 
 Paths are relative to the repository root. Groups map to ``--only`` names.
+
+**Keeping this catalog current (required):** whenever you add a new secret or
+machine-local runtime file that must live on the Pi (new ``.env``-adjacent
+file, credential JSON, per-user YAML, DB, etc.), update ``SECRET_GROUPS`` or
+``SECRET_GLOBS`` here in the same change. Also mention the path in
+``README.md`` (Local runtime assets) when it is operator-facing. The Cursor
+skill ``raspberry-pi-ops`` and rule ``pi-secrets-catalog`` remind agents to do
+this — do not rely on memory alone.
 """
 
 from __future__ import annotations
