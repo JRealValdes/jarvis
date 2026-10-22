@@ -14,7 +14,6 @@ from fastapi.responses import JSONResponse
 from jarvis.core.config import API_PORT, USE_MCP
 from jarvis.agents.mcp_session import get_mcp_tool_session
 from jarvis.agents.session import invalidate_agents_cache
-from jarvis.api.deployment import run_with_optional_tunnel
 from jarvis.api.errors import ForbiddenError
 from jarvis.core.logging_config import configure_logging
 
@@ -74,8 +73,8 @@ def start_uvicorn() -> None:
 
 
 def main() -> None:
-    """CLI entry point: optional tunnel plus uvicorn."""
-    run_with_optional_tunnel(start_uvicorn)
+    """CLI entry point: start uvicorn (LAN / localhost; off-LAN is host-layer, e.g. Tailscale)."""
+    start_uvicorn()
 
 
 if __name__ == "__main__":

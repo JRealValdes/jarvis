@@ -72,16 +72,17 @@ Docstring convention in production code: module + **Args** / **Returns** / **Rai
 Operator guide for SSH, systemd, secret sync, and code updates on a LAN Pi: [docs/raspberry-pi-ops.md](docs/raspberry-pi-ops.md). Helpers live under [`deploy/`](deploy/).
 ## Configuration
 
-App settings live in `jarvis.core.config` as typed defaults. That module is the only place that calls `load_dotenv()` and the only place that reads Jarvis environment variables. Entry points (`uv run jarvis`, root `app.py`, and the API) import it first. Override any setting in `.env` (see `.env.example`). Names stay public as written there (`JARVIS_*`, `JWT_*`, `API_PORT`, `TELEGRAM_*`, `FIREBASE_*`, `FERNET_KEY`). `OPENAI_API_KEY` is read by the OpenAI client, not by Jarvis code. Built-in tools are listed in `jarvis.tools.builtins.BUILTIN_TOOLS`.
+App settings live in `jarvis.core.config` as typed defaults. That module is the only place that calls `load_dotenv()` and the only place that reads Jarvis environment variables. Entry points (`uv run jarvis`, root `app.py`, and the API) import it first. Override any setting in `.env` (see `.env.example`). Names stay public as written there (`JARVIS_*`, `JWT_*`, `API_PORT`, `FERNET_KEY`). `OPENAI_API_KEY` is read by the OpenAI client, not by Jarvis code. Built-in tools are listed in `jarvis.tools.builtins.BUILTIN_TOOLS`.
 
 1. Copy `.env.example` to `.env` and fill in secrets (OpenAI, Fernet, JWT) plus any optional flags.
 2. Seed users into the local DB (see below).
 3. Google Calendar (optional): OAuth files under `data/google/<username>/<account>/` (see `data/google/example_user/`). Interactive flow: `examples/google_api_demo.ipynb`.
 4. Job / LinkedIn reply preferences (optional): ask Jarvis to interview you and save them (`show_job_preferences_tool` / `save_job_preferences_tool`), or copy `data/users/example_user/job_preferences.yaml` to `data/users/<real_name>/job_preferences.yaml` and edit. Optional style samples: copy `data/users/example_user/linkedin_reply_examples.yaml` to the same user folder. Used by `draft_linkedin_reply_tool`.
 5. MCP (optional): `JARVIS_USE_MCP=1`, edit `data/mcp/server_config.json`; server scripts live under `src/jarvis/mcp/servers/`.
-6. Public API tunnel (optional): `JARVIS_EXPOSE_API_WITH_CLOUDFLARED=1`.
-7. Local UI thread (optional): `JARVIS_LOCAL_THREAD_ID` (default `1`) is the checkpoint thread for the CLI and Gradio.
-8. Tool traces in chat (optional): `JARVIS_SHOW_TOOL_TRACES=1` paints tool call/result lines into message history for the UI/API. Default is off (final assistant replies only).
+6. Local UI thread (optional): `JARVIS_LOCAL_THREAD_ID` (default `1`) is the checkpoint thread for the CLI and Gradio.
+7. Tool traces in chat (optional): `JARVIS_SHOW_TOOL_TRACES=1` paints tool call/result lines into message history for the UI/API. Default is off (final assistant replies only).
+
+The HTTP API listens on the host/LAN (`0.0.0.0:API_PORT`). Off-LAN access is a host concern (Tailscale / named tunnel — issue #31), not an in-process tunnel.
 
 ### Debug observability (LangSmith)
 
@@ -127,7 +128,6 @@ These live on each machine and are required (or optional) for a full local setup
 | Google OAuth | `data/google/<user>/<account>/` (`*secret*.json`) | Only for Calendar tools | Google Cloud OAuth client + `examples/google_api_demo.ipynb` |
 | Job preferences | `data/users/<real_name>/job_preferences.yaml` | Only for LinkedIn reply drafting | Ask Jarvis to set them up, or copy from `data/users/example_user/job_preferences.yaml` |
 | LinkedIn reply samples | `data/users/<real_name>/linkedin_reply_examples.yaml` | Optional style references for drafts | Ask Jarvis to add samples, or copy from `data/users/example_user/linkedin_reply_examples.yaml` |
-| Firebase private key | `data/firebase_project_secret_private_key.json` | Only if using Firebase URL share | Firebase console |
 | MCP config | `data/mcp/server_config.json` | Only if `JARVIS_USE_MCP=1` | Tracked example config is in repo; customize locally if needed |
 | Conversation checkpoints | `data/checkpoints/{MODEL}.sqlite` | Created on first chat | Local SQLite; removed by a global memory reset |
 
@@ -191,7 +191,8 @@ jarvis/                          # repository root
 - [x] Web search and public-page reading (`web_search_tool`)
 - [x] JWT Token Security
 - [x] Raspberry Pi / Server version
-- [x] Cloudflare API exposure - Firebase URL share
+- [x] Remove legacy cloudflared / Firebase / Telegram API exposure (#30)
+- [ ] Remote API access — Tailscale / named tunnel (#31)
 - [ ] Android app
 - [ ] Multi-client management
 - [ ] Security layer: MAC Address control

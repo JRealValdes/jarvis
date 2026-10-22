@@ -2,7 +2,7 @@
 
 Run Jarvis on a Raspberry Pi **without** a monitor or keyboard. Day-to-day work is from your PC on the home LAN via **SSH** (a remote terminal — not a full remote desktop).
 
-Related issues: **#29** (this guide), **#28** (voice / Home Assistant on the same Pi), **#31** (off-LAN API). Legacy public exposure (`JARVIS_EXPOSE_API_WITH_CLOUDFLARED`, Firebase, Telegram URL publish) stays **off** on the Pi; see **#30**.
+Related issues: **#29** (this guide), **#28** (voice / Home Assistant on the same Pi), **#31** (off-LAN API via Tailscale / named tunnel). The API is LAN-only from Jarvis itself; do not port-forward `:8000` or SSH.
 
 **Runtime model for this issue:** systemd + `uv run jarvis api` (lightweight on older boards such as a Pi 3). Docker Compose beside Home Assistant remains a later option when you co-host HA (#28).
 
@@ -16,7 +16,7 @@ Cursor agents: use the project skill **`raspberry-pi-ops`** when the operator as
 
 - Same Wi‑Fi / LAN as the Pi
 - OpenSSH client (`ssh`, `scp`) — included with current Windows 10/11, macOS, and Linux
-- This repo cloned locally, with secrets already working on the PC (`.env`, optional Google/Firebase/user YAML)
+- This repo cloned locally, with secrets already working on the PC (`.env`, optional Google OAuth / user YAML)
 - [uv](https://docs.astral.sh/uv/) on the PC (for running the deploy helpers)
 
 ---
@@ -139,12 +139,6 @@ uv run python deploy/sync_secrets.py --restart
 
 By default this copies every **existing** local file in the catalog. Limit groups with `--only`. Use `--allow-password` only if key auth is not ready yet.
 
-On the Pi `.env`, keep:
-
-```env
-JARVIS_EXPOSE_API_WITH_CLOUDFLARED=0
-```
-
 ### 7. Install the systemd service on the Pi
 
 Edit `deploy/jarvis.service` so `User=`, `Group=`, `WorkingDirectory=`, and `ExecStart=` match your account and paths, then:
@@ -214,8 +208,7 @@ Voice bridges and HA should talk to Jarvis on **localhost or LAN**. They do not 
 | Avoid | Why |
 |-------|-----|
 | 32-bit OS (`armv7l`) on Pi 3 | `sqlite-vec` has no wheel; use 64-bit (`aarch64`) |
-| `JARVIS_EXPOSE_API_WITH_CLOUDFLARED=1` | Legacy quick tunnel; see #30 / #31 |
-| Router port-forward of SSH or `:8000` | Use Tailscale/named tunnel (#31) later |
+| Router port-forward of SSH or `:8000` | Use Tailscale / named tunnel (#31) later |
 | Daily smart-plug power cuts | Unclean shutdowns; leave the Pi on |
 
 ---

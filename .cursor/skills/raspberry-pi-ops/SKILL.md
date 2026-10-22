@@ -59,5 +59,4 @@ If this change (or the user) introduces a new Pi-bound secret path, update `depl
 ## Do not
 
 - Commit `deploy/pi.local.env` or secret files
-- Enable `JARVIS_EXPOSE_API_WITH_CLOUDFLARED` on the Pi
-- Port-forward SSH or `:8000` on the router
+- Port-forward SSH or `:8000` on the router (off-LAN is #31 / Tailscale)

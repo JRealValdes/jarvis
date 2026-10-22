@@ -7,7 +7,7 @@
 #   5. systemctl status jarvis.service
 #
 # Prefer a normal system service so the API starts at boot without a login.
-# Keep JARVIS_EXPOSE_API_WITH_CLOUDFLARED=0 on the Pi (LAN-only; see docs).
+# The API binds on the LAN; off-LAN reachability is host-layer (see issue #31).
 
 [Unit]
 Description=Jarvis HTTP API
@@ -23,8 +23,6 @@ WorkingDirectory=/home/pi/jarvis
 ExecStart=/home/pi/.local/bin/uv run --directory /home/pi/jarvis jarvis api
 Restart=on-failure
 RestartSec=5
-# Do not expose a public quick tunnel from the Pi by default.
-Environment=JARVIS_EXPOSE_API_WITH_CLOUDFLARED=0
 
 [Install]
 WantedBy=multi-user.target
