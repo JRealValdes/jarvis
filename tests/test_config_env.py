@@ -21,7 +21,6 @@ def _restore_config_module(monkeypatch: pytest.MonkeyPatch):
         "JARVIS_LOCAL_THREAD_ID",
         "JARVIS_IDENTIFICATION_FAILED_PROTOCOL",
         "JARVIS_DB_DEBUG_MODE",
-        "JARVIS_EXPOSE_API_WITH_CLOUDFLARED",
         "JWT_ALGORITHM",
         "JWT_EXP_DELTA_SECONDS",
         "API_PORT",
@@ -35,7 +34,6 @@ def _restore_config_module(monkeypatch: pytest.MonkeyPatch):
         "JARVIS_LOCAL_THREAD_ID",
         "JARVIS_IDENTIFICATION_FAILED_PROTOCOL",
         "JARVIS_DB_DEBUG_MODE",
-        "JARVIS_EXPOSE_API_WITH_CLOUDFLARED",
         "JWT_ALGORITHM",
         "JWT_EXP_DELTA_SECONDS",
         "API_PORT",
@@ -61,7 +59,6 @@ def test_config_defaults_when_unset(monkeypatch: pytest.MonkeyPatch):
         == IdentificationFailedProtocolEnum.AUTOMATIC_RESPONSE
     )
     assert config.DB_DEBUG_MODE is False
-    assert config.EXPOSE_API_WITH_CLOUDFLARED is False
     assert config.JWT_ALGORITHM == "HS256"
     assert config.JWT_EXP_DELTA_SECONDS == 3600
     assert config.USE_MCP is False
@@ -133,36 +130,12 @@ def test_identification_protocol_from_env(monkeypatch: pytest.MonkeyPatch):
     )
 
 
-def test_secrets_and_deployment_settings_from_env(monkeypatch: pytest.MonkeyPatch):
+def test_required_secrets_from_env(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("JWT_SECRET_KEY", "jwt-test")
     monkeypatch.setenv("FERNET_KEY", "fernet-test")
-    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "bot")
-    monkeypatch.setenv("TELEGRAM_CHAT_ID", " 99 ")
-    monkeypatch.setenv("FIREBASE_DB_URL", "https://example.firebaseio.com")
-    monkeypatch.setenv("FIREBASE_NODE_PATH", "jarvis/test")
     config = _reload_config()
     assert config.get_jwt_secret_key() == "jwt-test"
     assert config.get_fernet_key() == "fernet-test"
-    assert config.get_telegram_bot_token() == "bot"
-    assert config.get_telegram_chat_id() == "99"
-    assert config.get_firebase_db_url() == "https://example.firebaseio.com"
-    assert config.get_firebase_node_path() == "jarvis/test"
-
-
-def test_optional_deployment_settings_default(monkeypatch: pytest.MonkeyPatch):
-    for name in (
-        "TELEGRAM_BOT_TOKEN",
-        "TELEGRAM_CHAT_ID",
-        "FIREBASE_DB_URL",
-        "FIREBASE_NODE_PATH",
-    ):
-        # Empty counts as unset, and blocks load_dotenv from refilling .env values.
-        monkeypatch.setenv(name, "")
-    config = _reload_config()
-    assert config.get_telegram_bot_token() is None
-    assert config.get_telegram_chat_id() is None
-    assert config.get_firebase_db_url() is None
-    assert config.get_firebase_node_path() == "jarvis/latest_url"
 
 
 def test_required_secret_raises_when_missing(monkeypatch: pytest.MonkeyPatch):

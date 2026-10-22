@@ -5,7 +5,7 @@ root ``app.py``, and ``jarvis.api.app``) import this module before other
 Jarvis code so a local ``.env`` is applied before settings are read.
 
 Public variable names stay as documented in ``.env.example`` (``JARVIS_*``,
-``JWT_*``, ``API_PORT``, ``TELEGRAM_*``, ``FIREBASE_*``, ``FERNET_KEY``).
+``JWT_*``, ``API_PORT``, ``FERNET_KEY``).
 ``OPENAI_API_KEY`` is read by the OpenAI client, not by Jarvis.
 ``LANGSMITH_*`` is read by the LangSmith SDK for optional tracing (documented
 in ``.env.example`` / README). Add new Jarvis settings here instead of
@@ -162,11 +162,6 @@ IDENTIFICATION_FAILED_PROTOCOL: IdentificationFailedProtocolEnum = _env_enum(
 DB_DEBUG_MODE: bool = _env_flag("JARVIS_DB_DEBUG_MODE", default=False)
 """If True, allows debug operations on the user database."""
 
-EXPOSE_API_WITH_CLOUDFLARED: bool = _env_flag(
-    "JARVIS_EXPOSE_API_WITH_CLOUDFLARED", default=False
-)
-"""If True, the API attempts cloudflared exposure on startup (opt-in)."""
-
 JWT_ALGORITHM: str = _env_str("JWT_ALGORITHM", "HS256")
 """Signing algorithm for JWT tokens."""
 
@@ -207,43 +202,3 @@ def get_fernet_key() -> str:
         RuntimeError: If the variable is not set.
     """
     return require_env("FERNET_KEY")
-
-
-def get_telegram_bot_token() -> str | None:
-    """
-    Read the Telegram bot token.
-
-    Returns:
-        Token string, or None when notifications are not configured.
-    """
-    return _env_optional("TELEGRAM_BOT_TOKEN")
-
-
-def get_telegram_chat_id() -> str | None:
-    """
-    Read the Telegram chat id that receives deployment notices.
-
-    Returns:
-        Chat id, or None when notifications are not configured.
-    """
-    return _env_optional("TELEGRAM_CHAT_ID")
-
-
-def get_firebase_db_url() -> str | None:
-    """
-    Read the Firebase Realtime Database URL.
-
-    Returns:
-        Database URL, or None when URL sharing is not configured.
-    """
-    return _env_optional("FIREBASE_DB_URL")
-
-
-def get_firebase_node_path() -> str:
-    """
-    Read the Firebase node that stores the latest public API URL.
-
-    Returns:
-        Node path, defaulting to ``jarvis/latest_url``.
-    """
-    return _env_str("FIREBASE_NODE_PATH", "jarvis/latest_url")

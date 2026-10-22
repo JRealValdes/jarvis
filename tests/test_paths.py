@@ -2,7 +2,6 @@
 
 from jarvis.core.paths import (
     DATA_DIR,
-    FIREBASE_PRIVATE_KEY_PATH,
     GOOGLE_CREDENTIALS_DIR,
     MCP_SERVER_CONFIG_PATH,
     PROJECT_ROOT,
@@ -20,5 +19,4 @@ def test_data_paths_under_project_root():
     assert USERS_DB_PATH == DATA_DIR / "users.db"
     assert USERS_DATA_DIR == DATA_DIR / "users"
     assert GOOGLE_CREDENTIALS_DIR == DATA_DIR / "google"
-    assert FIREBASE_PRIVATE_KEY_PATH == DATA_DIR / "firebase_project_secret_private_key.json"
     assert MCP_SERVER_CONFIG_PATH == DATA_DIR / "mcp" / "server_config.json"

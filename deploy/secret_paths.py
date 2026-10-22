@@ -20,7 +20,6 @@ from pathlib import Path
 SECRET_GROUPS: dict[str, tuple[str, ...]] = {
     "env": (".env",),
     "users-db": ("data/users.db",),
-    "firebase": ("data/firebase_project_secret_private_key.json",),
     "mcp": ("data/mcp/server_config.json",),
 }
 
