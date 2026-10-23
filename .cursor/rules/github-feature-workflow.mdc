@@ -51,6 +51,7 @@ Details: same skill file, section “Work on an existing issue”.
 - Create a PR only when the user asks.
 - Title ends with a space and `(#X)` where `X` is the issue number, e.g. `Fix session history after restart (#8)`.
 - Link the PR to the issue as development work (`Closes #X` or Development sidebar / `gh` linking). Body in English.
+- If this backend work has a **sibling `jarvis_app` issue**, when opening (or right after merging) the PR post a **frontend handoff** comment on that issue with as-built API/client notes — see skill section “Frontend handoff”.
 
 ## After merge — branch cleanup
 
