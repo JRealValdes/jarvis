@@ -162,6 +162,30 @@ def test_checkpoint_without_user_row_stays_initialized(monkeypatch):
     assert session.valid_user is False
 
 
+def test_replies_from_state_drops_blank_assistant_text() -> None:
+    session = object.__new__(JarvisSession)
+    replies = session._replies_from_state(
+        {
+            "messages": [
+                HumanMessage(content="search something"),
+                AIMessage(
+                    content="",
+                    tool_calls=[
+                        {
+                            "name": "web_search_tool",
+                            "args": {"query": "x"},
+                            "id": "call_1",
+                            "type": "tool_call",
+                        }
+                    ],
+                ),
+                AIMessage(content="Here is the answer."),
+            ]
+        }
+    )
+    assert replies == ["Here is the answer."]
+
+
 def test_session_cache_refreshes_authenticated_user():
     cache = get_sessions_cache()
     thread_id = "refresh-thread"

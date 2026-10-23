@@ -245,7 +245,8 @@ class JarvisSession:
             response: Final graph state.
 
         Returns:
-            Reply strings. A fallback sentence when the model returned nothing.
+            Reply strings. Blank assistant text is omitted. A fallback
+            sentence when the model returned nothing visible.
         """
         response_messages = response.get("messages", [])
         last_human_index = max(
@@ -257,7 +258,11 @@ class JarvisSession:
             default=-1,
         )
         msg_dict_list = parse_message_list(response_messages[last_human_index + 1 :])
-        result = [msg["content"] for msg in msg_dict_list]
+        result = [
+            content
+            for content in (msg["content"] for msg in msg_dict_list)
+            if not isinstance(content, str) or content.strip()
+        ]
         return result if result else ["I'm sorry, sir. I have no response for your request."]
 
     async def _run_model(self, messages: list) -> list[str]:
