@@ -15,6 +15,88 @@ from jarvis.core.enums import ModelEnum
 logger = logging.getLogger(__name__)
 
 
+def _has_visible_content(content: Any) -> bool:
+    """Return whether assistant content is worth showing in chat.
+
+    Args:
+        content: LangChain message content, either text or structured blocks.
+
+    Returns:
+        False for missing, empty, or whitespace-only text. True when there
+        is any other non-empty value.
+    """
+    if isinstance(content, str):
+        return bool(content.strip())
+    return bool(content)
+
+
+def _format_tool_call(name: str, args: dict[str, Any]) -> str:
+    """Format one tool call the way chat traces name it.
+
+    Args:
+        name: Tool name.
+        args: Parsed arguments. Empty when the call has none.
+
+    Returns:
+        One assistant sentence with the tool name and its arguments.
+    """
+    if args:
+        args_str = ", ".join(f"{key}={value}" for key, value in args.items())
+        return f"Calling function: {name}. Arguments: {args_str}"
+    return f"Calling function: {name}. No arguments."
+
+
+def _tool_calls_for_display(msg: AIMessage) -> list[tuple[str, dict[str, Any]]]:
+    """Collect tool calls from the message attribute or legacy kwargs.
+
+    Current LangChain stores calls on ``AIMessage.tool_calls`` as
+    ``{name, args}`` and often leaves ``additional_kwargs`` empty, with
+    ``content`` equal to ``""``. Older messages only set
+    ``additional_kwargs["tool_calls"]`` in the OpenAI function shape.
+    When both are present, the attribute wins so one call is not announced
+    twice.
+
+    Args:
+        msg: Assistant message that may request tools.
+
+    Returns:
+        ``(name, args)`` pairs. Empty when the message is not a tool turn.
+        Legacy arguments that are not JSON become an empty mapping so the
+        turn is still recognized and is not copied as a blank reply.
+    """
+    native = list(getattr(msg, "tool_calls", None) or [])
+    if native:
+        calls: list[tuple[str, dict[str, Any]]] = []
+        for call in native:
+            if isinstance(call, dict):
+                name = str(call.get("name") or "")
+                args = call.get("args") or {}
+            else:
+                name = str(getattr(call, "name", "") or "")
+                args = getattr(call, "args", None) or {}
+            if not isinstance(args, dict):
+                args = {}
+            calls.append((name, args))
+        return calls
+
+    raw = msg.additional_kwargs.get("tool_calls") or []
+    calls: list[tuple[str, dict[str, Any]]] = []
+    for tool_call in raw:
+        function = tool_call.get("function") or {}
+        name = str(function.get("name") or "")
+        arguments = function.get("arguments") or "{}"
+        if isinstance(arguments, dict):
+            args = arguments
+        else:
+            try:
+                parsed = json.loads(arguments)
+            except (TypeError, json.JSONDecodeError):
+                parsed = {}
+            args = parsed if isinstance(parsed, dict) else {}
+        calls.append((name, args))
+    return calls
+
+
 def parse_message_list(
     messages: list,
     *,
@@ -25,9 +107,12 @@ def parse_message_list(
 
     When ``show_tool_traces`` is False (the default via config), tool call
     announcements and tool results are omitted so the UI only shows the
-    final assistant replies. Enable ``JARVIS_SHOW_TOOL_TRACES`` (or pass
-    ``True``) to paint every tool the same way. For full agent/tool
-    inspection without chat noise, use LangSmith tracing (see README).
+    final assistant replies. A tool-call ``AIMessage`` with no visible text
+    is dropped entirely. Calls are read from ``tool_calls`` or, for older
+    messages, from ``additional_kwargs["tool_calls"]``. Enable
+    ``JARVIS_SHOW_TOOL_TRACES`` (or pass ``True``) to paint every tool the
+    same way. For full agent/tool inspection without chat noise, use
+    LangSmith tracing (see README).
 
     Args:
         messages: List of SystemMessage, HumanMessage, AIMessage, ToolMessage.
@@ -47,39 +132,16 @@ def parse_message_list(
         elif isinstance(msg, HumanMessage):
             result.append({"role": "user", "content": msg.content})
         elif isinstance(msg, AIMessage):
-            tool_calls = msg.additional_kwargs.get("tool_calls") or []
-            if tool_calls:
-                if include_tools:
-                    for tool_call in tool_calls:
-                        args_dict = json.loads(tool_call["function"]["arguments"])
-                        args_str = ", ".join(
-                            f"{key}={value}" for key, value in args_dict.items()
-                        )
-                        if args_str:
-                            result.append(
-                                {
-                                    "role": "assistant",
-                                    "content": (
-                                        f"Calling function: "
-                                        f"{tool_call['function']['name']}. "
-                                        f"Arguments: {args_str}"
-                                    ),
-                                }
-                            )
-                        else:
-                            result.append(
-                                {
-                                    "role": "assistant",
-                                    "content": (
-                                        f"Calling function: "
-                                        f"{tool_call['function']['name']}. "
-                                        "No arguments."
-                                    ),
-                                }
-                            )
-                elif msg.content:
-                    result.append({"role": "assistant", "content": msg.content})
-            else:
+            tool_calls = _tool_calls_for_display(msg)
+            if tool_calls and include_tools:
+                for name, args in tool_calls:
+                    result.append(
+                        {
+                            "role": "assistant",
+                            "content": _format_tool_call(name, args),
+                        }
+                    )
+            elif _has_visible_content(msg.content):
                 result.append({"role": "assistant", "content": msg.content})
         elif isinstance(msg, ToolMessage):
             if include_tools:

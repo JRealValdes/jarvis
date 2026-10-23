@@ -76,6 +76,67 @@ def test_parse_with_args_formats_arguments() -> None:
     ]
 
 
+def _modern_tool_call_ai(
+    name: str,
+    args: dict | None = None,
+    content: str = "",
+) -> AIMessage:
+    """Build an AIMessage whose calls live on ``tool_calls``, not kwargs."""
+    return AIMessage(
+        content=content,
+        tool_calls=[
+            {
+                "name": name,
+                "args": {} if args is None else args,
+                "id": "call_1",
+                "type": "tool_call",
+            }
+        ],
+    )
+
+
+def test_parse_omits_modern_tool_call_when_traces_off() -> None:
+    messages = [
+        HumanMessage(content="search something"),
+        _modern_tool_call_ai("web_search_tool", {"query": "x"}),
+        ToolMessage(
+            content="big payload",
+            name="web_search_tool",
+            tool_call_id="call_1",
+        ),
+        AIMessage(content="Here is the answer."),
+    ]
+    parsed = parse_message_list(messages, show_tool_traces=False)
+    assert parsed == [
+        {"role": "user", "content": "search something"},
+        {"role": "assistant", "content": "Here is the answer."},
+    ]
+    assert all(item["content"] for item in parsed)
+
+
+def test_parse_formats_modern_tool_call_when_traces_on() -> None:
+    parsed = parse_message_list(
+        [_modern_tool_call_ai("web_search_tool", {"query": "x"})],
+        show_tool_traces=True,
+    )
+    assert parsed == [
+        {
+            "role": "assistant",
+            "content": "Calling function: web_search_tool. Arguments: query=x",
+        }
+    ]
+
+
+def test_parse_keeps_content_on_modern_tool_call_when_traces_off() -> None:
+    msg = _modern_tool_call_ai(
+        "web_search_tool",
+        {"query": "x"},
+        content="I will look that up.",
+    )
+    parsed = parse_message_list([msg], show_tool_traces=False)
+    assert parsed == [{"role": "assistant", "content": "I will look that up."}]
+
+
 def test_parse_keeps_content_on_tool_call_message_when_traces_off() -> None:
     msg = AIMessage(
         content="I will look that up.",
