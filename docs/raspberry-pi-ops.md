@@ -197,6 +197,14 @@ Cursor rule: `pi-secrets-catalog`. Skill: `raspberry-pi-ops`.
 
 ---
 
+## Web search rate limits
+
+`web_search_tool` searches with the `ddgs` package (no API key). Providers often rate-limit or block a shared or home IP. On the Pi this shows up as an intermittent `DDGSException: No results found.` even when the same query works from a desktop. Jarvis retries with a short backoff and alternate backends, then returns an error that names `ddgs`, the exception type, the backends tried, and a hint. That error is not a successful empty search (`No search results.`).
+
+If lookups fail for a long stretch, wait and retry. Check `journalctl -u jarvis` for `ddgs search failed`. No paid search API is required.
+
+---
+
 ## Voice / Home Assistant (#28)
 
 Voice bridges and HA should talk to Jarvis on **localhost or LAN**. They do not need a public URL.

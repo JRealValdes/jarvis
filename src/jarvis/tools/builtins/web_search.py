@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
+import logging
+
 from langchain_core.tools import tool
 
 from jarvis.infrastructure.web.fetch import fetch_public_page
 from jarvis.infrastructure.web.policy import UrlPolicyError
-from jarvis.infrastructure.web.search import DEFAULT_MAX_RESULTS, search_public_web
+from jarvis.infrastructure.web.search import (
+    DEFAULT_MAX_RESULTS,
+    WebSearchError,
+    search_public_web,
+)
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_FETCH_TOP = 2
 HARD_MAX_FETCH_TOP = 3
@@ -153,7 +161,37 @@ def web_search_tool(
             sections.append(_format_page(page))
     except UrlPolicyError as exc:
         return f"Blocked by public-web policy: {exc}"
+    except WebSearchError as exc:
+        logger.warning("web_search_tool provider failure:\n%s", exc)
+        return str(exc)
     except Exception as exc:
-        return f"Web lookup failed: {exc}"
+        message = _format_unexpected_lookup_failure(exc)
+        logger.warning("web_search_tool failed: %s", message, exc_info=exc)
+        return message
 
     return "\n\n".join(sections)
+
+
+def _format_unexpected_lookup_failure(exc: BaseException) -> str:
+    """Format a non-ddgs lookup error with type, cause, and a retry hint.
+
+    Args:
+        exc: Exception raised while searching or fetching a page.
+
+    Returns:
+        Multi-line failure text for the agent and for operators.
+    """
+    lines = [
+        "Web lookup failed.",
+        f"- Exception: {type(exc).__name__}: {exc}",
+    ]
+    cause = exc.__cause__
+    if cause is None and exc.args and isinstance(exc.args[0], BaseException):
+        cause = exc.args[0]
+    if isinstance(cause, BaseException):
+        lines.append(f"- Cause: {type(cause).__name__}: {cause}")
+    lines.append(
+        "- Hint: Retry the request. Tell the user the lookup failed, "
+        "not that the topic has no public information."
+    )
+    return "\n".join(lines)

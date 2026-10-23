@@ -10,7 +10,9 @@ from jarvis.infrastructure.web.policy import (
     assert_fetchable_url,
     is_blocked_host,
 )
-from jarvis.infrastructure.web.search import search_public_web
+from ddgs.exceptions import DDGSException, RatelimitException, TimeoutException
+
+from jarvis.infrastructure.web.search import WebSearchError, search_public_web
 from jarvis.tools.builtins.web_search import web_search_tool
 
 
@@ -251,6 +253,162 @@ def test_web_search_tool_url_blocked():
 def test_web_search_tool_requires_input():
     text = web_search_tool.invoke({"query": "", "url": ""})
     assert "Provide a search query" in text
+
+
+def test_search_public_web_retries_opaque_no_results_then_succeeds(monkeypatch):
+    calls: list[str] = []
+    sleeps: list[float] = []
+
+    def fake(query: str, max_results: int, backend: str) -> list[dict]:
+        calls.append(backend)
+        assert query == "Marvel Rivals Season 9 features"
+        if len(calls) < 3:
+            raise DDGSException("No results found.")
+        return [
+            {
+                "title": "Season 9",
+                "href": "https://example.com/season-9",
+                "body": "New features",
+            }
+        ]
+
+    monkeypatch.setattr("jarvis.infrastructure.web.search._ddgs_text", fake)
+    monkeypatch.setattr(
+        "jarvis.infrastructure.web.search.time.sleep",
+        lambda delay: sleeps.append(delay),
+    )
+
+    results = search_public_web("Marvel Rivals Season 9 features")
+    assert results == [
+        {
+            "title": "Season 9",
+            "url": "https://example.com/season-9",
+            "snippet": "New features",
+        }
+    ]
+    assert calls == [
+        "auto",
+        "brave,google,mojeek",
+        "duckduckgo,yahoo,startpage,wikipedia",
+    ]
+    assert sleeps == [0.6, 1.5]
+
+
+def test_search_public_web_reports_rate_limit_with_cause(monkeypatch):
+    def fake(query: str, max_results: int, backend: str) -> list[dict]:
+        raise DDGSException(RatelimitException("429 too many requests"))
+
+    monkeypatch.setattr("jarvis.infrastructure.web.search._ddgs_text", fake)
+    monkeypatch.setattr("jarvis.infrastructure.web.search.time.sleep", lambda delay: None)
+
+    with pytest.raises(WebSearchError) as exc_info:
+        search_public_web("Marvel Rivals Season 9 features")
+
+    text = str(exc_info.value)
+    assert text.startswith("Web lookup failed via ddgs.")
+    assert "Exception: DDGSException:" in text
+    assert "Cause: RatelimitException: 429 too many requests" in text
+    assert "brave,google,mojeek" in text
+    assert "rate limit" in text.lower()
+    assert "No search results." not in text
+    assert "no public information" in text
+
+
+def test_search_public_web_timeout_hint(monkeypatch):
+    def fake(query: str, max_results: int, backend: str) -> list[dict]:
+        raise TimeoutException("timed out")
+
+    monkeypatch.setattr("jarvis.infrastructure.web.search._ddgs_text", fake)
+    monkeypatch.setattr("jarvis.infrastructure.web.search.time.sleep", lambda delay: None)
+
+    with pytest.raises(WebSearchError) as exc_info:
+        search_public_web("slow query")
+
+    text = str(exc_info.value)
+    assert "TimeoutException: timed out" in text
+    assert "A search backend timed out." in text
+    assert "No search results." not in text
+
+
+def test_search_public_web_connection_hint_skips_duplicate_wrapper(monkeypatch):
+    class ConnectError(OSError):
+        """Stand-in for the HTTP client's connection error."""
+
+    def fake(query: str, max_results: int, backend: str) -> list[dict]:
+        inner = DDGSException("ConnectError: connection refused")
+        raise DDGSException(inner) from ConnectError("connection refused")
+
+    monkeypatch.setattr("jarvis.infrastructure.web.search._ddgs_text", fake)
+    monkeypatch.setattr("jarvis.infrastructure.web.search.time.sleep", lambda delay: None)
+
+    with pytest.raises(WebSearchError) as exc_info:
+        search_public_web("Marvel Rivals Season 9 features")
+
+    text = str(exc_info.value)
+    assert "Exception: DDGSException: ConnectError: connection refused" in text
+    assert "Cause: ConnectError: connection refused" in text
+    assert "Could not reach a search backend" in text
+    assert text.count("Exception: DDGSException:") == 1
+
+
+def test_search_public_web_does_not_retry_unexpected_errors(monkeypatch):
+    calls: list[str] = []
+
+    def fake(query: str, max_results: int, backend: str) -> list[dict]:
+        calls.append(backend)
+        raise RuntimeError("parser blew up")
+
+    monkeypatch.setattr("jarvis.infrastructure.web.search._ddgs_text", fake)
+
+    with pytest.raises(WebSearchError) as exc_info:
+        search_public_web("q")
+
+    assert calls == ["auto"]
+    text = str(exc_info.value)
+    assert "RuntimeError: parser blew up" in text
+    assert "brave,google,mojeek" not in text
+
+
+def test_web_search_tool_empty_hits_are_not_provider_errors(monkeypatch):
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_search.search_public_web",
+        lambda query, max_results=5: [],
+    )
+    text = web_search_tool.invoke({"query": "nothing here", "fetch_top": 0})
+    assert "No search results." in text
+    assert "Web lookup failed" not in text
+    assert "ddgs" not in text
+
+
+def test_web_search_tool_returns_ddgs_error_text(monkeypatch):
+    message = (
+        "Web lookup failed via ddgs.\n"
+        "- Exception: DDGSException: No results found.\n"
+        "- Hint: provider failed"
+    )
+
+    def boom(query: str, max_results: int = 5) -> list[dict[str, str]]:
+        raise WebSearchError(message)
+
+    monkeypatch.setattr("jarvis.tools.builtins.web_search.search_public_web", boom)
+    text = web_search_tool.invoke(
+        {"query": "Marvel Rivals Season 9 features", "fetch_top": 2}
+    )
+    assert text == message
+    assert "No search results." not in text
+
+
+def test_web_search_tool_unexpected_error_includes_type_and_cause(monkeypatch):
+    def boom(query: str, max_results: int = 5) -> list[dict[str, str]]:
+        raise RuntimeError("parser blew up") from TimeoutError("socket timed out")
+
+    monkeypatch.setattr("jarvis.tools.builtins.web_search.search_public_web", boom)
+    text = web_search_tool.invoke({"query": "x", "fetch_top": 0})
+    assert text.startswith("Web lookup failed.")
+    assert "via ddgs" not in text
+    assert "Exception: RuntimeError: parser blew up" in text
+    assert "Cause: TimeoutError: socket timed out" in text
+    assert "No search results." not in text
 
 
 def test_web_search_tool_fetches_page(monkeypatch):
