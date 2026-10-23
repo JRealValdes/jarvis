@@ -98,9 +98,11 @@ LANGSMITH_API_KEY=...
 
 ### Web search and public pages (`web_search_tool`)
 
-Jarvis can search the public web (DuckDuckGo via `ddgs`) and read extracted text from public `http`/`https` pages (`requests` + `trafilatura`). No API key is required.
+Jarvis can search the public web (metasearch via the `ddgs` package, including DuckDuckGo and other engines) and read extracted text from public `http`/`https` pages (`requests` + `trafilatura`). No API key is required.
 
 **Can read:** public HTML pages that allow the Jarvis user-agent in `robots.txt`, within size and timeout caps. After a search, the tool fetches readable text from the top hit URLs by default (not snippets alone).
+
+**Provider failures:** `ddgs` sometimes raises `No results found` when a backend is rate-limited, blocked, or flaky, instead of returning an empty list. That is intermittent and more common on a shared or home IP (typical for the Raspberry Pi) than on a desktop. Jarvis retries a few backends with a short backoff, then returns an error that names `ddgs`, the exception type, the backends tried, and a hint. A successful search with zero hits stays `No search results.` and is a different outcome. No paid search API is required.
 
 **Cannot read:** login-walled content, pages behind captchas/paywalls, credentialed sessions, or Glassdoor (and similar blocked job boards). Search may still return snippets that *mention* those sites; Jarvis must not fetch them. Snippets can be stale—prefer fetched page text and cite the URL used. Jarvis should answer the user in the language of their latest message.
 
