@@ -4,10 +4,12 @@ description: >-
   Create and maintain Jarvis GitHub issues, feature branches named
   feature/X-slug, and PRs into main with titles ending in (#X). Classifies
   new features as backend (jarvis), frontend (jarvis_app), or both and
-  creates issues in the matching repo(s). Use when starting work from main,
-  solving or continuing an existing GitHub issue, creating or updating an
-  issue for a feature, opening a feature branch, linking a PR to an issue,
-  or when the user asks to start the issue/branch/PR workflow.
+  creates issues in the matching repo(s). For dual-repo work, requires a
+  backend-to-frontend handoff comment on sibling app issues when the
+  backend PR lands. Use when starting work from main, solving or continuing
+  an existing GitHub issue, creating or updating an issue for a feature,
+  opening a feature branch, linking a PR to an issue, or when the user asks
+  to start the issue/branch/PR workflow.
 ---
 
 # GitHub feature flow (Jarvis)
@@ -91,6 +93,8 @@ Related backend issue: https://github.com/JRealValdes/jarvis/issues/<N>
 
 Record each issue number from the URL or `gh issue list` / `gh issue list --repo JRealValdes/jarvis_app`.
 
+When creating a **backend** issue that has (or will have) a frontend sibling, include a short **Frontend handoff** checklist item in the backend body: when the backend PR is opened or merged, comment on the related `jarvis_app` issue(s) with as-built client notes (see “Frontend handoff” below).
+
 ## 2. Create the branch
 
 Slug: lowercase kebab-case from the issue title; drop punctuation; keep it short.
@@ -140,6 +144,28 @@ Closes #<N>.
 
 Push with `-u` if the branch has no upstream yet.
 
+### Frontend handoff (backend PRs with a sibling app issue)
+
+When this repo’s change implements an API (or other contract) that a **linked** `jarvis_app` issue will consume later:
+
+1. Prefer posting the handoff **when the backend PR is opened** (or immediately after merge if it was forgotten).
+2. Comment on **each** related frontend issue with **as-built** notes — not only what the backend issue originally planned.
+
+```bash
+gh issue comment <M> --repo JRealValdes/jarvis_app --body-file <handoff.md>
+```
+
+Handoff comment should include, as applicable:
+
+- Final HTTP path(s), method(s), auth headers
+- Request/response shapes (JSON fields, multipart parts, content types)
+- Caps, max sizes/durations, supported formats, and error `detail` / status codes the UI should handle
+- Suggested client call sequence if multi-step (e.g. STT then `/ask`)
+- Deviations from the original backend issue plan
+- Link back to the backend PR and issue
+
+Do this even if the frontend issue is not started yet — the comment is the bridge for later work.
+
 ## 5. After merge — branch cleanup
 
 When a PR for `feature/<N>-*` is **merged**:
@@ -153,10 +179,12 @@ When a PR for `feature/<N>-*` is **merged**:
 
 ```
 - [ ] New work classified: backend / frontend / both; issues created in the matching repo(s) and cross-linked when both
+- [ ] Backend issues with a frontend sibling include a Frontend handoff checklist item
 - [ ] Issue exists (#N) in the owning repo, English; read before coding when working an existing issue
 - [ ] On feature/<N>-* in that repo (checked out or created), not on main
 - [ ] Work landed on that branch
 - [ ] Issue body updated only when useful
 - [ ] PR title ends with (#N); body links Closes/Refs #N
+- [ ] Backend PR with app sibling: handoff comment posted on related jarvis_app issue(s)
 - [ ] After merge: remote branch deleted (user UI or confirmed agent delete); local branch deleted only after confirmation; on main and pulled
 ```
