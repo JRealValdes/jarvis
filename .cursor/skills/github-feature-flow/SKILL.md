@@ -2,47 +2,94 @@
 name: github-feature-flow
 description: >-
   Create and maintain Jarvis GitHub issues, feature branches named
-  feature/X-slug, and PRs into main with titles ending in (#X). Use when
-  starting work from main, solving or continuing an existing GitHub issue,
-  creating or updating an issue for a feature, opening a feature branch,
-  linking a PR to an issue, or when the user asks to start the
-  issue/branch/PR workflow.
+  feature/X-slug, and PRs into main with titles ending in (#X). Classifies
+  new features as backend (jarvis), frontend (jarvis_app), or both and
+  creates issues in the matching repo(s). Use when starting work from main,
+  solving or continuing an existing GitHub issue, creating or updating an
+  issue for a feature, opening a feature branch, linking a PR to an issue,
+  or when the user asks to start the issue/branch/PR workflow.
 ---
 
 # GitHub feature flow (Jarvis)
 
 Issue + feature branch + PR into `main`. All GitHub text in **English**.
 
+## Repo scope for new features
+
+Jarvis is split across two GitHub repos:
+
+| Layer | Repo |
+|---|---|
+| Backend (API, agents, tools, server) | `JRealValdes/jarvis` (this repo) |
+| Frontend (client / app UI) | `JRealValdes/jarvis_app` |
+
+When the user asks for **new functionality** (new issues), decide which case applies **before** proposing:
+
+1. **Backend only** — API, LangGraph, tools, config, Pi deploy, HF Space backend surface, etc. → create **one** issue in `jarvis`.
+2. **Frontend only** — UI screens, client navigation, presentation-only changes against an existing API → create **one** issue in `jarvis_app` (`gh issue create --repo JRealValdes/jarvis_app ...`).
+3. **Both** — new or changed API contract plus UI that consumes it → create **two** issues (one per repo) and **cross-link** them in each body.
+
+In the proposal to the user, state the classification and which repo(s) will get issue(s). Do not create issues until they confirm (unless they already ordered the full flow).
+
+Heuristics (when unclear, say so in the proposal and recommend the safer “both” split if an API change is likely):
+
+- Touches `src/jarvis/`, FastAPI routes, MCP/tools, persistence → backend
+- Touches mobile/web UI only, no new/changed server contract → frontend
+- Needs new endpoints, response shapes, or auth flows **and** UI → both
+
 ## Start from `main` — new work (propose first)
 
-If the user asks for a **new** change while on `main` (no issue number), **propose** then wait for confirmation:
+If the user asks for a **new** change while on `main` (no issue number), **classify scope**, **propose**, then wait for confirmation:
 
-1. Create GitHub issue
-2. Create branch `feature/<N>-<slug>` from up-to-date `main`
-3. Develop on that branch
+1. Create GitHub issue(s) in the matching repo(s) (see above)
+2. If this repo (`jarvis`) has an issue: create branch `feature/<N>-<slug>` from up-to-date `main` and develop there
+3. If only `jarvis_app` is in scope: create that issue and do not open a backend branch unless the user asks to continue in the frontend repo
 
-Do not create the issue or branch until they agree (unless they already ordered the full flow).
+Do not create the issue(s) or branch until they agree (unless they already ordered the full flow).
 
 ## Work on an existing issue `#N` (from `main` or elsewhere)
 
 If the user asks to solve, implement, or continue issue `#N`:
 
-1. **Read the issue:** `gh issue view <N>` (and comments if needed). Treat the issue body/checklist as the source of requirements.
-2. **Use the development branch:**
+1. **Read the issue:** `gh issue view <N>` (add `--repo JRealValdes/jarvis_app` when the issue is on the frontend). Treat the issue body/checklist as the source of requirements.
+2. **Use the development branch** (only when working in the repo that owns that issue):
    - Look for an existing local or remote branch matching `feature/<N>-*` (or the branch linked under the issue’s Development section).
    - If it exists: check it out and pull latest (`git fetch` / `git pull`).
    - If it does not exist: create `feature/<N>-<slug>` from up-to-date `main` (slug from the issue title). Prefer `gh issue develop <N> --name feature/<N>-<slug> --checkout` when available; otherwise `git checkout -b` + `git push -u`.
 3. **Develop on that branch** only — do not implement `#N` on `main`. Update the issue body when new scope materially helps tracking.
 
-## 1. Create the issue
+## 1. Create the issue(s)
+
+**Backend** (`jarvis`, default cwd):
 
 ```bash
 gh issue create --title "<English title>" --body-file <path-or-heredoc>
 ```
 
+**Frontend** (`jarvis_app`):
+
+```bash
+gh issue create --repo JRealValdes/jarvis_app --title "<English title>" --body-file <path-or-heredoc>
+```
+
 Body: short context, goal, checklist. English only.
 
-Record the issue number `N` from the URL or `gh issue list`.
+When creating a **pair** (both repos), each body should:
+
+- Scope only that repo’s work (backend checklist vs frontend checklist)
+- Link the sibling issue once both URLs exist (create one, then the other with the first URL, then edit the first to add the second)
+
+Example cross-link line:
+
+```markdown
+Related frontend issue: https://github.com/JRealValdes/jarvis_app/issues/<M>
+```
+
+```markdown
+Related backend issue: https://github.com/JRealValdes/jarvis/issues/<N>
+```
+
+Record each issue number from the URL or `gh issue list` / `gh issue list --repo JRealValdes/jarvis_app`.
 
 ## 2. Create the branch
 
@@ -105,8 +152,9 @@ When a PR for `feature/<N>-*` is **merged**:
 ## Checklist
 
 ```
-- [ ] Issue exists (#N), English; read before coding when working an existing issue
-- [ ] On feature/<N>-* (checked out or created), not on main
+- [ ] New work classified: backend / frontend / both; issues created in the matching repo(s) and cross-linked when both
+- [ ] Issue exists (#N) in the owning repo, English; read before coding when working an existing issue
+- [ ] On feature/<N>-* in that repo (checked out or created), not on main
 - [ ] Work landed on that branch
 - [ ] Issue body updated only when useful
 - [ ] PR title ends with (#N); body links Closes/Refs #N

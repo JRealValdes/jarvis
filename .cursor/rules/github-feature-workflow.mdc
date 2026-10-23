@@ -20,13 +20,16 @@ Examples: issue `#8` “Fix session history and ChatState vs checkpoints” → 
 
 ## When on `main` and the user asks for a **new** change
 
-**Propose** (do not start until they confirm) this flow:
+**Classify scope first** (backend / frontend / both), then **propose** (do not start until they confirm):
 
-1. Create a GitHub issue for the work
-2. Create the associated feature branch from up-to-date `main`
-3. Develop on that branch
+1. Create GitHub issue(s) in the matching repo(s):
+   - **Backend only** → issue in `JRealValdes/jarvis` (this repo)
+   - **Frontend only** → issue in `JRealValdes/jarvis_app`
+   - **Both** → one issue in each repo (cross-link them)
+2. For work that belongs in **this** repo: create the associated feature branch from up-to-date `main` and develop there
+3. Frontend-only work: create the issue in `jarvis_app` and stop here unless the user asks to continue in that repo
 
-Then follow [`.cursor/skills/github-feature-flow/SKILL.md`](../skills/github-feature-flow/SKILL.md).
+Then follow [`.cursor/skills/github-feature-flow/SKILL.md`](../skills/github-feature-flow/SKILL.md) (section “Repo scope for new features”).
 
 ## When on `main` and the user asks to solve / work on issue `#X`
 
