@@ -8,6 +8,8 @@ my_notes.txt
 
 # Pi deploy target (host/user/path); see deploy/pi.env.example
 deploy/pi.local.env
+# Last-sync content hashes for deploy/sync_secrets.py
+deploy/.secrets_sync_state.json
 
 # Secret databases
 *secret*.db

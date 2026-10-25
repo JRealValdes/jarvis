@@ -130,14 +130,25 @@ JARVIS_PI_DIR=/home/jreal/Desktop/Stark_Industries/jarvis
 
 `pi.local.env` is gitignored.
 
-### 6. Push secrets from the PC
+### 6. Sync secrets with the PC
 
 ```bash
 uv run python deploy/sync_secrets.py --dry-run
 uv run python deploy/sync_secrets.py --restart
 ```
 
-By default this copies every **existing** local file in the catalog. Limit groups with `--only`. Use `--allow-password` only if key auth is not ready yet.
+By default this **pushes** catalog files local → Pi. Limit groups with `--only`. Use `--allow-password` only if key auth is not ready yet.
+
+**Pull** (Pi → PC), e.g. after editing LinkedIn prefs on the server:
+
+```bash
+uv run python deploy/sync_secrets.py --pull --only user-prefs --dry-run
+uv run python deploy/sync_secrets.py --pull --only user-prefs
+```
+
+**Conflicts:** the script stores last-sync content hashes in `deploy/.secrets_sync_state.json` (gitignored). If both sides changed since the last sync, it **aborts** and lists paths. Re-run with `--force-local` or `--force-remote` (and `--only`) after you decide which side wins. There is no automatic merge.
+
+Group policies live in `deploy/secret_paths.py` (`push` vs `sync`). `--list-groups` prints each group and its policy.
 
 ### 7. Install the systemd service on the Pi
 
@@ -173,6 +184,8 @@ Remote flow: **stop** `jarvis` → `git pull --ff-only` → `uv sync` → **star
 
 ```bash
 uv run python deploy/sync_secrets.py --restart
+# Retrieve live prefs from the Pi:
+uv run python deploy/sync_secrets.py --pull --only user-prefs
 ```
 
 ### Manual SSH
