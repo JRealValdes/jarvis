@@ -33,6 +33,12 @@ def test_list_group_names_includes_expected():
     assert "google" in names
 
 
+def test_group_policy_user_prefs_is_sync():
+    assert secret_paths.group_policy("user-prefs") == "sync"
+    assert secret_paths.group_policy("env") == "push"
+    assert secret_paths.group_policy("google") == "push"
+
+
 def test_resolve_skips_missing_and_examples(tmp_path: Path):
     (tmp_path / ".env").write_text("OPENAI_API_KEY=x\n", encoding="utf-8")
     example = (

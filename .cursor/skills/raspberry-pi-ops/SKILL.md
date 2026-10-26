@@ -2,10 +2,10 @@
 name: raspberry-pi-ops
 description: >-
   Update or sync Jarvis on the LAN Raspberry Pi (Jarvis Server): stop service,
-  git pull, uv sync, restart, health-check; or push secrets via scp. Use when
-  the user asks to update the raspberry, update the server, update Jarvis
-  Server, deploy/push code to the Pi, sync/push secrets to the Pi, or similar
-  phrases in any language.
+  git pull, uv sync, restart, health-check; or push/pull secrets via scp with
+  conflict abort. Use when the user asks to update the raspberry, update the
+  server, update Jarvis Server, deploy/push code to the Pi, sync/push/pull/
+  retrieve secrets to/from the Pi, or similar phrases in any language.
 ---
 
 # Raspberry Pi / Jarvis Server ops
@@ -27,8 +27,9 @@ Config (gitignored): `deploy/pi.local.env` from `deploy/pi.env.example`
 | User intent (examples) | Action |
 |------------------------|--------|
 | update raspberry / update server / update Jarvis Server / lleva esto a la Pi | **Code update** |
-| update/sync/push secrets / lleva los secretos | **Secrets sync** |
-| both | Secrets first (with `--restart`), or code update then secrets — ask only if unclear |
+| update/sync/push secrets / lleva los secretos | **Secrets push** |
+| pull/retrieve/trae secretos / from the Pi / from the server | **Secrets pull** |
+| both code + secrets | Secrets first (with `--restart` on push), or code then secrets — ask only if unclear |
 
 ### Code update
 
@@ -43,7 +44,7 @@ Remote flow: stop `jarvis` → `git pull --ff-only` → `uv sync` → start → 
 
 Report success/failure from the command output. On failure, suggest `ssh … 'systemctl status jarvis'` / `journalctl -u jarvis -n 50`.
 
-### Secrets sync
+### Secrets push (PC → Pi)
 
 ```bash
 uv run python deploy/sync_secrets.py --dry-run
@@ -52,11 +53,30 @@ uv run python deploy/sync_secrets.py --restart
 
 `--restart` reloads the API so new `.env` values apply. Use `--only group1,group2` only when the user asks for a subset (`--list-groups`).
 
+### Secrets pull (Pi → PC)
+
+```bash
+uv run python deploy/sync_secrets.py --pull --only user-prefs --dry-run
+uv run python deploy/sync_secrets.py --pull --only user-prefs
+```
+
+Prefer `--only` for pulls (especially `user-prefs`) so credentials are not overwritten by accident.
+
+### Conflicts
+
+Sync compares local hash, remote hash, and `deploy/.secrets_sync_state.json`.
+
+- If the script **aborts** with blocked paths: report them to the user, including local/remote mtimes and the newer-mtime hint. Do **not** auto-merge, do **not** treat mtime as auto-resolve, and do not pass `--force-*` unless the user explicitly chooses a side.
+- `--force-local` → local wins (push that content).
+- `--force-remote` → remote wins (pull that content).
+- Optional agent-assisted merge of YAML prefs only if the user asks; never auto-merge `.env` / Google secrets.
+
 ### New secret files in the repo
 
-If this change (or the user) introduces a new Pi-bound secret path, update `deploy/secret_paths.py` in the same work. See rule `pi-secrets-catalog` and the module docstring.
+If this change (or the user) introduces a new Pi-bound secret path, update `deploy/secret_paths.py` in the same work (include `GROUP_POLICY`). See rule `pi-secrets-catalog` and the module docstring.
 
 ## Do not
 
-- Commit `deploy/pi.local.env` or secret files
+- Commit `deploy/pi.local.env`, `deploy/.secrets_sync_state.json`, or secret files
 - Port-forward SSH or `:8000` on the router (off-LAN is #31 / Tailscale)
+- Silently overwrite the other side on conflict
