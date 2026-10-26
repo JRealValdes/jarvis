@@ -46,7 +46,9 @@ from sync_state import (
     SyncClass,
     classify_pair,
     file_sha256,
+    format_mtime,
     load_sync_state,
+    newer_side_hint,
     save_sync_state,
 )
 
@@ -143,15 +145,15 @@ def _restart_service(
     )
 
 
-def _remote_sha256_map(
+def _remote_file_info_map(
     user: str,
     host: str,
     remote_dir: str,
     rel_posix_paths: list[str],
     *,
     batch_mode: bool,
-) -> dict[str, str]:
-    """Return ``rel → sha256`` for files that exist on the remote.
+) -> dict[str, tuple[str, float]]:
+    """Return ``rel → (sha256, mtime)`` for files that exist on the remote.
 
     Missing files are omitted from the result.
     """
@@ -170,7 +172,8 @@ for rel in rels:
     with path.open("rb") as f:
         for chunk in iter(lambda: f.read(1024 * 1024), b""):
             h.update(chunk)
-    out[rel.replace("\\\\", "/")] = h.hexdigest()
+    key = rel.replace("\\\\", "/")
+    out[key] = {{"sha256": h.hexdigest(), "mtime": path.stat().st_mtime}}
 print(json.dumps(out))
 """
     stdout = _run_capture(
@@ -184,7 +187,12 @@ print(json.dumps(out))
     data = json.loads(stdout)
     if not isinstance(data, dict):
         return {}
-    return {str(k).replace("\\", "/"): str(v) for k, v in data.items()}
+    out: dict[str, tuple[str, float]] = {}
+    for key, value in data.items():
+        rel = str(key).replace("\\", "/")
+        if isinstance(value, dict) and "sha256" in value and "mtime" in value:
+            out[rel] = (str(value["sha256"]), float(value["mtime"]))
+    return out
 
 
 def _discover_remote_glob_rels(
@@ -353,17 +361,21 @@ def sync_secrets(
         return 1
 
     state = load_sync_state(state_path)
-    remote_hashes = _remote_sha256_map(
+    remote_info = _remote_file_info_map(
         user, host, remote_dir, rel_posix, batch_mode=batch_mode
     )
+    remote_hashes = {rel: info[0] for rel, info in remote_info.items()}
+    remote_mtimes = {rel: info[1] for rel, info in remote_info.items()}
 
     plans: list[tuple[str, SyncClass, str]] = []
-    blocked: list[tuple[str, SyncClass]] = []
+    blocked: list[tuple[str, SyncClass, float | None, float | None]] = []
 
     for rel in rel_posix:
         local_path = project_root / rel
         local_hash = file_sha256(local_path) if local_path.is_file() else None
+        local_mtime = local_path.stat().st_mtime if local_path.is_file() else None
         remote_hash = remote_hashes.get(rel)
+        remote_mtime = remote_mtimes.get(rel)
         last_hash = state.get(rel)
         classification = classify_pair(local_hash, remote_hash, last_hash)
         action = _decide_action(
@@ -373,7 +385,7 @@ def sync_secrets(
             force_remote=force_remote,
         )
         if action == "block":
-            blocked.append((rel, classification))
+            blocked.append((rel, classification, local_mtime, remote_mtime))
         elif action == "push" and local_hash is None:
             print(f"  skip  [{classification.value}] {rel} (local missing)")
         elif action == "pull" and remote_hash is None:
@@ -385,8 +397,15 @@ def sync_secrets(
 
     if blocked:
         print("Blocked (conflict or would clobber the other side):")
-        for rel, classification in blocked:
+        for rel, classification, local_mtime, remote_mtime in blocked:
+            hint = newer_side_hint(local_mtime, remote_mtime)
             print(f"  ! {rel} ({classification.value})")
+            print(f"      local mtime:  {format_mtime(local_mtime)}")
+            print(f"      remote mtime: {format_mtime(remote_mtime)}")
+            print(
+                f"      newer (mtime hint): {hint} "
+                "(clocks may skew; not used to auto-resolve)"
+            )
         print(
             "Resolve manually, or re-run with --force-local / --force-remote "
             "(and --only for a subset). No files were transferred."

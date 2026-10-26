@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -111,3 +112,29 @@ def classify_pair(
     if remote_changed:
         return SyncClass.REMOTE_ONLY
     return SyncClass.IDLE
+
+
+def format_mtime(mtime: float | None) -> str:
+    """Format a Unix mtime for operator display (local timezone)."""
+    if mtime is None:
+        return "missing"
+    return (
+        datetime.fromtimestamp(mtime, tz=timezone.utc)
+        .astimezone()
+        .strftime("%Y-%m-%d %H:%M:%S %Z")
+    )
+
+
+def newer_side_hint(local_mtime: float | None, remote_mtime: float | None) -> str:
+    """Return which side has the newer mtime (hint only; clocks may skew).
+
+    Returns:
+        ``local``, ``remote``, ``same``, or ``n/a`` if either side is missing.
+    """
+    if local_mtime is None or remote_mtime is None:
+        return "n/a"
+    if local_mtime > remote_mtime:
+        return "local"
+    if remote_mtime > local_mtime:
+        return "remote"
+    return "same"

@@ -146,7 +146,7 @@ uv run python deploy/sync_secrets.py --pull --only user-prefs --dry-run
 uv run python deploy/sync_secrets.py --pull --only user-prefs
 ```
 
-**Conflicts:** the script stores last-sync content hashes in `deploy/.secrets_sync_state.json` (gitignored). If both sides changed since the last sync, it **aborts** and lists paths. Re-run with `--force-local` or `--force-remote` (and `--only`) after you decide which side wins. There is no automatic merge.
+**Conflicts:** the script stores last-sync content hashes in `deploy/.secrets_sync_state.json` (gitignored). If both sides changed since the last sync, it **aborts**, lists paths, and prints local/remote modification times plus a newer-mtime hint (clocks may skew; never used to auto-resolve). Re-run with `--force-local` or `--force-remote` (and `--only`) after you decide which side wins. There is no automatic merge.
 
 Group policies live in `deploy/secret_paths.py` (`push` vs `sync`). `--list-groups` prints each group and its policy.
 

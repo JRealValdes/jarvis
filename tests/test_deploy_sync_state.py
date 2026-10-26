@@ -74,3 +74,13 @@ def test_load_sync_state_missing_or_invalid(tmp_path: Path):
     bad = tmp_path / "bad.json"
     bad.write_text("not-json", encoding="utf-8")
     assert sync_state.load_sync_state(bad) == {}
+
+
+def test_format_mtime_and_newer_hint():
+    assert sync_state.format_mtime(None) == "missing"
+    assert "2020" in sync_state.format_mtime(1_577_836_800.0)  # 2020-01-01 UTC-ish
+    assert sync_state.newer_side_hint(10.0, 5.0) == "local"
+    assert sync_state.newer_side_hint(5.0, 10.0) == "remote"
+    assert sync_state.newer_side_hint(5.0, 5.0) == "same"
+    assert sync_state.newer_side_hint(None, 5.0) == "n/a"
+    assert sync_state.newer_side_hint(5.0, None) == "n/a"

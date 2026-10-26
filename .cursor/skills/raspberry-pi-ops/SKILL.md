@@ -66,7 +66,7 @@ Prefer `--only` for pulls (especially `user-prefs`) so credentials are not overw
 
 Sync compares local hash, remote hash, and `deploy/.secrets_sync_state.json`.
 
-- If the script **aborts** with blocked paths: report them to the user. Do **not** auto-merge or pass `--force-*` unless the user explicitly chooses a side.
+- If the script **aborts** with blocked paths: report them to the user, including local/remote mtimes and the newer-mtime hint. Do **not** auto-merge, do **not** treat mtime as auto-resolve, and do not pass `--force-*` unless the user explicitly chooses a side.
 - `--force-local` → local wins (push that content).
 - `--force-remote` → remote wins (pull that content).
 - Optional agent-assisted merge of YAML prefs only if the user asks; never auto-merge `.env` / Google secrets.
