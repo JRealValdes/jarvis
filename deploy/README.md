@@ -15,6 +15,8 @@ Operator tooling for [issue #29](https://github.com/JRealValdes/jarvis/issues/29
 | `jarvis.service` | systemd unit template for `uv run jarvis api` |
 | `secret_paths.py` | Catalog of secret path groups for `--only` (**keep updated**) |
 
+**Off-LAN (Tailscale, #31):** no extra file here. Install Tailscale with the [official Linux instructions](https://tailscale.com/download/linux); that package already ships and enables **`tailscaled.service`**. Operator steps (MagicDNS, phone auto-connect, named-tunnel alternative): [docs/raspberry-pi-ops.md — Off-LAN access](../docs/raspberry-pi-ops.md#off-lan-access-tailscale-31). Do not add tunnel logic to `jarvis.service` or the API process.
+
 ```bash
 cp deploy/pi.env.example deploy/pi.local.env   # then edit
 uv run python deploy/sync_secrets.py --dry-run

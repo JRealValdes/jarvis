@@ -2,7 +2,7 @@
 
 Run Jarvis on a Raspberry Pi **without** a monitor or keyboard. Day-to-day work is from your PC on the home LAN via **SSH** (a remote terminal — not a full remote desktop).
 
-Related issues: **#29** (this guide), **#28** (voice / Home Assistant on the same Pi), **#31** (off-LAN API via Tailscale / named tunnel). The API is LAN-only from Jarvis itself; do not port-forward `:8000` or SSH.
+Related issues: **#29** (this guide), **#28** (voice / Home Assistant on the same Pi), **#31** (off-LAN API via **Tailscale**; named Cloudflare Tunnel is a documented alternative only). The API is LAN-only from Jarvis itself; do not port-forward `:8000` or SSH.
 
 **Runtime model for this issue:** systemd + `uv run jarvis api` (lightweight on older boards such as a Pi 3). Docker Compose beside Home Assistant remains a later option when you co-host HA (#28).
 
@@ -97,7 +97,7 @@ sudo chmod 440 /etc/sudoers.d/jarvis-systemctl
 sudo systemctl is-active jarvis.service   # should not prompt after the unit exists
 ```
 
-**Firewall:** on a home LAN, default Pi OS is usually fine. Do not port-forward SSH (22) or the Jarvis API to the public internet; use #31 later for remote access.
+**Firewall:** on a home LAN, default Pi OS is usually fine. Do not port-forward SSH (22) or the Jarvis API to the public internet; use [Tailscale (off-LAN)](#off-lan-access-tailscale-31) instead.
 
 ### 4. Install uv and clone Jarvis on the Pi
 
@@ -220,7 +220,63 @@ If lookups fail for a long stretch, wait and retry. Check `journalctl -u jarvis`
 
 ## Voice / Home Assistant (#28)
 
-Voice bridges and HA should talk to Jarvis on **localhost or LAN**. They do not need a public URL.
+Voice bridges and HA should talk to Jarvis on **localhost or LAN**. They do not need a public URL or Tailscale.
+
+---
+
+## Off-LAN access (Tailscale) (#31)
+
+Jarvis does **not** open a tunnel inside the Python process. Off-LAN reachability is a **host** concern: install [Tailscale](https://tailscale.com/) on the Pi and on each client, join the same tailnet, then point clients at the Pi’s MagicDNS name or Tailscale IP (same API port as on the LAN, default `8000`).
+
+Auth stays Jarvis JWT (or future device tokens). Tailscale only solves **reachability**.
+
+Frontend: configure the API base URL in `jarvis_app` Settings (see [jarvis_app#11](https://github.com/JRealValdes/jarvis_app/issues/11)). Do not embed a Tailscale SDK in the app.
+
+### 1. Pi — install and stay online
+
+On the Pi (official install; package provides `tailscaled` via systemd — we do **not** ship a custom unit under `deploy/`):
+
+```bash
+# Follow https://tailscale.com/download/linux for the current one-liner / apt steps
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up
+tailscale status
+tailscale ip -4    # e.g. 100.x.y.z
+```
+
+Confirm the daemon is enabled across reboots:
+
+```bash
+systemctl is-enabled tailscaled
+systemctl status tailscaled --no-pager
+```
+
+Optional: set a stable MagicDNS hostname in the [Tailscale admin console](https://login.tailscale.com/admin/machines) (e.g. `jarvis-pi`) so clients use `http://jarvis-pi:8000` instead of remembering `100.x`.
+
+`jarvis.service` is unchanged: it still binds `0.0.0.0:API_PORT` on the Pi. Tailscale routes private traffic to that listener.
+
+### 2. Phone / laptop — same tailnet + auto-connect
+
+1. Install the Tailscale app for the OS.
+2. Sign in to the **same** tailnet as the Pi (invite the account, or use a shared tag / ACL as you prefer).
+3. Enable **auto-connect** / **always-on VPN** / **connect on demand** (wording varies by OS) so the VPN stays up without opening the Tailscale app each time.
+4. Smoke-test in a browser or with curl while **off** the home Wi‑Fi (mobile data): `http://<magicdns-or-100.x>:8000/docs`.
+
+Day-to-day: open Jarvis (or any client), leave Tailscale connected in the background. If the VPN is down, the API is unreachable — same as being off the LAN without a mesh.
+
+### 3. Friends / intimate circle
+
+Invite them to the tailnet (or a restricted ACL tag that can only reach the Pi’s API). They install Tailscale, enable auto-connect, and set the same base URL in the app. You do **not** WhatsApp a changing public URL.
+
+### 4. SSH from outside (bonus)
+
+The same mesh can carry SSH (`ssh USER@jarvis-pi` or `USER@100.x.y.z`) without router port-forward. Deploy helpers (`deploy/pi.local.env`) can keep using the LAN IP at home; off-LAN, point `JARVIS_PI_HOST` at MagicDNS / Tailscale IP when you need PC → Pi scripts from away.
+
+### Alternative: named Cloudflare Tunnel
+
+If you need a stable **public** `https://…` hostname and no VPN app on the phone: run account-backed `cloudflared` on the Pi (host service), map a hostname under your Cloudflare DNS domain to `http://localhost:8000`, and put that HTTPS URL in the client. Domain registration is typically a small yearly cost; Tunnel on Cloudflare Free / Zero Trust Free is usually $0 for personal use.
+
+Prefer Tailscale for this project’s default. Do **not** use ephemeral `*.trycloudflare.com` quick tunnels or publish URLs via Firebase/Telegram. Do **not** put tunnel logic back inside the Jarvis process.
 
 ---
 
@@ -229,8 +285,9 @@ Voice bridges and HA should talk to Jarvis on **localhost or LAN**. They do not 
 | Avoid | Why |
 |-------|-----|
 | 32-bit OS (`armv7l`) on Pi 3 | `sqlite-vec` has no wheel; use 64-bit (`aarch64`) |
-| Router port-forward of SSH or `:8000` | Use Tailscale / named tunnel (#31) later |
+| Router port-forward of SSH or `:8000` | Use Tailscale (#31); named tunnel only if you chose that alternative |
 | Daily smart-plug power cuts | Unclean shutdowns; leave the Pi on |
+| Jarvis-in-process / quick tunnels | Removed in #30; host-layer Tailscale (or named tunnel) only |
 
 ---
 

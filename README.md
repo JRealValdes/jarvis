@@ -70,6 +70,9 @@ Docstring convention in production code: module + **Args** / **Returns** / **Rai
 ## Raspberry Pi (headless)
 
 Operator guide for SSH, systemd, secret sync, and code updates on a LAN Pi: [docs/raspberry-pi-ops.md](docs/raspberry-pi-ops.md). Helpers live under [`deploy/`](deploy/).
+
+**Off-LAN:** install Tailscale on the Pi and on clients (same tailnet), then use MagicDNS / Tailscale IP as the API base URL — see [Off-LAN access (Tailscale)](docs/raspberry-pi-ops.md#off-lan-access-tailscale-31). Named Cloudflare Tunnel is a documented alternative only. No in-process tunnel in Jarvis.
+
 ## Configuration
 
 App settings live in `jarvis.core.config` as typed defaults. That module is the only place that calls `load_dotenv()` and the only place that reads Jarvis environment variables. Entry points (`uv run jarvis`, root `app.py`, and the API) import it first. Override any setting in `.env` (see `.env.example`). Names stay public as written there (`JARVIS_*`, `JWT_*`, `API_PORT`, `FERNET_KEY`). `OPENAI_API_KEY` is read by the OpenAI client, not by Jarvis code. Built-in tools are listed in `jarvis.tools.builtins.BUILTIN_TOOLS`.
@@ -82,7 +85,7 @@ App settings live in `jarvis.core.config` as typed defaults. That module is the 
 6. Local UI thread (optional): `JARVIS_LOCAL_THREAD_ID` (default `1`) is the checkpoint thread for the CLI and Gradio.
 7. Tool traces in chat (optional): `JARVIS_SHOW_TOOL_TRACES=1` paints tool call/result lines into message history for the UI/API. Default is off (final assistant replies only).
 
-The HTTP API listens on the host/LAN (`0.0.0.0:API_PORT`). Off-LAN access is a host concern (Tailscale / named tunnel — issue #31), not an in-process tunnel.
+The HTTP API listens on the host/LAN (`0.0.0.0:API_PORT`). Off-LAN access is a host concern (**Tailscale** by default — issue #31; named Cloudflare Tunnel optional), not an in-process tunnel.
 
 ### Debug observability (LangSmith)
 
@@ -194,7 +197,7 @@ jarvis/                          # repository root
 - [x] JWT Token Security
 - [x] Raspberry Pi / Server version
 - [x] Remove legacy cloudflared / Firebase / Telegram API exposure (#30)
-- [ ] Remote API access — Tailscale / named tunnel (#31)
+- [x] Remote API access — Tailscale host-layer docs (#31; named tunnel alternative only)
 - [ ] Android app
 - [ ] Multi-client management
 - [ ] Security layer: MAC Address control

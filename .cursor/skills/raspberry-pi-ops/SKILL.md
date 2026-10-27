@@ -78,5 +78,5 @@ If this change (or the user) introduces a new Pi-bound secret path, update `depl
 ## Do not
 
 - Commit `deploy/pi.local.env`, `deploy/.secrets_sync_state.json`, or secret files
-- Port-forward SSH or `:8000` on the router (off-LAN is #31 / Tailscale)
+- Port-forward SSH or `:8000` on the router (off-LAN: Tailscale per `docs/raspberry-pi-ops.md` / #31)
 - Silently overwrite the other side on conflict
