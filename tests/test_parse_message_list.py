@@ -152,3 +152,20 @@ def test_parse_keeps_content_on_tool_call_message_when_traces_off() -> None:
     )
     parsed = parse_message_list([msg], show_tool_traces=False)
     assert parsed == [{"role": "assistant", "content": "I will look that up."}]
+
+
+def test_parse_hides_image_bytes_in_user_history() -> None:
+    message = HumanMessage(
+        content=[
+            {"type": "text", "text": "What is this?"},
+            {
+                "type": "image_url",
+                "image_url": {"url": "data:image/png;base64,AAAA"},
+            },
+        ]
+    )
+    parsed = parse_message_list([message])
+    assert parsed == [
+        {"role": "user", "content": "What is this?\n[Image attached]"}
+    ]
+    assert "AAAA" not in parsed[0]["content"]

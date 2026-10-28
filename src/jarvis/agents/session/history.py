@@ -11,6 +11,7 @@ from jarvis.agents.checkpointer import checkpoint_path, open_model_checkpointer
 from jarvis.agents.session.cache import get_agents_cache
 from jarvis.core.config import DEFAULT_MODEL, SHOW_TOOL_TRACES
 from jarvis.core.enums import ModelEnum
+from jarvis.infrastructure.images import human_content_for_history
 
 logger = logging.getLogger(__name__)
 
@@ -130,7 +131,9 @@ def parse_message_list(
         if isinstance(msg, SystemMessage):
             result.append({"role": "system", "content": msg.content})
         elif isinstance(msg, HumanMessage):
-            result.append({"role": "user", "content": msg.content})
+            result.append(
+                {"role": "user", "content": human_content_for_history(msg.content)}
+            )
         elif isinstance(msg, AIMessage):
             tool_calls = _tool_calls_for_display(msg)
             if tool_calls and include_tools:

@@ -30,3 +30,19 @@ def resolve_openai_chat_model_id(model: ModelEnum) -> str:
 def is_openai_chat_model(model: ModelEnum) -> bool:
     """Return True if ``model`` is backed by OpenAI Chat Completions."""
     return model in _OPENAI_CHAT_MODEL_IDS
+
+
+_VISION_CHAT_MODELS: frozenset[ModelEnum] = frozenset({ModelEnum.GPT_4O_MINI})
+
+
+def model_supports_vision(model: ModelEnum) -> bool:
+    """
+    Return whether ``model`` accepts image inputs on a chat turn.
+
+    Args:
+        model: Jarvis chat model.
+
+    Returns:
+        True for vision-capable models (currently GPT-4o mini only).
+    """
+    return model in _VISION_CHAT_MODELS

@@ -7,6 +7,7 @@ import pytest
 from jarvis.core.enums import ModelEnum
 from jarvis.core.openai_models import (
     is_openai_chat_model,
+    model_supports_vision,
     resolve_openai_chat_model_id,
 )
 
@@ -27,3 +28,8 @@ def test_resolve_rejects_unknown_model():
 def test_is_openai_chat_model():
     assert is_openai_chat_model(ModelEnum.GPT_4O_MINI) is True
     assert is_openai_chat_model(ModelEnum.GPT_3_5) is True
+
+
+def test_vision_support_is_gpt_4o_mini_only():
+    assert model_supports_vision(ModelEnum.GPT_4O_MINI) is True
+    assert model_supports_vision(ModelEnum.GPT_3_5) is False

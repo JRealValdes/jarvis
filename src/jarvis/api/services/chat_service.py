@@ -1,5 +1,7 @@
 """Chat, session, and history use cases."""
 
+from fastapi import HTTPException
+
 from jarvis.agents.session import (
     ask_jarvis,
     check_individual_session_cache_exists,
@@ -9,6 +11,7 @@ from jarvis.agents.session import (
 from jarvis.api.errors import ForbiddenError
 from jarvis.api.schemas.chat import AskInput, ThreadIdPayload
 from jarvis.core.enums import ModelEnum
+from jarvis.infrastructure.images import ImageAttachmentError, VisionNotSupportedError
 
 
 class ChatService:
@@ -19,17 +22,31 @@ class ChatService:
         Send a message to Jarvis on the API event loop.
 
         Args:
-            input_data: Message, model, and optional thread_id.
+            input_data: Message, optional images, model, and optional thread_id.
             user: Decoded JWT claims.
 
         Returns:
             Dict ``{response: list[str]}``.
+
+        Raises:
+            HTTPException: 400 when the turn is empty or an image is rejected.
         """
+        message = input_data.message or ""
+        if not message.strip() and not input_data.images:
+            raise HTTPException(status_code=400, detail="Message cannot be empty.")
         model_enum = ModelEnum[input_data.model_name]
         thread_id = input_data.thread_id or user["real_name"]
-        answer = await ask_jarvis(
-            input_data.message, model_enum, thread_id, user_info=user
-        )
+        images = [item.model_dump() for item in input_data.images]
+        try:
+            answer = await ask_jarvis(
+                message,
+                model_enum,
+                thread_id,
+                user_info=user,
+                images=images or None,
+            )
+        except (ImageAttachmentError, VisionNotSupportedError) as exc:
+            raise HTTPException(status_code=400, detail=exc.message) from exc
         return {"response": answer}
 
     def reset_session_for_user(
