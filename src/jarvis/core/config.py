@@ -179,6 +179,11 @@ RANKED_IMAGE_RETRIEVAL: bool = _env_flag(
 )
 """If True, image search scores a larger pool before returning the top hits."""
 
+VISION_VERIFY_IMAGES: bool = _env_flag(
+    "JARVIS_VISION_VERIFY_IMAGES", default=False
+)
+"""If True, one vision call per turn must accept the best web image before it is shown."""
+
 API_PORT: int = _env_int("API_PORT", 8000)
 """HTTP port for the FastAPI server."""
 

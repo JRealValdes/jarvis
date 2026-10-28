@@ -115,6 +115,8 @@ When a picture would help, Jarvis can search public images (again via `ddgs`, no
 
 **Ranked retrieval** (`JARVIS_RANKED_IMAGE_RETRIEVAL`, default off): when on, the search pulls a larger pool and keeps the best hits by title overlap with the query, known size of at least 200px on both edges (unknown size is kept; smaller known images are dropped), and a preference for Wikimedia hosts. When off, behavior stays the simpler path: direct image URLs, Wikimedia hosts moved first, no size filter.
 
+**Vision check** (`JARVIS_VISION_VERIFY_IMAGES`, default off): when on, the best candidate is shown to GPT-4o mini once per user turn. The reply may embed that image only if the check answers YES. A NO, an error, or a second image search in the same turn yields text only. Expect one extra vision call (often a few seconds) on turns that search for an image. When off, there is no vision call and behavior matches the search path above.
+
 Gradio's chatbot renders Markdown (`render_markdown=True`), so that image appears inline. HTTP clients that render markdown images, including `![alt](url)`, get the same text.
 
 

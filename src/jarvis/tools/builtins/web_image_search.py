@@ -6,6 +6,10 @@ import logging
 
 from langchain_core.tools import tool
 
+from jarvis.infrastructure.images.vision_verify import (
+    image_matches_subject,
+    reserve_vision_check,
+)
 from jarvis.infrastructure.web.search import (
     DEFAULT_IMAGE_RESULTS,
     MAX_INLINE_IMAGES_PER_REPLY,
@@ -43,6 +47,34 @@ def _format_image_candidates(results: list[dict[str, str]]) -> str:
         if source:
             lines.append(f"   - Source: {source}")
     return "\n".join(lines)
+
+
+def _vision_verify_enabled() -> bool:
+    """Read the operator flag at call time so tests can patch config."""
+    from jarvis.core.config import VISION_VERIFY_IMAGES
+
+    return VISION_VERIFY_IMAGES
+
+
+def _candidates_after_vision_check(
+    query: str,
+    results: list[dict[str, str]],
+) -> list[dict[str, str]] | None:
+    """
+    Keep only the best candidate when one vision check accepts it.
+
+    Returns:
+        The candidate list to show. ``None`` when the turn's single check
+        was already spent and no further image may be offered.
+    """
+    if not _vision_verify_enabled() or not results:
+        return results
+    if not reserve_vision_check():
+        return None
+    best = results[0]
+    if image_matches_subject(query, best.get("image_url") or ""):
+        return [best]
+    return []
 
 
 @tool
@@ -84,4 +116,10 @@ def web_image_search_tool(
             "Image search failed. Reply with text only. "
             "Do not invent an image URL."
         )
-    return _format_image_candidates(results)
+    checked = _candidates_after_vision_check(cleaned, results)
+    if checked is None:
+        return (
+            "Vision check already used this turn. Reply with text only. "
+            "Do not invent an image URL."
+        )
+    return _format_image_candidates(checked)

@@ -173,3 +173,103 @@ def test_image_tool_requires_a_query():
     text = web_image_search_tool.invoke({"query": "  "})
     assert "Provide an image search query" in text
     assert "do not invent" in text.lower()
+
+
+def _two_hits() -> list[dict[str, str]]:
+    return [
+        {
+            "title": "Best",
+            "image_url": "https://cdn.example/best.jpg",
+            "page_url": "https://cdn.example/best",
+            "source": "Example",
+        },
+        {
+            "title": "Other",
+            "image_url": "https://cdn.example/other.jpg",
+            "page_url": "https://cdn.example/other",
+            "source": "Example",
+        },
+    ]
+
+
+def test_vision_off_does_not_call_the_checker(monkeypatch):
+    from jarvis.infrastructure.images.vision_verify import reset_vision_check_budget
+
+    reset_vision_check_budget()
+    monkeypatch.setattr("jarvis.core.config.VISION_VERIFY_IMAGES", False)
+    calls: list[str] = []
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_image_search.search_public_images",
+        lambda query, max_results=3: _two_hits(),
+    )
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_image_search.image_matches_subject",
+        lambda query, url: calls.append(url) or True,
+    )
+    text = web_image_search_tool.invoke({"query": "a cathedral"})
+    assert calls == []
+    assert "https://cdn.example/other.jpg" in text
+
+
+def test_vision_on_keeps_only_the_accepted_image(monkeypatch):
+    from jarvis.infrastructure.images.vision_verify import reset_vision_check_budget
+
+    reset_vision_check_budget()
+    monkeypatch.setattr("jarvis.core.config.VISION_VERIFY_IMAGES", True)
+    seen: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_image_search.search_public_images",
+        lambda query, max_results=3: _two_hits(),
+    )
+
+    def _check(query: str, url: str) -> bool:
+        seen.append((query, url))
+        return True
+
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_image_search.image_matches_subject",
+        _check,
+    )
+    text = web_image_search_tool.invoke({"query": "a cathedral"})
+    assert seen == [("a cathedral", "https://cdn.example/best.jpg")]
+    assert "https://cdn.example/best.jpg" in text
+    assert "https://cdn.example/other.jpg" not in text
+
+
+def test_vision_rejection_hides_every_candidate(monkeypatch):
+    from jarvis.infrastructure.images.vision_verify import reset_vision_check_budget
+
+    reset_vision_check_budget()
+    monkeypatch.setattr("jarvis.core.config.VISION_VERIFY_IMAGES", True)
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_image_search.search_public_images",
+        lambda query, max_results=3: _two_hits(),
+    )
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_image_search.image_matches_subject",
+        lambda query, url: False,
+    )
+    text = web_image_search_tool.invoke({"query": "a cathedral"})
+    assert "No image candidates" in text
+    assert "https://cdn.example/best.jpg" not in text
+
+
+def test_second_image_search_in_the_turn_does_not_check_again(monkeypatch):
+    from jarvis.infrastructure.images.vision_verify import reset_vision_check_budget
+
+    reset_vision_check_budget()
+    monkeypatch.setattr("jarvis.core.config.VISION_VERIFY_IMAGES", True)
+    calls: list[str] = []
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_image_search.search_public_images",
+        lambda query, max_results=3: _two_hits(),
+    )
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_image_search.image_matches_subject",
+        lambda query, url: calls.append(url) or True,
+    )
+    web_image_search_tool.invoke({"query": "a cathedral"})
+    second = web_image_search_tool.invoke({"query": "a cathedral again"})
+    assert calls == ["https://cdn.example/best.jpg"]
+    assert "already used" in second.lower()
+    assert "https://cdn.example/best.jpg" not in second

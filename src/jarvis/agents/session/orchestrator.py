@@ -37,6 +37,7 @@ from jarvis.infrastructure.images import (
     build_human_message,
     normalize_image_attachments,
 )
+from jarvis.infrastructure.images.vision_verify import reset_vision_check_budget
 from jarvis.infrastructure.persistence.users.identification import find_user_by_prompt
 from jarvis.infrastructure.persistence.users.repository import get_user_by_field
 
@@ -287,6 +288,7 @@ class JarvisSession:
         Returns:
             List of response strings (never empty on success path).
         """
+        reset_vision_check_budget()
         try:
             response = await self.agent.invoke(**self._build_agent_kwargs(messages))
             return self._replies_from_state(response)
