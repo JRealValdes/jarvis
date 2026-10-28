@@ -6,7 +6,7 @@ from jarvis.api.routers import admin, auth, chat
 
 def test_routers_have_expected_route_count():
     assert len(auth.router.routes) == 2
-    assert len(chat.router.routes) == 4
+    assert len(chat.router.routes) == 5
     assert len(admin.router.routes) == 2
 
 
@@ -16,6 +16,7 @@ def test_app_includes_all_router_paths():
         "/token",
         "/validate-token",
         "/ask",
+        "/transcribe",
         "/reset-session",
         "/individual-cache-status",
         "/message-history",
