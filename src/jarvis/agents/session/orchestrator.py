@@ -21,6 +21,7 @@ from jarvis.core.config import (
     USE_MCP,
 )
 from jarvis.core.enums import ModelEnum
+from jarvis.core.openai_models import model_supports_vision
 from jarvis.domain.chat.chat_state import (
     ChatState,
     compute_next_chat_state,
@@ -30,6 +31,11 @@ from jarvis.domain.users.prompts import (
     AUTOMATIC_RESPONSE_IF_ID_FAILED,
     build_background_prompt,
     get_welcome_message,
+)
+from jarvis.infrastructure.images import (
+    VisionNotSupportedError,
+    build_human_message,
+    normalize_image_attachments,
 )
 from jarvis.infrastructure.persistence.users.identification import find_user_by_prompt
 from jarvis.infrastructure.persistence.users.repository import get_user_by_field
@@ -215,16 +221,22 @@ class JarvisSession:
             return None
         return [AUTOMATIC_RESPONSE_IF_ID_FAILED]
 
-    def _messages_for_model(self, prompt: str) -> list:
+    def _messages_for_model(
+        self,
+        prompt: str,
+        images: list[dict[str, str]] | None = None,
+    ) -> list:
         """
         Build the LangChain messages for a model turn.
 
         Args:
             prompt: User message.
+            images: Normalized image attachments for this turn.
 
         Returns:
             Messages for ``STARTING_CHAT`` (with system context) or a single human turn.
         """
+        human = build_human_message(prompt, images)
         if self._chat_state == ChatState.STARTING_CHAT:
             messages = [
                 SystemMessage(
@@ -233,9 +245,9 @@ class JarvisSession:
             ]
             if self.valid_user:
                 messages.append(AIMessage(content=get_welcome_message(self.user)))
-            messages.append(HumanMessage(content=prompt))
+            messages.append(human)
             return messages
-        return [HumanMessage(content=prompt)]
+        return [human]
 
     def _replies_from_state(self, response: dict) -> list[str]:
         """
@@ -281,22 +293,48 @@ class JarvisSession:
         except Exception as e:
             return [f"There was an error processing your request, sir. Error: {e}"]
 
-    async def handle_turn(self, prompt: str) -> list[str]:
+    async def handle_turn(
+        self,
+        prompt: str,
+        images: list[dict[str, str]] | None = None,
+    ) -> list[str]:
         """
         Run one conversation turn for this session.
 
         Advances the chat state machine and, when needed, invokes the model.
+        Image bytes are sent on this turn. A welcome-only turn that includes
+        images also runs the model so the attachment is not dropped.
 
         Args:
             prompt: User message.
+            images: Normalized image attachments for this turn.
 
         Returns:
             List of response strings for the user.
+
+        Raises:
+            VisionNotSupportedError: If images are present and the model cannot view them.
         """
+        attachments = list(images or [])
+        if attachments and not model_supports_vision(self.model_enum):
+            raise VisionNotSupportedError(
+                "The selected model does not support images. Use GPT_4O_MINI."
+            )
         direct = self._direct_reply(prompt)
-        if direct is not None:
+        if direct is not None and not attachments:
             return direct
-        return await self._run_model(self._messages_for_model(prompt))
+        if direct is not None and self._chat_state == ChatState.JARVIS_WELCOME_MESSAGE:
+            self._chat_state = ChatState.STARTING_CHAT
+            model_replies = await self._run_model(
+                self._messages_for_model(prompt, attachments)
+            )
+            return [*direct, *model_replies]
+        if direct is not None:
+            return [
+                *direct,
+                "I can look at images after we start the conversation. Please send them again.",
+            ]
+        return await self._run_model(self._messages_for_model(prompt, attachments))
 
 
 def _session_for(
@@ -369,6 +407,7 @@ async def ask_jarvis(
     model: ModelEnum = DEFAULT_MODEL,
     thread_id: str = LOCAL_THREAD_ID,
     user_info: dict | None = None,
+    images: list | None = None,
 ) -> list[str]:
     """
     Public entry point to send a message to Jarvis.
@@ -381,9 +420,17 @@ async def ask_jarvis(
         model: LLM model to use.
         thread_id: Thread / session identifier.
         user_info: Authenticated user dict (API); None in CLI without JWT.
+        images: Optional image attachments (``media_type`` + ``data_base64``).
 
     Returns:
         List of response text fragments for the user.
+
+    Raises:
+        ImageAttachmentError: If an attachment fails validation.
+        VisionNotSupportedError: If images are sent to a non-vision model.
     """
     await _ensure_mcp_ready()
-    return await _session_for(model, thread_id, user_info).handle_turn(prompt)
+    normalized = normalize_image_attachments(images)
+    return await _session_for(model, thread_id, user_info).handle_turn(
+        prompt, normalized
+    )

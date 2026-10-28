@@ -126,6 +126,22 @@ Authenticated the same way as `/ask` (`Authorization: Bearer <JWT>`). Remote / A
 
 Errors: `400` empty/unsupported; `413` too large; `502` Whisper failure; `401`/`403` without a valid JWT. Mic → prompt and attach-audio → context both use this endpoint; the client chooses how to apply `text`. Local app mode calls Whisper on-device and skips this route.
 
+### Multimodal images (`POST /ask`)
+
+`POST /ask` accepts optional images on the same JSON body as the text prompt. Auth is the same Bearer JWT. Images are sent to a vision-capable model (`GPT_4O_MINI`). `GPT_3_5` rejects the turn with `400`.
+
+| | |
+|--|--|
+| **Field** | `images`: list of `{ "media_type", "data_base64" }` |
+| **Text** | `message` may be empty when at least one image is attached |
+| **Cap** | **4** images per turn; **4 MiB** decoded bytes each |
+| **Types** | `image/jpeg`, `image/png`, `image/gif`, `image/webp` (or a `data:` URL in `data_base64`) |
+| **Response** | Unchanged: `{ "response": ["..."] }` |
+
+The checkpoint keeps each attachment on the turn that sent it. Later model calls include image bytes only for the **latest** image-bearing user message, so a follow-up can still refer to that photo without resending every older image. `GET /message-history` does not return base64; each image is the marker `[Image attached]`.
+
+Errors: `400` when the message and images are both empty, the payload is invalid, the cap is exceeded, or the model cannot view images.
+
 ### Conversation threads
 
 Each model stores threads in `data/checkpoints/{MODEL}.sqlite`. The same `thread_id` keeps one conversation across process restarts.

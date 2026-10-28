@@ -8,6 +8,8 @@ from langgraph.graph import StateGraph
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 
+from jarvis.infrastructure.images import prepare_messages_for_model
+
 
 class AgentState(TypedDict):
     """Graph state: accumulated messages and ``real_name`` for tools."""
@@ -37,7 +39,8 @@ def compile_tool_agent(
     llm_with_tools = llm.bind_tools(tools)
 
     def chatbot(state: AgentState) -> dict:
-        return {"messages": [llm_with_tools.invoke(state["messages"])]}
+        visible = prepare_messages_for_model(state["messages"])
+        return {"messages": [llm_with_tools.invoke(visible)]}
 
     graph_builder.add_node("chatbot", chatbot)
     graph_builder.add_node("tools", ToolNode(tools=tools))

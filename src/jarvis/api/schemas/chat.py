@@ -7,10 +7,28 @@ from pydantic import BaseModel, Field
 from jarvis.core.config import DEFAULT_MODEL
 
 
+class ImageAttachment(BaseModel):
+    """One image attached to POST /ask."""
+
+    media_type: str = Field(
+        description="image/jpeg, image/png, image/gif, or image/webp.",
+    )
+    data_base64: str = Field(
+        description="Raw base64 image bytes, or a data: URL.",
+    )
+
+
 class AskInput(BaseModel):
     """JSON body for POST /ask."""
 
-    message: str = Field(description="User message for Jarvis.")
+    message: str = Field(
+        default="",
+        description="User message for Jarvis. May be empty when images are attached.",
+    )
+    images: list[ImageAttachment] = Field(
+        default_factory=list,
+        description="Up to 4 images for this turn (vision models only).",
+    )
     model_name: str = Field(
         default=DEFAULT_MODEL.name,
         description="ModelEnum member name (e.g. GPT_4O_MINI).",
