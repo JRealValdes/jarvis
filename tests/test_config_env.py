@@ -17,6 +17,7 @@ def _restore_config_module(monkeypatch: pytest.MonkeyPatch):
     for name in (
         "JARVIS_USE_MCP",
         "JARVIS_SHOW_TOOL_TRACES",
+        "JARVIS_RANKED_IMAGE_RETRIEVAL",
         "JARVIS_DEFAULT_MODEL",
         "JARVIS_LOCAL_THREAD_ID",
         "JARVIS_IDENTIFICATION_FAILED_PROTOCOL",
@@ -30,6 +31,7 @@ def _restore_config_module(monkeypatch: pytest.MonkeyPatch):
     for name in (
         "JARVIS_USE_MCP",
         "JARVIS_SHOW_TOOL_TRACES",
+        "JARVIS_RANKED_IMAGE_RETRIEVAL",
         "JARVIS_DEFAULT_MODEL",
         "JARVIS_LOCAL_THREAD_ID",
         "JARVIS_IDENTIFICATION_FAILED_PROTOCOL",
@@ -63,6 +65,7 @@ def test_config_defaults_when_unset(monkeypatch: pytest.MonkeyPatch):
     assert config.JWT_EXP_DELTA_SECONDS == 3600
     assert config.USE_MCP is False
     assert config.SHOW_TOOL_TRACES is False
+    assert config.RANKED_IMAGE_RETRIEVAL is False
     assert config.API_PORT == 8000
 
 
@@ -92,6 +95,11 @@ def test_show_tool_traces_falsy_values(
 ) -> None:
     monkeypatch.setenv("JARVIS_SHOW_TOOL_TRACES", value)
     assert _reload_config().SHOW_TOOL_TRACES is False
+
+
+def test_ranked_image_retrieval_from_env(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("JARVIS_RANKED_IMAGE_RETRIEVAL", "1")
+    assert _reload_config().RANKED_IMAGE_RETRIEVAL is True
 
 
 def test_local_thread_id_from_env(monkeypatch: pytest.MonkeyPatch):
