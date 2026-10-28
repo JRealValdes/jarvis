@@ -1,11 +1,15 @@
 """Jarvis conversation routes and cached session management."""
 
-from fastapi import APIRouter, Body, Depends
+from typing import Any
+
+from fastapi import APIRouter, Body, Depends, File, UploadFile
 from fastapi.responses import JSONResponse
 
 from jarvis.api.dependencies import verify_jwt_token
 from jarvis.api.schemas.chat import AskInput, ThreadIdPayload
+from jarvis.api.schemas.transcribe import TranscribeResponse
 from jarvis.api.services.chat_service import chat_service
+from jarvis.api.services.transcribe_service import transcribe_service
 
 router = APIRouter(tags=["chat"])
 
@@ -13,8 +17,8 @@ router = APIRouter(tags=["chat"])
 @router.post("/ask")
 async def ask_json(
     input_data: AskInput,
-    user: dict = Depends(verify_jwt_token),
-) -> dict:
+    user: dict[str, Any] = Depends(verify_jwt_token),
+) -> dict[str, list[str]]:
     """
     Send a message to Jarvis and return the reply.
 
@@ -26,6 +30,29 @@ async def ask_json(
         Dict with key ``response`` (list of strings).
     """
     return await chat_service.ask(input_data, user)
+
+
+@router.post("/transcribe", response_model=TranscribeResponse)
+async def transcribe_audio(
+    file: UploadFile = File(..., description="Audio file (wav, mp3, m4a, …)."),
+    user: dict[str, Any] = Depends(verify_jwt_token),
+) -> dict[str, str]:
+    """
+    Transcribe short audio with Whisper for mobile mic and attachments.
+
+    Same JWT as ``/ask``. Audio is not stored after the request. Mic → prompt
+    and attach-audio → context both use this endpoint; the client decides how
+    to apply ``text``.
+
+    Args:
+        file: Multipart form field ``file``.
+        user: JWT payload (dependency).
+
+    Returns:
+        Dict ``{text}`` with the transcription.
+    """
+    _ = user
+    return await transcribe_service.transcribe_upload(file)
 
 
 @router.post("/reset-session")

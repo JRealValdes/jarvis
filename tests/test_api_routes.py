@@ -25,6 +25,7 @@ def test_app_has_documented_routes():
     expected = {
         "/token",
         "/ask",
+        "/transcribe",
         "/reset-session",
         "/admin/reset-global-memory",
         "/admin/cache-status",

@@ -19,8 +19,15 @@ def test_chat_service_resolve_thread_id_default():
 
 
 def test_admin_service_instances_exported():
-    from jarvis.api.services import admin_service, auth_service, chat_service
+    from jarvis.api.services import (
+        admin_service,
+        auth_service,
+        chat_service,
+        transcribe_service,
+    )
+    from jarvis.api.services.transcribe_service import TranscribeService
 
     assert isinstance(auth_service, AuthService)
     assert isinstance(chat_service, ChatService)
     assert isinstance(admin_service, AdminService)
+    assert isinstance(transcribe_service, TranscribeService)

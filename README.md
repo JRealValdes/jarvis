@@ -111,6 +111,21 @@ Jarvis can search the public web (metasearch via the `ddgs` package, including D
 
 
 
+### HTTP speech-to-text (`POST /transcribe`)
+
+Authenticated the same way as `/ask` (`Authorization: Bearer <JWT>`). Remote / Auto-online clients (`jarvis_app`) send short audio; the server reuses OpenAI Whisper (`whisper-1`) and does **not** keep the file after the request.
+
+| | |
+|--|--|
+| **Method / path** | `POST /transcribe` |
+| **Body** | `multipart/form-data` with part `file` (audio bytes) |
+| **Response** | `{ "text": "<transcription>" }` |
+| **Max size** | 25 MiB (OpenAI Whisper upload limit) |
+| **Formats** | `.flac`, `.m4a`, `.mp3`, `.mp4`, `.mpeg`, `.mpga`, `.oga`, `.ogg`, `.wav`, `.webm` |
+| **Client policy** | Max **2** audio attachments per chat turn (enforced in the app; each file is one `/transcribe` call) |
+
+Errors: `400` empty/unsupported; `413` too large; `502` Whisper failure; `401`/`403` without a valid JWT. Mic → prompt and attach-audio → context both use this endpoint; the client chooses how to apply `text`. Local app mode calls Whisper on-device and skips this route.
+
 ### Conversation threads
 
 Each model stores threads in `data/checkpoints/{MODEL}.sqlite`. The same `thread_id` keeps one conversation across process restarts.

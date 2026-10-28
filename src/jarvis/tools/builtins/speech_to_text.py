@@ -1,12 +1,12 @@
 """Audio transcription with OpenAI Whisper for the agent and Gradio UI."""
 
-import os
 from typing import Optional
 
-from langchain_core.tools import tool, ToolException
 from langchain_core.callbacks.manager import CallbackManagerForToolRun
-from openai import OpenAI
+from langchain_core.tools import ToolException, tool
 from pydantic import BaseModel, Field
+
+from jarvis.infrastructure.audio import AudioTranscriptionError, transcribe_audio_path
 
 
 class TranscribeAudioInput(BaseModel):
@@ -33,15 +33,7 @@ def speech_to_text_tool(
     Raises:
         ToolException: If the file does not exist or the OpenAI API fails.
     """
-    if not os.path.exists(file_path):
-        raise ToolException(f"The file does not exist at the provided path: {file_path}")
-
     try:
-        with open(file_path, "rb") as audio_file:
-            transcription = OpenAI().audio.transcriptions.create(
-                model="whisper-1",
-                file=audio_file,
-            )
-        return transcription.text
-    except Exception as e:
-        raise ToolException(f"Failed to transcribe the audio file: {str(e)}") from e
+        return transcribe_audio_path(file_path)
+    except AudioTranscriptionError as exc:
+        raise ToolException(exc.message) from exc
