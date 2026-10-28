@@ -174,6 +174,11 @@ USE_MCP: bool = _env_flag("JARVIS_USE_MCP", default=False)
 SHOW_TOOL_TRACES: bool = _env_flag("JARVIS_SHOW_TOOL_TRACES", default=False)
 """If True, chat history includes tool call/result messages. Default: final replies only."""
 
+RANKED_IMAGE_RETRIEVAL: bool = _env_flag(
+    "JARVIS_RANKED_IMAGE_RETRIEVAL", default=False
+)
+"""If True, image search scores a larger pool before returning the top hits."""
+
 API_PORT: int = _env_int("API_PORT", 8000)
 """HTTP port for the FastAPI server."""
 

@@ -111,7 +111,9 @@ Jarvis can search the public web (metasearch via the `ddgs` package, including D
 
 ### Inline web images (`web_image_search_tool`)
 
-When a picture would help, Jarvis can search public images (again via `ddgs`, no API key) and embed **at most one** markdown image in the reply: `![alt](direct-image-url)`. The URL must be copied from the tool. If the search returns nothing, the reply stays text-only. Wikimedia hosts are preferred when they show up; this is not a ranked image-search product.
+When a picture would help, Jarvis can search public images (again via `ddgs`, no API key) and embed **at most one** markdown image in the reply: `![alt](direct-image-url)`. The URL must be copied from the tool. If the search returns nothing, the reply stays text-only.
+
+**Ranked retrieval** (`JARVIS_RANKED_IMAGE_RETRIEVAL`, default off): when on, the search pulls a larger pool and keeps the best hits by title overlap with the query, known size of at least 200px on both edges (unknown size is kept; smaller known images are dropped), and a preference for Wikimedia hosts. When off, behavior stays the simpler path: direct image URLs, Wikimedia hosts moved first, no size filter.
 
 Gradio's chatbot renders Markdown (`render_markdown=True`), so that image appears inline. HTTP clients that render markdown images, including `![alt](url)`, get the same text.
 

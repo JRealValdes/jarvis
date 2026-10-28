@@ -51,6 +51,85 @@ def test_search_public_images_keeps_direct_urls_and_prefers_wikimedia():
     assert results[0]["source"] == "Wikimedia Commons"
 
 
+def test_ranked_retrieval_drops_tiny_images_and_prefers_relevant_hits():
+    raw = [
+        {
+            "title": "Tiny icon",
+            "image": "https://upload.wikimedia.org/icon.jpg",
+            "url": "https://commons.wikimedia.org/wiki/File:icon.jpg",
+            "source": "Wikimedia",
+            "width": "80",
+            "height": "80",
+        },
+        {
+            "title": "Unrelated landscape",
+            "image": "https://cdn.example/landscape.jpg",
+            "url": "https://cdn.example/landscape",
+            "source": "Example",
+            "width": "1200",
+            "height": "800",
+        },
+        {
+            "title": "Van Gogh The Starry Night",
+            "image": "https://cdn.example/starry.jpg",
+            "url": "https://cdn.example/starry",
+            "source": "Example",
+            "width": "1024",
+            "height": "800",
+        },
+    ]
+
+    def fake_search(query: str, max_results: int) -> list[dict]:
+        assert max_results == 10
+        return raw
+
+    results = search_public_images(
+        "Van Gogh The Starry Night",
+        search_fn=fake_search,
+        ranked=True,
+    )
+    assert [item["image_url"] for item in results] == [
+        "https://cdn.example/starry.jpg",
+        "https://cdn.example/landscape.jpg",
+    ]
+    assert "width" not in results[0]
+
+
+def test_ranked_flag_off_keeps_simple_wikimedia_order(monkeypatch):
+    monkeypatch.setattr(
+        "jarvis.core.config.RANKED_IMAGE_RETRIEVAL",
+        False,
+    )
+    raw = [
+        {
+            "title": "Van Gogh The Starry Night",
+            "image": "https://cdn.example/starry.jpg",
+            "url": "https://cdn.example/starry",
+            "source": "Example",
+            "width": "80",
+            "height": "80",
+        },
+        {
+            "title": "Painting",
+            "image": "https://upload.wikimedia.org/starry.jpg",
+            "url": "https://commons.wikimedia.org/wiki/File:starry.jpg",
+            "source": "Wikimedia",
+            "width": "80",
+            "height": "80",
+        },
+    ]
+
+    def fake_search(query: str, max_results: int) -> list[dict]:
+        assert max_results == 3
+        return raw
+
+    results = search_public_images(
+        "Van Gogh The Starry Night",
+        search_fn=fake_search,
+    )
+    assert results[0]["image_url"] == "https://upload.wikimedia.org/starry.jpg"
+
+
 def test_search_public_images_rejects_empty_query():
     try:
         search_public_images("  ")

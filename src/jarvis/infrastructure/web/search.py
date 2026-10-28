@@ -10,6 +10,11 @@ from urllib.parse import urlparse
 from ddgs import DDGS
 from ddgs.exceptions import DDGSException, RatelimitException, TimeoutException
 
+from jarvis.infrastructure.web.image_rank import (
+    PREFERRED_IMAGE_HOSTS,
+    rank_image_candidates,
+)
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_MAX_RESULTS = 5
@@ -18,11 +23,7 @@ DEFAULT_IMAGE_RESULTS = 3
 HARD_MAX_IMAGE_RESULTS = 3
 MAX_INLINE_IMAGES_PER_REPLY = 1
 _IMAGE_EXTENSIONS = (".gif", ".jpeg", ".jpg", ".png", ".webp")
-_PREFERRED_IMAGE_HOSTS = (
-    "commons.wikimedia.org",
-    "upload.wikimedia.org",
-    "wikipedia.org",
-)
+_IMAGE_RANK_POOL = HARD_MAX_RESULTS
 
 # Library default is 5s, which is tight on a slow link. Match the ddgs HTTP
 # client default so a single slow backend is less likely to look like "no results".
@@ -313,13 +314,13 @@ def _prefer_stable_image_hosts(
     def sort_key(index_item: tuple[int, dict[str, str]]) -> tuple[int, int]:
         index, item = index_item
         host = urlparse(item["image_url"]).netloc.lower()
-        preferred = any(marker in host for marker in _PREFERRED_IMAGE_HOSTS)
+        preferred = any(marker in host for marker in PREFERRED_IMAGE_HOSTS)
         return (0 if preferred else 1, index)
 
     return [item for _, item in sorted(enumerate(results), key=sort_key)]
 
 
-def _normalize_image_hits(raw: list[dict[str, Any]]) -> list[dict[str, str]]:
+def _collect_image_hits(raw: list[dict[str, Any]]) -> list[dict[str, str]]:
     """Map provider rows to direct image URLs, dropping page-only hits."""
     results: list[dict[str, str]] = []
     seen: set[str] = set()
@@ -334,9 +335,28 @@ def _normalize_image_hits(raw: list[dict[str, Any]]) -> list[dict[str, str]]:
                 "image_url": image_url,
                 "page_url": str(item.get("url") or item.get("href") or "").strip(),
                 "source": str(item.get("source") or "").strip(),
+                "width": str(item.get("width") or "").strip(),
+                "height": str(item.get("height") or "").strip(),
             }
         )
-    return _prefer_stable_image_hosts(results)
+    return results
+
+
+def _public_image_row(item: dict[str, str]) -> dict[str, str]:
+    """Drop ranking-only fields before a row is shown to the agent."""
+    return {
+        "title": item.get("title", ""),
+        "image_url": item.get("image_url", ""),
+        "page_url": item.get("page_url", ""),
+        "source": item.get("source", ""),
+    }
+
+
+def _ranked_image_retrieval_enabled() -> bool:
+    """Read the operator flag at call time so tests can patch config."""
+    from jarvis.core.config import RANKED_IMAGE_RETRIEVAL
+
+    return RANKED_IMAGE_RETRIEVAL
 
 
 def search_public_images(
@@ -344,19 +364,24 @@ def search_public_images(
     *,
     max_results: int = DEFAULT_IMAGE_RESULTS,
     search_fn: Callable[[str, int], list[dict[str, Any]]] | None = None,
+    ranked: bool | None = None,
 ) -> list[dict[str, str]]:
     """
     Search public images and return direct image URL candidates.
 
-    This is the MVP path for inline chat images: a few direct URLs, with
-    Wikimedia-style hosts preferred when they appear. It is not a ranked
-    retrieval pipeline.
+    With ranked retrieval off (the default), Wikimedia-style hosts are moved
+    ahead and the first hits are returned. With ``JARVIS_RANKED_IMAGE_RETRIEVAL``
+    on, a larger pool is scored by title overlap, pixel size, and host, and
+    only the top hits are returned. Known images smaller than 200px on either
+    edge are dropped in that mode.
 
     Args:
         query: Image search query.
         max_results: Desired candidate count (clamped to 1..3).
         search_fn: Optional injectable search callable for tests. Receives
             ``(query, max_results)`` and returns raw ``ddgs`` image rows.
+        ranked: Override the config flag. ``None`` reads
+            ``RANKED_IMAGE_RETRIEVAL``.
 
     Returns:
         List of ``{"title", "image_url", "page_url", "source"}``. May be empty.
@@ -369,8 +394,16 @@ def search_public_images(
     if not cleaned:
         raise ValueError("Search query is empty.")
     limit = _clamp_image_results(max_results)
+    use_ranked = _ranked_image_retrieval_enabled() if ranked is None else ranked
+    fetch_limit = _IMAGE_RANK_POOL if use_ranked else limit
     if search_fn is None:
-        raw = _search_ddgs_images(cleaned, limit)
+        raw = _search_ddgs_images(cleaned, fetch_limit)
     else:
-        raw = search_fn(cleaned, limit)
-    return _normalize_image_hits(raw)[:limit]
+        raw = search_fn(cleaned, fetch_limit)
+    collected = _collect_image_hits(raw)
+    ordered = (
+        rank_image_candidates(cleaned, collected)
+        if use_ranked
+        else _prefer_stable_image_hosts(collected)
+    )
+    return [_public_image_row(item) for item in ordered[:limit]]
