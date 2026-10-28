@@ -22,6 +22,7 @@ def test_local_tools_follow_the_declared_list():
         "show_linkedin_reply_examples_tool",
         "add_linkedin_reply_example_tool",
         "transcribe_audio",
+        "web_image_search_tool",
         "web_search_tool",
     ]
 

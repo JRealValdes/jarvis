@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import time
 from typing import Any, Callable
+from urllib.parse import urlparse
 
 from ddgs import DDGS
 from ddgs.exceptions import DDGSException, RatelimitException, TimeoutException
@@ -13,6 +14,15 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_MAX_RESULTS = 5
 HARD_MAX_RESULTS = 10
+DEFAULT_IMAGE_RESULTS = 3
+HARD_MAX_IMAGE_RESULTS = 3
+MAX_INLINE_IMAGES_PER_REPLY = 1
+_IMAGE_EXTENSIONS = (".gif", ".jpeg", ".jpg", ".png", ".webp")
+_PREFERRED_IMAGE_HOSTS = (
+    "commons.wikimedia.org",
+    "upload.wikimedia.org",
+    "wikipedia.org",
+)
 
 # Library default is 5s, which is tight on a slow link. Match the ddgs HTTP
 # client default so a single slow backend is less likely to look like "no results".
@@ -166,12 +176,17 @@ def _ddgs_text(query: str, max_results: int, backend: str) -> list[dict[str, Any
         return list(client.text(query, max_results=max_results, backend=backend))
 
 
-def _search_ddgs(query: str, max_results: int) -> list[dict[str, Any]]:
-    """Search via ``ddgs``, retrying transient failures on alternate backends.
+def _search_with_retries(
+    query: str,
+    max_results: int,
+    runner: Callable[[str, int, str], list[dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    """Run ``runner`` across backends until one attempt succeeds.
 
     Args:
         query: Non-empty search query.
         max_results: Clamped hit count passed through to ``ddgs``.
+        runner: One backend call, ``(query, max_results, backend)``.
 
     Returns:
         Raw result dicts from the first successful attempt.
@@ -184,7 +199,7 @@ def _search_ddgs(query: str, max_results: int) -> list[dict[str, Any]]:
     for attempt, backend in enumerate(_BACKEND_ATTEMPTS):
         tried.append(backend)
         try:
-            return _ddgs_text(query, max_results, backend)
+            return runner(query, max_results, backend)
         except Exception as exc:
             last_exc = exc
             logger.warning(
@@ -201,6 +216,22 @@ def _search_ddgs(query: str, max_results: int) -> list[dict[str, Any]]:
             time.sleep(_BACKOFF_SECONDS[min(attempt, len(_BACKOFF_SECONDS) - 1)])
     assert last_exc is not None
     raise WebSearchError(format_search_failure(last_exc, backends=tried)) from last_exc
+
+
+def _search_ddgs(query: str, max_results: int) -> list[dict[str, Any]]:
+    """Search text via ``ddgs``, retrying transient failures on alternate backends."""
+    return _search_with_retries(query, max_results, _ddgs_text)
+
+
+def _ddgs_images(query: str, max_results: int, backend: str) -> list[dict[str, Any]]:
+    """Run one ``ddgs`` image search against ``backend``."""
+    with DDGS(timeout=_DDGS_TIMEOUT_SECONDS) as client:
+        return list(client.images(query, max_results=max_results, backend=backend))
+
+
+def _search_ddgs_images(query: str, max_results: int) -> list[dict[str, Any]]:
+    """Search images via ``ddgs``, retrying transient failures on alternate backends."""
+    return _search_with_retries(query, max_results, _ddgs_images)
 
 
 def _normalize_hits(raw: list[dict[str, Any]]) -> list[dict[str, str]]:
@@ -255,3 +286,91 @@ def search_public_web(
     else:
         raw = search_fn(cleaned, limit)
     return _normalize_hits(raw)
+
+
+def _clamp_image_results(max_results: int) -> int:
+    """Clamp image hit count to ``1..HARD_MAX_IMAGE_RESULTS``."""
+    if max_results < 1:
+        return 1
+    if max_results > HARD_MAX_IMAGE_RESULTS:
+        return HARD_MAX_IMAGE_RESULTS
+    return max_results
+
+
+def _is_direct_image_url(url: str) -> bool:
+    """Return whether ``url`` is an http(s) link to a common image file."""
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        return False
+    return parsed.path.lower().endswith(_IMAGE_EXTENSIONS)
+
+
+def _prefer_stable_image_hosts(
+    results: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    """Keep input order, but move Wikimedia-style hosts ahead of the rest."""
+
+    def sort_key(index_item: tuple[int, dict[str, str]]) -> tuple[int, int]:
+        index, item = index_item
+        host = urlparse(item["image_url"]).netloc.lower()
+        preferred = any(marker in host for marker in _PREFERRED_IMAGE_HOSTS)
+        return (0 if preferred else 1, index)
+
+    return [item for _, item in sorted(enumerate(results), key=sort_key)]
+
+
+def _normalize_image_hits(raw: list[dict[str, Any]]) -> list[dict[str, str]]:
+    """Map provider rows to direct image URLs, dropping page-only hits."""
+    results: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for item in raw:
+        image_url = str(item.get("image") or "").strip()
+        if not _is_direct_image_url(image_url) or image_url in seen:
+            continue
+        seen.add(image_url)
+        results.append(
+            {
+                "title": str(item.get("title") or "").strip(),
+                "image_url": image_url,
+                "page_url": str(item.get("url") or item.get("href") or "").strip(),
+                "source": str(item.get("source") or "").strip(),
+            }
+        )
+    return _prefer_stable_image_hosts(results)
+
+
+def search_public_images(
+    query: str,
+    *,
+    max_results: int = DEFAULT_IMAGE_RESULTS,
+    search_fn: Callable[[str, int], list[dict[str, Any]]] | None = None,
+) -> list[dict[str, str]]:
+    """
+    Search public images and return direct image URL candidates.
+
+    This is the MVP path for inline chat images: a few direct URLs, with
+    Wikimedia-style hosts preferred when they appear. It is not a ranked
+    retrieval pipeline.
+
+    Args:
+        query: Image search query.
+        max_results: Desired candidate count (clamped to 1..3).
+        search_fn: Optional injectable search callable for tests. Receives
+            ``(query, max_results)`` and returns raw ``ddgs`` image rows.
+
+    Returns:
+        List of ``{"title", "image_url", "page_url", "source"}``. May be empty.
+
+    Raises:
+        ValueError: If ``query`` is empty after stripping.
+        WebSearchError: If the default ``ddgs`` path fails.
+    """
+    cleaned = (query or "").strip()
+    if not cleaned:
+        raise ValueError("Search query is empty.")
+    limit = _clamp_image_results(max_results)
+    if search_fn is None:
+        raw = _search_ddgs_images(cleaned, limit)
+    else:
+        raw = search_fn(cleaned, limit)
+    return _normalize_image_hits(raw)[:limit]
