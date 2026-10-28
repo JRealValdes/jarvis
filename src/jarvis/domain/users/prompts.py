@@ -4,6 +4,18 @@ AUTOMATIC_RESPONSE_IF_ID_FAILED = (
     "I'm afraid I cannot assist you without identification."
 )
 
+# When to embed one web image, and the rule against invented URLs.
+INLINE_WEB_IMAGE_GUIDANCE = (
+    "When a picture would genuinely help (a specific artwork, place, object, "
+    "person, or diagram), call web_image_search_tool once. If it returns "
+    "candidates, embed at most one image in the middle of the reply as "
+    "![short alt](Image URL), using an Image URL from that tool copied "
+    "exactly, then continue the explanation. Never invent, shorten, or guess "
+    "an image URL, and do not use the source-page URL as the image. If the "
+    "tool returns no candidates, or a picture would not help, reply in text "
+    "only."
+)
+
 # Shared guidance so chat replies stay scannable without padding short answers.
 MARKDOWN_REPLY_GUIDANCE = (
     "Format replies in clear Markdown when it helps scanning: use short "
@@ -81,6 +93,7 @@ def build_background_prompt(valid_user: bool, user: dict | None) -> str:
             "(no paraphrase, no second draft). Examples are stored in English: "
             "if the text is not English, the tool translates it (translation "
             "only—no other edits). Confirm the English sample before saving. "
+            f"{INLINE_WEB_IMAGE_GUIDANCE} "
             f"{MARKDOWN_REPLY_GUIDANCE}"
         )
     return (

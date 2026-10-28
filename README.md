@@ -109,6 +109,12 @@ Jarvis can search the public web (metasearch via the `ddgs` package, including D
 
 **Cannot read:** login-walled content, pages behind captchas/paywalls, credentialed sessions, or Glassdoor (and similar blocked job boards). Search may still return snippets that *mention* those sites; Jarvis must not fetch them. Snippets can be stale—prefer fetched page text and cite the URL used. Jarvis should answer the user in the language of their latest message.
 
+### Inline web images (`web_image_search_tool`)
+
+When a picture would help, Jarvis can search public images (again via `ddgs`, no API key) and embed **at most one** markdown image in the reply: `![alt](direct-image-url)`. The URL must be copied from the tool. If the search returns nothing, the reply stays text-only. Wikimedia hosts are preferred when they show up; this is not a ranked image-search product.
+
+Gradio's chatbot renders Markdown (`render_markdown=True`), so that image appears inline. HTTP clients that render markdown images, including `![alt](url)`, get the same text.
+
 
 
 ### HTTP speech-to-text (`POST /transcribe`)

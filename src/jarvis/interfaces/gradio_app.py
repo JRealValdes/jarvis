@@ -122,7 +122,7 @@ async def reset_chat() -> tuple[str, list]:
 
 demo = gr.Blocks()
 with demo:
-    chatbot = gr.Chatbot(height=500)
+    chatbot = gr.Chatbot(height=500, render_markdown=True)
 
     with gr.Row():
         message = gr.Textbox(

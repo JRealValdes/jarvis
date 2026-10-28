@@ -43,6 +43,9 @@ def test_build_background_prompt_valid_user():
     assert "stored in english" in text.lower()
     assert "reply in the language of the user's latest message" in text.lower()
     assert "web_search_tool" in text
+    assert "web_image_search_tool" in text
+    assert "Never invent" in text
+    assert "at most one image" in text
     assert "current_date_time_tool" in text
     assert MARKDOWN_REPLY_GUIDANCE in text
     assert "GFM tables" in text
@@ -54,6 +57,7 @@ def test_build_background_prompt_intruder():
     text = build_background_prompt(False, None)
     assert "intruder" in text.lower()
     assert MARKDOWN_REPLY_GUIDANCE in text
+    assert "web_image_search_tool" not in text
 
 
 def test_find_user_by_prompt_no_pattern():
