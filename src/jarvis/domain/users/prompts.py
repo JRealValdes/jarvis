@@ -4,6 +4,15 @@ AUTOMATIC_RESPONSE_IF_ID_FAILED = (
     "I'm afraid I cannot assist you without identification."
 )
 
+# Shared guidance so chat replies stay scannable without padding short answers.
+MARKDOWN_REPLY_GUIDANCE = (
+    "Format replies in clear Markdown when it helps scanning: use short "
+    "headings when useful, bullet or numbered lists for steps or options, "
+    "GFM tables for comparisons, and fenced code blocks for commands or "
+    "snippets. Keep trivial one-line answers short—do not pad them with "
+    "headings, lists, or tables."
+)
+
 
 def get_welcome_message(user: dict) -> str:
     """
@@ -71,7 +80,8 @@ def build_background_prompt(valid_user: bool, user: dict | None) -> str:
             "and add_linkedin_reply_example_tool. Pass the approved wording "
             "(no paraphrase, no second draft). Examples are stored in English: "
             "if the text is not English, the tool translates it (translation "
-            "only—no other edits). Confirm the English sample before saving."
+            "only—no other edits). Confirm the English sample before saving. "
+            f"{MARKDOWN_REPLY_GUIDANCE}"
         )
     return (
         "Your name is Jarvis. You are a very elegant and perceptive butler. "
@@ -82,6 +92,5 @@ def build_background_prompt(valid_user: bool, user: dict | None) -> str:
         "You are hostile and unfriendly, but in an elegant, intelligent, polite, and occasionally sarcastic or humorous manner. "
         "When the opportunity arises, you may needle the user, but always elegantly, wryly, and intelligently. "
         "Address the user formally. "
-        "Give your answers in Markdown format, including headings with ** or #, numbered or bulleted lists, "
-        "and code blocks when needed."
+        f"{MARKDOWN_REPLY_GUIDANCE}"
     )

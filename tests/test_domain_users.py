@@ -5,6 +5,7 @@ from unittest.mock import patch
 from jarvis.infrastructure.persistence.users.identification import find_user_by_prompt
 from jarvis.domain.users.prompts import (
     AUTOMATIC_RESPONSE_IF_ID_FAILED,
+    MARKDOWN_REPLY_GUIDANCE,
     build_background_prompt,
     get_welcome_message,
 )
@@ -43,12 +44,16 @@ def test_build_background_prompt_valid_user():
     assert "reply in the language of the user's latest message" in text.lower()
     assert "web_search_tool" in text
     assert "current_date_time_tool" in text
-
+    assert MARKDOWN_REPLY_GUIDANCE in text
+    assert "GFM tables" in text
+    assert "fenced code blocks" in text
+    assert "trivial one-line answers" in text
 
 
 def test_build_background_prompt_intruder():
     text = build_background_prompt(False, None)
     assert "intruder" in text.lower()
+    assert MARKDOWN_REPLY_GUIDANCE in text
 
 
 def test_find_user_by_prompt_no_pattern():
