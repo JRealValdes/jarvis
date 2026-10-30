@@ -23,6 +23,9 @@ def _restore_config_module(monkeypatch: pytest.MonkeyPatch):
         "JARVIS_WEB_IMAGE_TTL_DAYS",
         "JARVIS_GENERATED_IMAGE_TTL_DAYS",
         "JARVIS_PUBLIC_BASE_URL",
+        "JARVIS_IMAGE_MODEL",
+        "JARVIS_IMAGE_QUALITY",
+        "JARVIS_IMAGE_SIZE",
         "JARVIS_DEFAULT_MODEL",
         "JARVIS_LOCAL_THREAD_ID",
         "JARVIS_IDENTIFICATION_FAILED_PROTOCOL",
@@ -42,6 +45,9 @@ def _restore_config_module(monkeypatch: pytest.MonkeyPatch):
         "JARVIS_WEB_IMAGE_TTL_DAYS",
         "JARVIS_GENERATED_IMAGE_TTL_DAYS",
         "JARVIS_PUBLIC_BASE_URL",
+        "JARVIS_IMAGE_MODEL",
+        "JARVIS_IMAGE_QUALITY",
+        "JARVIS_IMAGE_SIZE",
         "JARVIS_DEFAULT_MODEL",
         "JARVIS_LOCAL_THREAD_ID",
         "JARVIS_IDENTIFICATION_FAILED_PROTOCOL",
@@ -63,6 +69,8 @@ def _reload_config():
 
 
 def test_config_defaults_when_unset(monkeypatch: pytest.MonkeyPatch):
+    # A developer .env may set the public origin. Blank means the code default.
+    monkeypatch.setenv("JARVIS_PUBLIC_BASE_URL", "")
     config = _reload_config()
     assert config.DEFAULT_MODEL == ModelEnum.GPT_4O_MINI
     assert config.LOCAL_THREAD_ID == "1"
@@ -81,6 +89,9 @@ def test_config_defaults_when_unset(monkeypatch: pytest.MonkeyPatch):
     assert config.WEB_IMAGE_TTL_DAYS == 30
     assert config.GENERATED_IMAGE_TTL_DAYS == 365
     assert config.PUBLIC_BASE_URL == ""
+    assert config.IMAGE_GENERATION_MODEL == "gpt-image-1-mini"
+    assert config.IMAGE_GENERATION_QUALITY == "low"
+    assert config.IMAGE_GENERATION_SIZE == "1024x1024"
     assert config.API_PORT == 8000
 
 
@@ -132,6 +143,28 @@ def test_image_storage_settings_from_env(monkeypatch: pytest.MonkeyPatch):
     assert config.WEB_IMAGE_TTL_DAYS == 0
     assert config.GENERATED_IMAGE_TTL_DAYS == 10
     assert config.PUBLIC_BASE_URL == "http://jarvis.example:8000/"
+
+
+def test_image_generation_settings_from_env(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("JARVIS_IMAGE_MODEL", "gpt-image-1")
+    monkeypatch.setenv("JARVIS_IMAGE_QUALITY", "medium")
+    monkeypatch.setenv("JARVIS_IMAGE_SIZE", "1024x1536")
+    config = _reload_config()
+    assert config.IMAGE_GENERATION_MODEL == "gpt-image-1"
+    assert config.IMAGE_GENERATION_QUALITY == "medium"
+    assert config.IMAGE_GENERATION_SIZE == "1024x1536"
+
+
+def test_image_generation_rejects_dalle_and_unknown_quality(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    monkeypatch.setenv("JARVIS_IMAGE_MODEL", "dall-e-3")
+    with pytest.raises(ValueError, match="JARVIS_IMAGE_MODEL"):
+        _reload_config()
+    monkeypatch.setenv("JARVIS_IMAGE_MODEL", "gpt-image-1-mini")
+    monkeypatch.setenv("JARVIS_IMAGE_QUALITY", "hd")
+    with pytest.raises(ValueError, match="JARVIS_IMAGE_QUALITY"):
+        _reload_config()
 
 
 def test_image_ttl_rejects_negative(monkeypatch: pytest.MonkeyPatch):

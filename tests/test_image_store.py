@@ -64,7 +64,10 @@ def image_root(tmp_path, monkeypatch: pytest.MonkeyPatch):
     return tmp_path
 
 
-def test_web_and_generated_use_different_ttls(image_root):
+def test_web_and_generated_use_different_ttls(
+    image_root, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr("jarvis.core.config.PUBLIC_BASE_URL", "")
     web = store_image_bytes(PNG, kind=WEB_KIND, now=NOW)
     generated = store_image_bytes(GIF, kind=GENERATED_KIND, now=NOW)
     assert isinstance(web, StoredImage)
