@@ -3,14 +3,18 @@
 from __future__ import annotations
 
 import base64
+import os
 import socket
 from datetime import datetime, timedelta, timezone
+from unittest.mock import AsyncMock, patch
 
+import jwt
 import pytest
 import requests
 from fastapi.testclient import TestClient
 
 from jarvis.api.app import app
+from jarvis.core.config import JWT_ALGORITHM
 from jarvis.infrastructure.images.store import (
     GENERATED_KIND,
     MAX_STORED_FILES,
@@ -64,10 +68,7 @@ def image_root(tmp_path, monkeypatch: pytest.MonkeyPatch):
     return tmp_path
 
 
-def test_web_and_generated_use_different_ttls(
-    image_root, monkeypatch: pytest.MonkeyPatch
-):
-    monkeypatch.setattr("jarvis.core.config.PUBLIC_BASE_URL", "")
+def test_web_and_generated_use_different_ttls(image_root):
     web = store_image_bytes(PNG, kind=WEB_KIND, now=NOW)
     generated = store_image_bytes(GIF, kind=GENERATED_KIND, now=NOW)
     assert isinstance(web, StoredImage)
@@ -79,14 +80,45 @@ def test_web_and_generated_use_different_ttls(
     assert (image_root / f"{generated.image_id}.gif").is_file()
 
 
-def test_public_base_url_is_prefixed(image_root, monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(
-        "jarvis.core.config.PUBLIC_BASE_URL",
-        "http://jarvis.example:8000/",
-    )
+def test_stored_url_is_a_path_with_no_host(image_root):
     stored = store_image_bytes(PNG, kind=WEB_KIND, now=NOW)
     assert stored is not None
-    assert stored.public_url == f"http://jarvis.example:8000/images/{stored.image_id}"
+    assert stored.public_url == f"/images/{stored.image_id}"
+
+
+def test_origin_follows_the_browser_host_and_api_port():
+    from types import SimpleNamespace
+
+    from jarvis.infrastructure.images.store import origin_for_api
+    from jarvis.interfaces.gradio_app import browser_image_origin
+
+    assert origin_for_api("http", "192.168.68.54", 8000) == "http://192.168.68.54:8000"
+    assert origin_for_api("", "", 8000) == "http://127.0.0.1:8000"
+    page = SimpleNamespace(url=SimpleNamespace(scheme="http", hostname="192.168.68.54"))
+    assert browser_image_origin(page) == "http://192.168.68.54:8000"
+    tailscale = SimpleNamespace(
+        url="http://jarvis-raspberry.tailffe700.ts.net:7860/"
+    )
+    assert browser_image_origin(tailscale) == (
+        "http://jarvis-raspberry.tailffe700.ts.net:8000"
+    )
+    assert browser_image_origin(None) == "http://127.0.0.1:8000"
+
+
+def test_absolutize_uses_the_caller_origin():
+    from jarvis.infrastructure.images.store import absolutize_stored_image_urls
+
+    image_id = "ab" * 32
+    text = (
+        f"See ![night](/images/{image_id}) and "
+        f"![old](http://jarvis-raspberry.tailffe700.ts.net:8000/images/{image_id}). "
+        "Also https://upload.wikimedia.org/starry.jpg"
+    )
+    rewritten = absolutize_stored_image_urls(text, "http://192.168.68.54:8000/")
+    assert rewritten.count(f"http://192.168.68.54:8000/images/{image_id}") == 2
+    assert "tailffe700" not in rewritten
+    assert "https://upload.wikimedia.org/starry.jpg" in rewritten
+    assert absolutize_stored_image_urls(text, "") == text
 
 
 def test_zero_ttl_is_kept_forever(image_root, monkeypatch: pytest.MonkeyPatch):
@@ -258,3 +290,33 @@ def test_get_missing_or_expired_image_is_404(image_root):
     assert missing.status_code == 404
     assert expired.status_code == 404
     assert expired.json()["detail"] == "Image not found."
+
+
+def test_ask_rewrites_stored_images_to_the_request_host():
+    image_id = "cd" * 32
+    tailscale = f"http://jarvis-raspberry.tailffe700.ts.net:8000/images/{image_id}"
+    fake = AsyncMock(
+        return_value=[f"Look ![one](/images/{image_id}) ![two]({tailscale})"]
+    )
+    token = jwt.encode(
+        {
+            "sub": "pytest",
+            "real_name": "Pytest",
+            "jarvis_name": "Sir",
+            "is_female": False,
+            "admin": True,
+            "exp": 9999999999,
+        },
+        os.environ["JWT_SECRET_KEY"],
+        algorithm=JWT_ALGORITHM,
+    )
+    with patch("jarvis.api.services.chat_service.ask_jarvis", fake):
+        response = TestClient(app).post(
+            "/ask",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"message": "show me"},
+        )
+    assert response.status_code == 200
+    body = response.json()["response"][0]
+    assert body.count(f"http://testserver/images/{image_id}") == 2
+    assert "tailffe700" not in body

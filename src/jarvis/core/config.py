@@ -258,9 +258,6 @@ GENERATED_IMAGE_TTL_DAYS: int = _env_non_negative_int(
 )
 """How long a stored generated image is kept. ``0`` means never auto-delete."""
 
-PUBLIC_BASE_URL: str = _env_str("JARVIS_PUBLIC_BASE_URL", "")
-"""API origin clients use to load stored images, without a trailing path."""
-
 IMAGE_GENERATION_MODEL: str = _env_image_model(
     "JARVIS_IMAGE_MODEL", "gpt-image-1-mini"
 )

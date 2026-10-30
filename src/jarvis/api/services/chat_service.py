@@ -12,21 +12,23 @@ from jarvis.api.errors import ForbiddenError
 from jarvis.api.schemas.chat import AskInput, ThreadIdPayload
 from jarvis.core.enums import ModelEnum
 from jarvis.infrastructure.images import ImageAttachmentError, VisionNotSupportedError
+from jarvis.infrastructure.images.store import absolutize_stored_image_urls
 
 
 class ChatService:
     """Orchestrates Jarvis conversations via the API."""
 
-    async def ask(self, input_data: AskInput, user: dict) -> dict:
+    async def ask(self, input_data: AskInput, user: dict, *, origin: str = "") -> dict:
         """
         Send a message to Jarvis on the API event loop.
 
         Args:
             input_data: Message, optional images, model, and optional thread_id.
             user: Decoded JWT claims.
+            origin: Scheme, host, and port the client used for this request.
 
         Returns:
-            Dict ``{response: list[str]}``.
+            Dict ``{response: list[str]}``. Stored image paths use ``origin``.
 
         Raises:
             HTTPException: 400 when the turn is empty or an image is rejected.
@@ -47,7 +49,14 @@ class ChatService:
             )
         except (ImageAttachmentError, VisionNotSupportedError) as exc:
             raise HTTPException(status_code=400, detail=exc.message) from exc
-        return {"response": answer}
+        return {
+            "response": [
+                absolutize_stored_image_urls(item, origin)
+                if isinstance(item, str)
+                else item
+                for item in answer
+            ]
+        }
 
     def reset_session_for_user(
         self, payload: ThreadIdPayload | None, user: dict
@@ -82,23 +91,36 @@ class ChatService:
         """
         return check_individual_session_cache_exists(real_name)
 
-    def get_history(self, thread_id: str | None, user: dict) -> dict:
+    def get_history(
+        self, thread_id: str | None, user: dict, *, origin: str = ""
+    ) -> dict:
         """
         Return parsed message history for a thread.
 
         Args:
             thread_id: Explicit thread or None to use JWT real_name.
             user: Decoded JWT claims.
+            origin: Scheme, host, and port the client used for this request.
 
         Returns:
-            Dict ``{thread_id, messages}``.
+            Dict ``{thread_id, messages}``. Stored image paths use ``origin``.
 
         Raises:
             ForbiddenError: If a non-admin queries another thread.
         """
         thread_id = self._resolve_thread_id(thread_id, user, action="read")
         history = get_message_history(thread_id)
-        return {"thread_id": thread_id, "messages": history}
+        messages = []
+        for item in history:
+            if isinstance(item, dict) and isinstance(item.get("content"), str):
+                copied = dict(item)
+                copied["content"] = absolutize_stored_image_urls(
+                    item["content"], origin
+                )
+                messages.append(copied)
+            else:
+                messages.append(item)
+        return {"thread_id": thread_id, "messages": messages}
 
     def _resolve_thread_id(
         self, thread_id: str | None, user: dict, *, action: str
