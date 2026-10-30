@@ -19,6 +19,10 @@ def _restore_config_module(monkeypatch: pytest.MonkeyPatch):
         "JARVIS_SHOW_TOOL_TRACES",
         "JARVIS_RANKED_IMAGE_RETRIEVAL",
         "JARVIS_VISION_VERIFY_IMAGES",
+        "JARVIS_IMAGE_STORAGE",
+        "JARVIS_WEB_IMAGE_TTL_DAYS",
+        "JARVIS_GENERATED_IMAGE_TTL_DAYS",
+        "JARVIS_PUBLIC_BASE_URL",
         "JARVIS_DEFAULT_MODEL",
         "JARVIS_LOCAL_THREAD_ID",
         "JARVIS_IDENTIFICATION_FAILED_PROTOCOL",
@@ -34,6 +38,10 @@ def _restore_config_module(monkeypatch: pytest.MonkeyPatch):
         "JARVIS_SHOW_TOOL_TRACES",
         "JARVIS_RANKED_IMAGE_RETRIEVAL",
         "JARVIS_VISION_VERIFY_IMAGES",
+        "JARVIS_IMAGE_STORAGE",
+        "JARVIS_WEB_IMAGE_TTL_DAYS",
+        "JARVIS_GENERATED_IMAGE_TTL_DAYS",
+        "JARVIS_PUBLIC_BASE_URL",
         "JARVIS_DEFAULT_MODEL",
         "JARVIS_LOCAL_THREAD_ID",
         "JARVIS_IDENTIFICATION_FAILED_PROTOCOL",
@@ -69,6 +77,10 @@ def test_config_defaults_when_unset(monkeypatch: pytest.MonkeyPatch):
     assert config.SHOW_TOOL_TRACES is False
     assert config.RANKED_IMAGE_RETRIEVAL is False
     assert config.VISION_VERIFY_IMAGES is False
+    assert config.IMAGE_STORAGE is True
+    assert config.WEB_IMAGE_TTL_DAYS == 30
+    assert config.GENERATED_IMAGE_TTL_DAYS == 365
+    assert config.PUBLIC_BASE_URL == ""
     assert config.API_PORT == 8000
 
 
@@ -108,6 +120,24 @@ def test_ranked_image_retrieval_from_env(monkeypatch: pytest.MonkeyPatch):
 def test_vision_verify_images_from_env(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("JARVIS_VISION_VERIFY_IMAGES", "on")
     assert _reload_config().VISION_VERIFY_IMAGES is True
+
+
+def test_image_storage_settings_from_env(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("JARVIS_IMAGE_STORAGE", "0")
+    monkeypatch.setenv("JARVIS_WEB_IMAGE_TTL_DAYS", "0")
+    monkeypatch.setenv("JARVIS_GENERATED_IMAGE_TTL_DAYS", "10")
+    monkeypatch.setenv("JARVIS_PUBLIC_BASE_URL", "http://jarvis.example:8000/")
+    config = _reload_config()
+    assert config.IMAGE_STORAGE is False
+    assert config.WEB_IMAGE_TTL_DAYS == 0
+    assert config.GENERATED_IMAGE_TTL_DAYS == 10
+    assert config.PUBLIC_BASE_URL == "http://jarvis.example:8000/"
+
+
+def test_image_ttl_rejects_negative(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("JARVIS_WEB_IMAGE_TTL_DAYS", "-1")
+    with pytest.raises(ValueError, match="JARVIS_WEB_IMAGE_TTL_DAYS"):
+        _reload_config()
 
 
 def test_local_thread_id_from_env(monkeypatch: pytest.MonkeyPatch):

@@ -32,6 +32,7 @@ def test_app_has_documented_routes():
         "/individual-cache-status",
         "/message-history",
         "/validate-token",
+        "/images/{image_id}",
     }
     assert expected.issubset(paths)
 

@@ -7,6 +7,8 @@ loads once (see that module).
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
+import logging
+
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -18,7 +20,9 @@ from jarvis.api.errors import ForbiddenError
 from jarvis.core.logging_config import configure_logging
 
 configure_logging()
-from jarvis.api.routers import admin, auth, chat
+from jarvis.api.routers import admin, auth, chat, images
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -29,6 +33,7 @@ async def _lifespan(_application: FastAPI) -> AsyncIterator[None]:
     Args:
         _application: FastAPI instance (unused; required by the lifespan hook).
     """
+    _purge_expired_images()
     if USE_MCP:
         await get_mcp_tool_session().connect()
     try:
@@ -61,7 +66,21 @@ def create_app() -> FastAPI:
     application.include_router(auth.router)
     application.include_router(chat.router)
     application.include_router(admin.router)
+    application.include_router(images.router)
     return application
+
+
+def _purge_expired_images() -> None:
+    """Drop expired assistant images when the API process starts."""
+    try:
+        from jarvis.infrastructure.images.store import purge_expired
+
+        removed = purge_expired()
+    except Exception:
+        logger.warning("Could not purge expired stored images.", exc_info=True)
+        return
+    if removed:
+        logger.info("Removed %s expired stored image(s).", removed)
 
 
 app = create_app()

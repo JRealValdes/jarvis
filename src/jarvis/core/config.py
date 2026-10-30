@@ -96,6 +96,26 @@ def require_env(name: str) -> str:
     return value
 
 
+def _env_non_negative_int(name: str, default: int) -> int:
+    """
+    Read an integer environment variable that must be zero or greater.
+
+    Args:
+        name: Environment variable name.
+        default: Value when unset or empty.
+
+    Returns:
+        Parsed integer.
+
+    Raises:
+        ValueError: If the variable is not an integer or is negative.
+    """
+    value = _env_int(name, default)
+    if value < 0:
+        raise ValueError(f"{name} must be >= 0 (0 means never expire).")
+    return value
+
+
 def _env_int(name: str, default: int) -> int:
     """
     Read an integer environment variable.
@@ -183,6 +203,20 @@ VISION_VERIFY_IMAGES: bool = _env_flag(
     "JARVIS_VISION_VERIFY_IMAGES", default=False
 )
 """If True, one vision call per turn must accept the best web image before it is shown."""
+
+IMAGE_STORAGE: bool = _env_flag("JARVIS_IMAGE_STORAGE", default=True)
+"""If True, assistant images are saved on disk and served by Jarvis instead of hotlinked."""
+
+WEB_IMAGE_TTL_DAYS: int = _env_non_negative_int("JARVIS_WEB_IMAGE_TTL_DAYS", 30)
+"""How long a stored web-search image is kept. ``0`` means never auto-delete."""
+
+GENERATED_IMAGE_TTL_DAYS: int = _env_non_negative_int(
+    "JARVIS_GENERATED_IMAGE_TTL_DAYS", 365
+)
+"""How long a stored generated image is kept. ``0`` means never auto-delete."""
+
+PUBLIC_BASE_URL: str = _env_str("JARVIS_PUBLIC_BASE_URL", "")
+"""API origin clients use to load stored images, without a trailing path."""
 
 API_PORT: int = _env_int("API_PORT", 8000)
 """HTTP port for the FastAPI server."""

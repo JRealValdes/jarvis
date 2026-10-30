@@ -25,6 +25,9 @@ data/users/*
 # Conversation checkpoints (SQLite, per model)
 data/checkpoints/
 
+# Assistant images cached on disk (web search and later generations)
+data/images/
+
 # Secret CSV files
 *secret*.csv
 

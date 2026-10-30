@@ -49,6 +49,36 @@ def _format_image_candidates(results: list[dict[str, str]]) -> str:
     return "\n".join(lines)
 
 
+def _storage_enabled() -> bool:
+    """Read the storage flag at call time so tests can patch config."""
+    from jarvis.core.config import IMAGE_STORAGE
+
+    return IMAGE_STORAGE
+
+
+def _with_stored_copies(results: list[dict[str, str]]) -> list[dict[str, str]]:
+    """
+    Save web images locally and point candidates at the Jarvis URL.
+
+    When storage is off, or a download fails, the original hotlink stays.
+    """
+    if not _storage_enabled() or not results:
+        return results
+    from jarvis.infrastructure.images.store import persist_web_image
+
+    rewritten: list[dict[str, str]] = []
+    for item in results:
+        original = item.get("image_url") or ""
+        saved = persist_web_image(original) if original else None
+        if saved is None:
+            rewritten.append(item)
+            continue
+        copied = dict(item)
+        copied["image_url"] = saved.public_url
+        rewritten.append(copied)
+    return rewritten
+
+
 def _vision_verify_enabled() -> bool:
     """Read the operator flag at call time so tests can patch config."""
     from jarvis.core.config import VISION_VERIFY_IMAGES
@@ -89,9 +119,10 @@ def web_image_search_tool(
     artwork, place, object, person, or diagram. Do not call it for ordinary
     factual questions that text answers well.
 
-    The result lists direct image URLs. Embed at most one, copied exactly
-    as ![alt](Image URL). Never invent a URL. If there are no candidates,
-    answer in text only.
+    The result lists image URLs. Embed at most one, copied exactly as
+    ![alt](Image URL). When image storage is on, that URL points at Jarvis
+    instead of the original site. Never invent a URL. If there are no
+    candidates, answer in text only.
 
     Parameters:
     - query: what the image should depict
@@ -122,4 +153,4 @@ def web_image_search_tool(
             "Vision check already used this turn. Reply with text only. "
             "Do not invent an image URL."
         )
-    return _format_image_candidates(checked)
+    return _format_image_candidates(_with_stored_copies(checked))
