@@ -10,18 +10,20 @@ INLINE_WEB_IMAGE_GUIDANCE = (
     "person, or diagram), call web_image_search_tool once. If it returns "
     "candidates, embed at most one image in the middle of the reply as "
     "![short alt](Image URL), using an Image URL from that tool copied "
-    "exactly, then continue the explanation. Never invent, shorten, or guess "
-    "an image URL, and do not use the source-page URL as the image. If the "
-    "tool returns no candidates, or a picture would not help, reply in text "
-    "only."
+    "exactly. On the next line, copy that image's Attribution text exactly, "
+    "then continue the explanation. Never invent, shorten, or guess an image "
+    "URL, a source, or a license, and do not use the source-page URL as the "
+    "image. If the tool returns no candidates, or a picture would not help, "
+    "reply in text only."
 )
 
 # Admins may create a new picture. Non-admins must not be told this tool exists.
 IMAGE_GENERATION_GUIDANCE = (
     "When the user asks you to create, draw, or generate a new picture "
     "(not to find one that already exists), call generate_image_tool once. "
-    "If it returns an Image URL, embed it exactly as ![short alt](Image URL). "
-    "If it refuses or fails, reply in text only and do not invent a URL. "
+    "If it returns an Image URL, embed it exactly as ![short alt](Image URL) "
+    "and put the Attribution line under it. If it refuses or fails, reply "
+    "in text only and do not invent a URL. "
     "Use web_image_search_tool, not this tool, for a real artwork, place, "
     "object, or person."
 )

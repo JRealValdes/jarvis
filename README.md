@@ -111,7 +111,7 @@ Jarvis can search the public web (metasearch via the `ddgs` package, including D
 
 ### Inline web images (`web_image_search_tool`)
 
-When a picture would help, Jarvis can search public images (again via `ddgs`, no API key) and embed **at most one** markdown image in the reply: `![alt](direct-image-url)`. The URL must be copied from the tool. If the search returns nothing, the reply stays text-only.
+When a picture would help, Jarvis can search public images (again via `ddgs`, no API key) and embed **at most one** markdown image in the reply: `![alt](direct-image-url)`. The URL must be copied from the tool. The next line is a short caption from that same hit: the title, a link to the source page when the tool returned one, and `License: …` only when the provider sent a license. Empty metadata becomes the line `Source unknown`. Jarvis does not invent a license. If the search returns nothing, the reply stays text-only. A generated image uses the caption `Generated image` and no license.
 
 **Ranked retrieval** (`JARVIS_RANKED_IMAGE_RETRIEVAL`, default off): when on, the search pulls a larger pool and keeps the best hits by title overlap with the query, known size of at least 200px on both edges (unknown size is kept; smaller known images are dropped), and a preference for Wikimedia hosts. When off, behavior stays the simpler path: direct image URLs, Wikimedia hosts moved first, no size filter.
 

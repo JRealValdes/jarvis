@@ -6,6 +6,7 @@ import logging
 
 from langchain_core.tools import tool
 
+from jarvis.infrastructure.images.attribution import format_image_attribution
 from jarvis.infrastructure.images.vision_verify import (
     image_matches_subject,
     reserve_vision_check,
@@ -23,8 +24,10 @@ _EMBED_RULES = (
     f"Embed at most {MAX_INLINE_IMAGES_PER_REPLY} image in the reply, "
     "and only when a picture helps. Copy one Image URL below exactly into "
     "markdown as ![short alt](Image URL), in the middle of the explanation. "
-    "Never invent, shorten, or edit a URL. Do not use the source-page URL "
-    "as the image. If none of these fit, reply with text only."
+    "On the next line, copy that same candidate's Attribution text exactly. "
+    "Never invent, shorten, or edit a URL, a source, or a license. Do not "
+    "use the source-page URL as the image. If the Attribution line says "
+    "Source unknown, write that. If none of these fit, reply with text only."
 )
 
 
@@ -40,12 +43,15 @@ def _format_image_candidates(results: list[dict[str, str]]) -> str:
         title = item.get("title") or "(no title)"
         lines.append(f"{index}. **{title}**")
         lines.append(f"   - Image URL: {item.get('image_url') or ''}")
-        page = item.get("page_url") or ""
-        if page:
-            lines.append(f"   - Source page: {page}")
-        source = item.get("source") or ""
-        if source:
-            lines.append(f"   - Source: {source}")
+        lines.append(
+            "   - Attribution: "
+            + format_image_attribution(
+                title=item.get("title") or "",
+                page_url=item.get("page_url") or "",
+                source=item.get("source") or "",
+                license_name=item.get("license") or "",
+            )
+        )
     return "\n".join(lines)
 
 
@@ -119,10 +125,12 @@ def web_image_search_tool(
     artwork, place, object, person, or diagram. Do not call it for ordinary
     factual questions that text answers well.
 
-    The result lists image URLs. Embed at most one, copied exactly as
-    ![alt](Image URL). When image storage is on, that URL points at Jarvis
-    instead of the original site. Never invent a URL. If there are no
-    candidates, answer in text only.
+    The result lists image URLs and one Attribution line each. Embed at
+    most one image, copied exactly as ![alt](Image URL), and put that
+    candidate's Attribution text on the next line. When image storage is
+    on, the image URL points at Jarvis and the attribution still names the
+    original page. Never invent a URL, a source, or a license. If there
+    are no candidates, answer in text only.
 
     Parameters:
     - query: what the image should depict
