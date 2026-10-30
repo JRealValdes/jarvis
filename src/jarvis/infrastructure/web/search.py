@@ -335,6 +335,9 @@ def _collect_image_hits(raw: list[dict[str, Any]]) -> list[dict[str, str]]:
                 "image_url": image_url,
                 "page_url": str(item.get("url") or item.get("href") or "").strip(),
                 "source": str(item.get("source") or "").strip(),
+                "license": str(
+                    item.get("license") or item.get("licence") or ""
+                ).strip(),
                 "width": str(item.get("width") or "").strip(),
                 "height": str(item.get("height") or "").strip(),
             }
@@ -349,6 +352,7 @@ def _public_image_row(item: dict[str, str]) -> dict[str, str]:
         "image_url": item.get("image_url", ""),
         "page_url": item.get("page_url", ""),
         "source": item.get("source", ""),
+        "license": item.get("license", ""),
     }
 
 
@@ -384,7 +388,8 @@ def search_public_images(
             ``RANKED_IMAGE_RETRIEVAL``.
 
     Returns:
-        List of ``{"title", "image_url", "page_url", "source"}``. May be empty.
+        List of ``{"title", "image_url", "page_url", "source", "license"}``.
+        ``license`` is empty when the provider did not send one. May be empty.
 
     Raises:
         ValueError: If ``query`` is empty after stripping.

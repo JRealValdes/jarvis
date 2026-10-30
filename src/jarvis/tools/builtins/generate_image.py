@@ -6,6 +6,7 @@ import logging
 
 from langchain_core.tools import tool
 
+from jarvis.infrastructure.images.attribution import GENERATED_IMAGE_CAPTION
 from jarvis.infrastructure.images.generate import (
     GENERATION_TOOL_NAME,
     ImageGenerationError,
@@ -21,8 +22,10 @@ def _format_stored(url: str) -> str:
     return (
         "Generated image stored. Embed it once, in the middle of the reply, "
         "as ![short alt](Image URL). Copy the Image URL exactly. "
-        "Do not invent or edit it.\n"
-        f"Image URL: {url}"
+        "On the next line, copy the Attribution text exactly. "
+        "Do not invent a source or a license.\n"
+        f"Image URL: {url}\n"
+        f"Attribution: {GENERATED_IMAGE_CAPTION}"
     )
 
 

@@ -150,6 +150,8 @@ def test_empty_prompt_does_not_spend_the_turn(monkeypatch: pytest.MonkeyPatch):
     assert "description" in text.lower()
     assert calls == ["a red square"]
     assert "/images/abc" in follow
+    assert "Attribution: Generated image" in follow
+    assert "License:" not in follow
 
 
 def test_generate_image_bytes_rejects_a_long_prompt():

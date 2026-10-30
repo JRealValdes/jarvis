@@ -62,6 +62,7 @@ def test_search_public_images_keeps_direct_urls_and_prefers_wikimedia():
     ]
     assert results[0]["page_url"].startswith("https://commons.wikimedia.org/")
     assert results[0]["source"] == "Wikimedia Commons"
+    assert results[0]["license"] == ""
 
 
 def test_ranked_retrieval_drops_tiny_images_and_prefers_relevant_hits():
@@ -143,6 +144,24 @@ def test_ranked_flag_off_keeps_simple_wikimedia_order(monkeypatch):
     assert results[0]["image_url"] == "https://upload.wikimedia.org/starry.jpg"
 
 
+def test_search_public_images_keeps_a_provider_license():
+    raw = [
+        {
+            "title": "Painting",
+            "image": "https://upload.wikimedia.org/starry.jpg",
+            "url": "https://commons.wikimedia.org/wiki/File:Starry.jpg",
+            "source": "Wikimedia Commons",
+            "license": "CC BY-SA 4.0",
+        }
+    ]
+
+    results = search_public_images(
+        "Starry Night",
+        search_fn=lambda query, max_results: raw,
+    )
+    assert results[0]["license"] == "CC BY-SA 4.0"
+
+
 def test_search_public_images_rejects_empty_query():
     try:
         search_public_images("  ")
@@ -179,7 +198,27 @@ def test_image_tool_lists_exact_urls_and_one_image_cap(monkeypatch):
     assert "https://upload.wikimedia.org/starry.jpg" in text
     assert "at most 1 image" in text
     assert "Never invent" in text
-    assert "Source page:" in text
+    assert "Attribution: The Starry Night · [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Starry.jpg)" in text
+    assert "License:" not in text
+
+
+def test_image_tool_says_source_unknown_when_metadata_is_missing(monkeypatch):
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_image_search.search_public_images",
+        lambda query, max_results=3: [
+            {
+                "title": "",
+                "image_url": "https://cdn.example/photo.jpg",
+                "page_url": "",
+                "source": "",
+                "license": "",
+            }
+        ],
+    )
+    text = web_image_search_tool.invoke({"query": "a photo"})
+    assert "https://cdn.example/photo.jpg" in text
+    assert "Attribution: Source unknown" in text
+    assert "License:" not in text
 
 
 def test_image_tool_requires_a_query():
@@ -338,6 +377,10 @@ def test_storage_on_embeds_the_jarvis_url(monkeypatch):
     assert stored == ["https://cdn.example/best.jpg"]
     assert "/images/abc123" in text
     assert "https://cdn.example/best.jpg" not in text
+    assert (
+        "Attribution: Best · [Example](https://cdn.example/best)" in text
+    )
+    assert "License:" not in text
 
 
 def test_storage_failure_keeps_the_hotlink(monkeypatch):
