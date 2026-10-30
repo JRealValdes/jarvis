@@ -23,6 +23,7 @@ def find_project_root() -> Path:
 PROJECT_ROOT: Path = find_project_root()
 JARVIS_PACKAGE_DIR: Path = Path(__file__).resolve().parent.parent
 DATA_DIR: Path = PROJECT_ROOT / "data"
+IMAGES_DIR: Path = DATA_DIR / "images"
 USERS_DB_PATH: Path = DATA_DIR / "users.db"
 USERS_DATA_DIR: Path = DATA_DIR / "users"
 GOOGLE_CREDENTIALS_DIR: Path = DATA_DIR / "google"

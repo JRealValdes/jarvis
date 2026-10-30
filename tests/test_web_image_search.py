@@ -2,8 +2,21 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
+import pytest
+
 from jarvis.infrastructure.web.search import search_public_images
 from jarvis.tools.builtins.web_image_search import web_image_search_tool
+
+
+@pytest.fixture(autouse=True)
+def _keep_remote_image_urls(monkeypatch: pytest.MonkeyPatch):
+    """Storage is on by default; these tests cover search text, not downloads."""
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_image_search._storage_enabled",
+        lambda: False,
+    )
 
 
 def test_search_public_images_keeps_direct_urls_and_prefers_wikimedia():
@@ -273,3 +286,72 @@ def test_second_image_search_in_the_turn_does_not_check_again(monkeypatch):
     assert calls == ["https://cdn.example/best.jpg"]
     assert "already used" in second.lower()
     assert "https://cdn.example/best.jpg" not in second
+
+
+def test_storage_off_does_not_download(monkeypatch):
+    calls: list[str] = []
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_image_search._storage_enabled",
+        lambda: False,
+    )
+    monkeypatch.setattr(
+        "jarvis.infrastructure.images.store.persist_web_image",
+        lambda url: calls.append(url),
+    )
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_image_search.search_public_images",
+        lambda query, max_results=3: _two_hits(),
+    )
+    text = web_image_search_tool.invoke({"query": "a cathedral"})
+    assert calls == []
+    assert "https://cdn.example/best.jpg" in text
+
+
+def test_storage_on_embeds_the_jarvis_url(monkeypatch):
+    from jarvis.infrastructure.images.vision_verify import reset_vision_check_budget
+
+    reset_vision_check_budget()
+    monkeypatch.setattr("jarvis.core.config.VISION_VERIFY_IMAGES", True)
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_image_search._storage_enabled",
+        lambda: True,
+    )
+    stored: list[str] = []
+
+    def _persist(url: str):
+        stored.append(url)
+        return SimpleNamespace(public_url="/images/abc123")
+
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_image_search.search_public_images",
+        lambda query, max_results=3: _two_hits(),
+    )
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_image_search.image_matches_subject",
+        lambda query, url: True,
+    )
+    monkeypatch.setattr(
+        "jarvis.infrastructure.images.store.persist_web_image",
+        _persist,
+    )
+    text = web_image_search_tool.invoke({"query": "a cathedral"})
+    assert stored == ["https://cdn.example/best.jpg"]
+    assert "/images/abc123" in text
+    assert "https://cdn.example/best.jpg" not in text
+
+
+def test_storage_failure_keeps_the_hotlink(monkeypatch):
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_image_search._storage_enabled",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        "jarvis.infrastructure.images.store.persist_web_image",
+        lambda url: None,
+    )
+    monkeypatch.setattr(
+        "jarvis.tools.builtins.web_image_search.search_public_images",
+        lambda query, max_results=3: _two_hits()[:1],
+    )
+    text = web_image_search_tool.invoke({"query": "a cathedral"})
+    assert "https://cdn.example/best.jpg" in text

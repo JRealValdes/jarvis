@@ -117,6 +117,8 @@ When a picture would help, Jarvis can search public images (again via `ddgs`, no
 
 **Vision check** (`JARVIS_VISION_VERIFY_IMAGES`, default off): when on, the best candidate is shown to GPT-4o mini once per user turn. The reply may embed that image only if the check answers YES. A NO, an error, or a second image search in the same turn yields text only. Expect one extra vision call (often a few seconds) on turns that search for an image. When off, there is no vision call and behavior matches the search path above.
 
+**Stored copies** (`JARVIS_IMAGE_STORAGE`, default on): Jarvis downloads the image it is about to show, saves it under `data/images/`, and the markdown URL points at `GET /images/{id}` on this server. That avoids broken hotlinks. Web-search images are kept for `JARVIS_WEB_IMAGE_TTL_DAYS` (default **30**). Generated images (issue #40) will use `JARVIS_GENERATED_IMAGE_TTL_DAYS` (default **365**). Set either value to **0** to keep that kind until you delete the files yourself. Expired files are removed when the API starts, when a new image is saved, and when an expired id is requested. Each file may be up to 8 MiB. The directory stops accepting new files at 500 images or 512 MiB; a picture that does not fit is left as a hotlink. Downloads are limited to public `http`/`https` hosts. Set `JARVIS_IMAGE_STORAGE=0` to keep the old hotlink behavior. Set `JARVIS_PUBLIC_BASE_URL` to the origin clients use (for example `http://jarvis.example:8000`, no path) so Gradio and the phone app can load the file. When it is unset, the markdown path is root-relative (`/images/{id}`). The image route does not use a JWT, because an `<img>` tag cannot send one; the id is a content hash.
+
 Gradio's chatbot renders Markdown (`render_markdown=True`), so that image appears inline. HTTP clients that render markdown images, including `![alt](url)`, get the same text.
 
 
@@ -176,6 +178,7 @@ These live on each machine and are required (or optional) for a full local setup
 | LinkedIn reply samples | `data/users/<real_name>/linkedin_reply_examples.yaml` | Optional style references for drafts | Ask Jarvis to add samples, or copy from `data/users/example_user/linkedin_reply_examples.yaml` |
 | MCP config | `data/mcp/server_config.json` | Only if `JARVIS_USE_MCP=1` | Tracked example config is in repo; customize locally if needed |
 | Conversation checkpoints | `data/checkpoints/{MODEL}.sqlite` | Created on first chat | Local SQLite; removed by a global memory reset |
+| Stored assistant images | `data/images/` | Created when image storage is on | Local cache, not synced as a secret. Web images expire after 30 days by default; generated images after 365. Cap 512 MiB / 500 files |
 
 Gitignores cover `.env`, `data/users.db`, and `*secret*` files. Do not commit personal credentials.
 
@@ -208,6 +211,7 @@ jarvis/                          # repository root
 │   └── mcp/servers/             # MCP server scripts
 ├── data/                        # local runtime (users.db gitignored)
 │   ├── google/                  # OAuth credentials per user
+│   ├── images/                  # cached assistant images (gitignored)
 │   └── mcp/server_config.json
 ├── scripts/users/               # CSV + notebook to seed data/users.db
 ├── deploy/                      # Pi ops: sync secrets, update code, systemd unit
