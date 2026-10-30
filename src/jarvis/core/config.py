@@ -116,6 +116,49 @@ def _env_non_negative_int(name: str, default: int) -> int:
     return value
 
 
+def _env_image_model(name: str, default: str) -> str:
+    """
+    Read the OpenAI image model id.
+
+    Args:
+        name: Environment variable name.
+        default: Value when unset or empty.
+
+    Returns:
+        Model id.
+
+    Raises:
+        ValueError: If the id is a DALL·E model.
+    """
+    value = _env_str(name, default)
+    lowered = value.lower()
+    if lowered.startswith("dall-e") or lowered.startswith("dalle"):
+        raise ValueError(f"{name} must be a gpt-image model, not {value!r}.")
+    return value
+
+
+def _env_choice(name: str, default: str, allowed: frozenset[str]) -> str:
+    """
+    Read a string environment variable that must be one of ``allowed``.
+
+    Args:
+        name: Environment variable name.
+        default: Value when unset or empty.
+        allowed: Accepted values.
+
+    Returns:
+        Stripped value.
+
+    Raises:
+        ValueError: If the value is not in ``allowed``.
+    """
+    value = _env_str(name, default)
+    if value not in allowed:
+        choices = ", ".join(sorted(allowed))
+        raise ValueError(f"Invalid {name}={value!r}. Expected one of: {choices}.")
+    return value
+
+
 def _env_int(name: str, default: int) -> int:
     """
     Read an integer environment variable.
@@ -215,8 +258,24 @@ GENERATED_IMAGE_TTL_DAYS: int = _env_non_negative_int(
 )
 """How long a stored generated image is kept. ``0`` means never auto-delete."""
 
-PUBLIC_BASE_URL: str = _env_str("JARVIS_PUBLIC_BASE_URL", "")
-"""API origin clients use to load stored images, without a trailing path."""
+IMAGE_GENERATION_MODEL: str = _env_image_model(
+    "JARVIS_IMAGE_MODEL", "gpt-image-1-mini"
+)
+"""OpenAI image model for admin generation. DALL·E model ids are rejected."""
+
+IMAGE_GENERATION_QUALITY: str = _env_choice(
+    "JARVIS_IMAGE_QUALITY",
+    "low",
+    frozenset({"low", "medium", "high", "auto"}),
+)
+"""Quality sent to the Images API. ``low`` is the cheaper default."""
+
+IMAGE_GENERATION_SIZE: str = _env_choice(
+    "JARVIS_IMAGE_SIZE",
+    "1024x1024",
+    frozenset({"1024x1024", "1024x1536", "1536x1024", "auto"}),
+)
+"""Pixel size sent to the Images API."""
 
 API_PORT: int = _env_int("API_PORT", 8000)
 """HTTP port for the FastAPI server."""

@@ -46,6 +46,8 @@ def test_build_background_prompt_valid_user():
     assert "web_image_search_tool" in text
     assert "Never invent" in text
     assert "at most one image" in text
+    assert "generate_image_tool" not in text
+    assert "cannot create new images" in text
     assert "current_date_time_tool" in text
     assert MARKDOWN_REPLY_GUIDANCE in text
     assert "GFM tables" in text
@@ -53,11 +55,21 @@ def test_build_background_prompt_valid_user():
     assert "trivial one-line answers" in text
 
 
+def test_build_background_prompt_admin_may_generate():
+    text = build_background_prompt(
+        True,
+        {"jarvis_name": "Sir", "is_female": False, "admin": True},
+    )
+    assert "generate_image_tool" in text
+    assert "cannot create new images" not in text
+
+
 def test_build_background_prompt_intruder():
     text = build_background_prompt(False, None)
     assert "intruder" in text.lower()
     assert MARKDOWN_REPLY_GUIDANCE in text
     assert "web_image_search_tool" not in text
+    assert "generate_image_tool" not in text
 
 
 def test_find_user_by_prompt_no_pattern():

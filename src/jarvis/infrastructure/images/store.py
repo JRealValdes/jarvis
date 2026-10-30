@@ -10,6 +10,7 @@ import hashlib
 import ipaddress
 import json
 import logging
+import re
 import socket
 import threading
 from dataclasses import dataclass
@@ -48,6 +49,10 @@ _MEDIA_EXTENSIONS = {
 _ALLOWED_EXTENSIONS = frozenset(_MEDIA_EXTENSIONS.values())
 
 _lock = threading.RLock()
+_STORED_IMAGE_URL = re.compile(
+    r"(?:https?://[^/\s)]+)?/images/(?P<id>[0-9a-f]{64})",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -90,22 +95,59 @@ def detect_image_media_type(data: bytes) -> str | None:
 
 def public_image_url(image_id: str) -> str:
     """
-    Build the URL embedded in chat markdown for a stored image.
+    Build the path embedded in chat markdown for a stored image.
+
+    The host is not included. The API adds the caller's origin when it
+    returns a reply or history, so the same picture works on the LAN and
+    over Tailscale.
 
     Args:
         image_id: Hex id of the file.
 
     Returns:
-        ``{JARVIS_PUBLIC_BASE_URL}/images/{id}``, or ``/images/{id}`` when
-        the base URL is unset.
+        ``/images/{id}``.
     """
-    from jarvis.core.config import PUBLIC_BASE_URL
+    return f"/images/{image_id}"
 
-    path = f"/images/{image_id}"
-    base = (PUBLIC_BASE_URL or "").strip().rstrip("/")
-    if not base:
-        return path
-    return f"{base}{path}"
+
+def origin_for_api(scheme: str | None, hostname: str | None, port: int) -> str:
+    """
+    Build an API origin from the host the caller already used.
+
+    Args:
+        scheme: ``http`` or ``https``. Empty becomes ``http``.
+        hostname: Host without a port. Empty becomes ``127.0.0.1``.
+        port: API port.
+
+    Returns:
+        ``{scheme}://{hostname}:{port}`` with no path.
+    """
+    host = (hostname or "").strip() or "127.0.0.1"
+    return f"{(scheme or '').strip() or 'http'}://{host}:{port}"
+
+
+def absolutize_stored_image_urls(text: str, origin: str) -> str:
+    """
+    Point stored-image paths at ``origin``.
+
+    Root-relative ``/images/{id}`` links and older absolute links to that
+    path are rewritten. Other URLs are left as they are.
+
+    Args:
+        text: Chat text that may contain a stored image.
+        origin: Scheme, host, and port the client just used, no path.
+
+    Returns:
+        Text with stored image URLs made absolute for ``origin``.
+    """
+    base = (origin or "").strip().rstrip("/")
+    if not base or not text:
+        return text
+
+    def _replace(match: re.Match[str]) -> str:
+        return f"{base}/images/{match.group('id')}"
+
+    return _STORED_IMAGE_URL.sub(_replace, text)
 
 
 def store_image_bytes(

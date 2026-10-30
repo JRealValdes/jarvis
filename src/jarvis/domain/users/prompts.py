@@ -16,6 +16,16 @@ INLINE_WEB_IMAGE_GUIDANCE = (
     "only."
 )
 
+# Admins may create a new picture. Non-admins must not be told this tool exists.
+IMAGE_GENERATION_GUIDANCE = (
+    "When the user asks you to create, draw, or generate a new picture "
+    "(not to find one that already exists), call generate_image_tool once. "
+    "If it returns an Image URL, embed it exactly as ![short alt](Image URL). "
+    "If it refuses or fails, reply in text only and do not invent a URL. "
+    "Use web_image_search_tool, not this tool, for a real artwork, place, "
+    "object, or person."
+)
+
 # Shared guidance so chat replies stay scannable without padding short answers.
 MARKDOWN_REPLY_GUIDANCE = (
     "Format replies in clear Markdown when it helps scanning: use short "
@@ -24,6 +34,13 @@ MARKDOWN_REPLY_GUIDANCE = (
     "snippets. Keep trivial one-line answers short—do not pad them with "
     "headings, lists, or tables."
 )
+
+
+def _image_generation_clause(user: dict) -> str:
+    """Return admin generation guidance, or a denial for everyone else."""
+    if user.get("admin"):
+        return IMAGE_GENERATION_GUIDANCE
+    return "You cannot create new images."
 
 
 def get_welcome_message(user: dict) -> str:
@@ -94,6 +111,7 @@ def build_background_prompt(valid_user: bool, user: dict | None) -> str:
             "if the text is not English, the tool translates it (translation "
             "only—no other edits). Confirm the English sample before saving. "
             f"{INLINE_WEB_IMAGE_GUIDANCE} "
+            f"{_image_generation_clause(user)} "
             f"{MARKDOWN_REPLY_GUIDANCE}"
         )
     return (

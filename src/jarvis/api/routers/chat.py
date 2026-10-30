@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from fastapi import APIRouter, Body, Depends, File, UploadFile
+from fastapi import APIRouter, Body, Depends, File, Request, UploadFile
 from fastapi.responses import JSONResponse
 
 from jarvis.api.dependencies import verify_jwt_token
@@ -17,6 +17,7 @@ router = APIRouter(tags=["chat"])
 @router.post("/ask")
 async def ask_json(
     input_data: AskInput,
+    request: Request,
     user: dict[str, Any] = Depends(verify_jwt_token),
 ) -> dict[str, list[str]]:
     """
@@ -24,12 +25,15 @@ async def ask_json(
 
     Args:
         input_data: Message, model, and optional thread_id.
+        request: Incoming request, used to build stored-image URLs.
         user: JWT payload (dependency).
 
     Returns:
         Dict with key ``response`` (list of strings).
     """
-    return await chat_service.ask(input_data, user)
+    return await chat_service.ask(
+        input_data, user, origin=str(request.base_url)
+    )
 
 
 @router.post("/transcribe", response_model=TranscribeResponse)
@@ -93,6 +97,7 @@ async def individual_cache_status(user: dict = Depends(verify_jwt_token)) -> JSO
 
 @router.get("/message-history")
 async def message_history(
+    request: Request,
     thread_id: str | None = None,
     user: dict = Depends(verify_jwt_token),
 ) -> dict:
@@ -100,6 +105,7 @@ async def message_history(
     Parsed message history for a thread.
 
     Args:
+        request: Incoming request, used to build stored-image URLs.
         thread_id: Thread to query; defaults to JWT real_name.
         user: JWT payload.
 
@@ -109,4 +115,6 @@ async def message_history(
     Raises:
         HTTPException: 403 if a non-admin queries another thread.
     """
-    return chat_service.get_history(thread_id, user)
+    return chat_service.get_history(
+        thread_id, user, origin=str(request.base_url)
+    )

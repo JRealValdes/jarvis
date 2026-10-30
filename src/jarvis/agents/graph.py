@@ -9,6 +9,7 @@ from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 
 from jarvis.infrastructure.images import prepare_messages_for_model
+from jarvis.infrastructure.images.generate import visible_tools
 
 
 class AgentState(TypedDict):
@@ -36,10 +37,11 @@ def compile_tool_agent(
         Tuple of (compiled graph, checkpointer).
     """
     graph_builder = StateGraph(AgentState)
-    llm_with_tools = llm.bind_tools(tools)
 
     def chatbot(state: AgentState) -> dict:
         visible = prepare_messages_for_model(state["messages"])
+        # Bind per turn so non-admins never see image generation.
+        llm_with_tools = llm.bind_tools(visible_tools(tools))
         return {"messages": [llm_with_tools.invoke(visible)]}
 
     graph_builder.add_node("chatbot", chatbot)
