@@ -26,7 +26,7 @@ Config (gitignored): `deploy/pi.local.env` from `deploy/pi.env.example`
 
 | User intent (examples) | Action |
 |------------------------|--------|
-| update raspberry / update server / update Jarvis Server / lleva esto a la Pi | **Code update** |
+| update raspberry / update server / update Jarvis Server / lleva esto a la Pi | **Code update** (+ secrets dry-run check; see below) |
 | update/sync/push secrets / lleva los secretos | **Secrets push** |
 | pull/retrieve/trae secretos / from the Pi / from the server | **Secrets pull** |
 | both code + secrets | Secrets first (with `--restart` on push), or code then secrets — ask only if unclear |
@@ -43,6 +43,21 @@ uv run python deploy/update_code.py
 Remote flow: stop `jarvis` → `git pull --ff-only` → `uv sync` → start → health-check `http://127.0.0.1:8000/docs`. On pull/sync failure the script tries to start the service again.
 
 Report success/failure from the command output. On failure, suggest `ssh … 'systemctl status jarvis'` / `journalctl -u jarvis -n 50`.
+
+#### Secrets check (always with code update)
+
+After a code-update request (before or after the code deploy; prefer **before** restart-heavy work so the user can decide early), check whether a secrets push is also warranted:
+
+```bash
+uv run python deploy/sync_secrets.py --dry-run
+```
+
+Interpret the dry-run:
+
+- **No sync needed** — output is effectively idle (`Nothing to transfer.` and/or only `skip` lines, exit 0, no planned `push`/`pull`, no blocked paths). Tell the user that a secrets sync is **not** needed; do not run a real secrets sync unless they ask.
+- **Sync may be needed** — dry-run shows planned transfers (`Transferring N file(s)` / `push`/`pull` lines) **or** blocked conflicts. **Ask** the user whether they also want a secrets sync; do **not** push/pull secrets until they confirm. If they say yes, follow **Secrets push** (or conflict rules) below.
+
+Do not treat “code update” alone as permission to sync secrets.
 
 ### Secrets push (PC → Pi)
 
