@@ -25,6 +25,7 @@ from jarvis.tools.builtins.linkedin_reply_examples import (
 )
 from jarvis.tools.builtins.generate_image import generate_image_tool
 from jarvis.tools.builtins.speech_to_text import speech_to_text_tool
+from jarvis.tools.builtins.weather import weather_tool
 from jarvis.tools.builtins.web_image_search import web_image_search_tool
 from jarvis.tools.builtins.web_search import web_search_tool
 
@@ -43,4 +44,5 @@ BUILTIN_TOOLS: list[BaseTool] = [
     generate_image_tool,
     web_image_search_tool,
     web_search_tool,
+    weather_tool,
 ]
