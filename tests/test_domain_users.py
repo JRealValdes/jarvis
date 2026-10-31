@@ -43,6 +43,9 @@ def test_build_background_prompt_valid_user():
     assert "stored in english" in text.lower()
     assert "reply in the language of the user's latest message" in text.lower()
     assert "web_search_tool" in text
+    assert "weather_tool" in text
+    assert "not web_search_tool" in text
+    assert "short bullets" in text
     assert "web_image_search_tool" in text
     assert "Never invent" in text
     assert "at most one image" in text

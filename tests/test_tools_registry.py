@@ -25,6 +25,7 @@ def test_local_tools_follow_the_declared_list():
         "generate_image_tool",
         "web_image_search_tool",
         "web_search_tool",
+        "weather_tool",
     ]
 
 
