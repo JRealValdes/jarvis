@@ -72,8 +72,8 @@ def generate_image_tool(prompt: str = "") -> str:
     except Exception as exc:
         logger.warning("generate_image_tool failed: %s", exc, exc_info=exc)
         return (
-            "Image generation failed. Reply with text only. "
-            "Do not invent an image URL."
+            "Image generation failed unexpectedly. Tell the user they can "
+            "retry shortly. Reply with text only. Do not invent an image URL."
         )
     if stored is None:
         return (

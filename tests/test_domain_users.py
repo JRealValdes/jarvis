@@ -6,6 +6,7 @@ from jarvis.infrastructure.persistence.users.identification import find_user_by_
 from jarvis.domain.users.prompts import (
     AUTOMATIC_RESPONSE_IF_ID_FAILED,
     MARKDOWN_REPLY_GUIDANCE,
+    TOOL_FAILURE_GUIDANCE,
     build_background_prompt,
     get_welcome_message,
 )
@@ -53,6 +54,7 @@ def test_build_background_prompt_valid_user():
     assert "cannot create new images" in text
     assert "current_date_time_tool" in text
     assert MARKDOWN_REPLY_GUIDANCE in text
+    assert TOOL_FAILURE_GUIDANCE in text
     assert "GFM tables" in text
     assert "fenced code blocks" in text
     assert "trivial one-line answers" in text
@@ -65,6 +67,7 @@ def test_build_background_prompt_admin_may_generate():
     )
     assert "generate_image_tool" in text
     assert "cannot create new images" not in text
+    assert "safety/content policy" in text
 
 
 def test_build_background_prompt_intruder():

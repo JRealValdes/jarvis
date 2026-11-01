@@ -49,6 +49,92 @@ class ImageGenerationError(Exception):
         self.message = message
 
 
+# OpenAI Images API codes that mean the prompt was blocked by safety/policy.
+_POLICY_REFUSAL_CODES = frozenset(
+    {
+        "content_policy_violation",
+        "moderation_blocked",
+    }
+)
+
+_TEXT_ONLY_NO_URL = "Reply with text only. Do not invent an image URL."
+
+_POLICY_REFUSAL_MESSAGE = (
+    "Image generation was blocked by the image provider's safety/content "
+    "policy. Explain briefly that this picture cannot be created under those "
+    "rules and suggest rephrasing the request. "
+    f"{_TEXT_ONLY_NO_URL}"
+)
+
+_GENERIC_REFUSAL_MESSAGE = (
+    "Image generation was refused by the provider (invalid or disallowed "
+    f"request). Explain briefly and suggest adjusting the description. "
+    f"{_TEXT_ONLY_NO_URL}"
+)
+
+_PROVIDER_FAILURE_MESSAGE = (
+    "Image generation failed due to a provider or network error. Tell the "
+    f"user they can retry shortly. {_TEXT_ONLY_NO_URL}"
+)
+
+
+def _provider_error_code(exc: BaseException) -> str | None:
+    """
+    Extract a provider error code from an OpenAI exception when present.
+
+    Args:
+        exc: Exception raised by the Images API client.
+
+    Returns:
+        Code string, or None when unavailable.
+    """
+    code = getattr(exc, "code", None)
+    if isinstance(code, str) and code.strip():
+        return code.strip()
+    body = getattr(exc, "body", None)
+    if isinstance(body, dict):
+        nested = body.get("code")
+        if isinstance(nested, str) and nested.strip():
+            return nested.strip()
+        error = body.get("error")
+        if isinstance(error, dict):
+            nested = error.get("code")
+            if isinstance(nested, str) and nested.strip():
+                return nested.strip()
+    return None
+
+
+def _is_policy_refusal(exc: openai.BadRequestError) -> bool:
+    """
+    Return True when the Images API refused the prompt for safety/policy.
+
+    Args:
+        exc: ``BadRequestError`` from ``images.generate``.
+
+    Returns:
+        True for known policy codes or clear safety/policy wording.
+    """
+    code = _provider_error_code(exc)
+    if code in _POLICY_REFUSAL_CODES:
+        return True
+    haystack = " ".join(
+        part
+        for part in (
+            code or "",
+            str(getattr(exc, "message", "") or ""),
+            str(exc),
+            str(getattr(exc, "body", "") or ""),
+        )
+        if part
+    ).lower()
+    return (
+        "content_policy" in haystack
+        or "content policy" in haystack
+        or "safety system" in haystack
+        or "safety policies" in haystack
+    )
+
+
 def set_generation_allowed(allowed: bool) -> None:
     """
     Record whether the user turn that is about to run may generate images.
@@ -142,34 +228,30 @@ def generate_image_bytes(prompt: str, *, client: Any | None = None) -> bytes:
             n=1,
         )
     except openai.BadRequestError as exc:
-        logger.warning("Image generation refused: %s", exc)
-        raise ImageGenerationError(
-            "Image generation was refused. Reply with text only. "
-            "Do not invent an image URL."
-        ) from exc
+        code = _provider_error_code(exc)
+        logger.warning(
+            "Image generation refused (code=%s): %s", code or "unknown", exc
+        )
+        if _is_policy_refusal(exc):
+            raise ImageGenerationError(_POLICY_REFUSAL_MESSAGE) from exc
+        raise ImageGenerationError(_GENERIC_REFUSAL_MESSAGE) from exc
     except openai.OpenAIError as exc:
         logger.warning("Image generation failed: %s", exc)
-        raise ImageGenerationError(
-            "Image generation failed. Reply with text only. "
-            "Do not invent an image URL."
-        ) from exc
+        raise ImageGenerationError(_PROVIDER_FAILURE_MESSAGE) from exc
     data = _first_b64(response)
     if not data:
         raise ImageGenerationError(
-            "Image generation returned no image. Reply with text only. "
-            "Do not invent an image URL."
+            f"Image generation returned no image. {_TEXT_ONLY_NO_URL}"
         )
     try:
         decoded = base64.b64decode(data, validate=True)
     except Exception as exc:
         raise ImageGenerationError(
-            "Image generation returned unreadable data. Reply with text only. "
-            "Do not invent an image URL."
+            f"Image generation returned unreadable data. {_TEXT_ONLY_NO_URL}"
         ) from exc
     if not decoded:
         raise ImageGenerationError(
-            "Image generation returned an empty image. Reply with text only. "
-            "Do not invent an image URL."
+            f"Image generation returned an empty image. {_TEXT_ONLY_NO_URL}"
         )
     return decoded
 

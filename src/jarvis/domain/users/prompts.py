@@ -22,10 +22,12 @@ IMAGE_GENERATION_GUIDANCE = (
     "When the user asks you to create, draw, or generate a new picture "
     "(not to find one that already exists), call generate_image_tool once. "
     "If it returns an Image URL, embed it exactly as ![short alt](Image URL) "
-    "and put the Attribution line under it. If it refuses or fails, reply "
-    "in text only and do not invent a URL. "
-    "Use web_image_search_tool, not this tool, for a real artwork, place, "
-    "object, or person."
+    "and put the Attribution line under it. If it reports a safety/content "
+    "policy block, explain that the provider's image policies prevent that "
+    "generation and suggest rephrasing; for other generation failures, say "
+    "so briefly. Always reply in text only on failure and do not invent a "
+    "URL. Use web_image_search_tool, not this tool, for a real artwork, "
+    "place, object, or person."
 )
 
 # Shared guidance so chat replies stay scannable without padding short answers.
@@ -35,6 +37,14 @@ MARKDOWN_REPLY_GUIDANCE = (
     "GFM tables for comparisons, and fenced code blocks for commands or "
     "snippets. Keep trivial one-line answers short—do not pad them with "
     "headings, lists, or tables."
+)
+
+# When a tool returns a failure, explain it instead of inventing success.
+TOOL_FAILURE_GUIDANCE = (
+    "If a tool returns an error, refusal, or failure message, tell the user "
+    "clearly what went wrong in their language and what they can try next "
+    "(retry, rephrase, or a different request). Do not invent successful "
+    "tool results, data, or URLs."
 )
 
 
@@ -121,6 +131,7 @@ def build_background_prompt(valid_user: bool, user: dict | None) -> str:
             "only—no other edits). Confirm the English sample before saving. "
             f"{INLINE_WEB_IMAGE_GUIDANCE} "
             f"{_image_generation_clause(user)} "
+            f"{TOOL_FAILURE_GUIDANCE} "
             f"{MARKDOWN_REPLY_GUIDANCE}"
         )
     return (
