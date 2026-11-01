@@ -20,12 +20,12 @@ logger = logging.getLogger(__name__)
 
 def _format_stored(url: str) -> str:
     return (
-        "Generated image stored. Embed it once, in the middle of the reply, "
-        "as ![short alt](Image URL). Copy the Image URL exactly. "
-        "On the next line, copy the Attribution text exactly. "
-        "Do not invent a source or a license.\n"
-        f"Image URL: {url}\n"
-        f"Attribution: {GENERATED_IMAGE_CAPTION}"
+        "Generated image stored. Paste the next two lines into the middle of "
+        "your reply exactly as written. The path starts with /images/ — it is "
+        "not a website hostname. Do not add https://, http://, or any host, "
+        "and do not shorten the path.\n"
+        f"![short alt]({url})\n"
+        f"{GENERATED_IMAGE_CAPTION}"
     )
 
 
@@ -37,8 +37,8 @@ def generate_image_tool(prompt: str = "") -> str:
     Call once when the user asks you to draw, create, or generate a picture.
     Do not call it to find a real artwork, place, or photo that already
     exists; use web_image_search_tool for those. Non-admins cannot use this
-    tool. Embed the returned Image URL exactly as ![alt](Image URL). Never
-    invent a URL.
+    tool. Paste the returned Markdown image line and caption exactly. Never
+    invent a URL or turn /images/... into https://images/....
 
     Parameters:
     - prompt: what the new image should show

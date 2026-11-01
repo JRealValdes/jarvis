@@ -22,17 +22,18 @@ logger = logging.getLogger(__name__)
 
 _EMBED_RULES = (
     f"Embed at most {MAX_INLINE_IMAGES_PER_REPLY} image in the reply, "
-    "and only when a picture helps. Copy one Image URL below exactly into "
-    "markdown as ![short alt](Image URL), in the middle of the explanation. "
-    "On the next line, copy that same candidate's Attribution text exactly. "
-    "Never invent, shorten, or edit a URL, a source, or a license. Do not "
-    "use the source-page URL as the image. If the Attribution line says "
-    "Source unknown, write that. If none of these fit, reply with text only."
+    "and only when a picture helps. For one candidate below, paste its "
+    "two-line Markdown block into the middle of the explanation exactly. "
+    "A path that starts with /images/ is not a website — do not add "
+    "https://, http://, or any host, and do not shorten it. Never invent, "
+    "shorten, or edit a URL, a source, or a license. Do not use the "
+    "source-page URL as the image. If the Attribution line says Source "
+    "unknown, write that. If none of these fit, reply with text only."
 )
 
 
 def _format_image_candidates(results: list[dict[str, str]]) -> str:
-    """Format image hits so the model can copy a URL or skip images."""
+    """Format image hits so the model can paste markdown or skip images."""
     if not results:
         return (
             "No image candidates. Reply with text only. "
@@ -41,17 +42,17 @@ def _format_image_candidates(results: list[dict[str, str]]) -> str:
     lines = ["## Image candidates", _EMBED_RULES]
     for index, item in enumerate(results, start=1):
         title = item.get("title") or "(no title)"
-        lines.append(f"{index}. **{title}**")
-        lines.append(f"   - Image URL: {item.get('image_url') or ''}")
-        lines.append(
-            "   - Attribution: "
-            + format_image_attribution(
-                title=item.get("title") or "",
-                page_url=item.get("page_url") or "",
-                source=item.get("source") or "",
-                license_name=item.get("license") or "",
-            )
+        image_url = item.get("image_url") or ""
+        attribution = format_image_attribution(
+            title=item.get("title") or "",
+            page_url=item.get("page_url") or "",
+            source=item.get("source") or "",
+            license_name=item.get("license") or "",
         )
+        lines.append(f"{index}. **{title}**")
+        lines.append("   Paste exactly:")
+        lines.append(f"   ![short alt]({image_url})")
+        lines.append(f"   {attribution}")
     return "\n".join(lines)
 
 
@@ -125,12 +126,12 @@ def web_image_search_tool(
     artwork, place, object, person, or diagram. Do not call it for ordinary
     factual questions that text answers well.
 
-    The result lists image URLs and one Attribution line each. Embed at
-    most one image, copied exactly as ![alt](Image URL), and put that
-    candidate's Attribution text on the next line. When image storage is
-    on, the image URL points at Jarvis and the attribution still names the
-    original page. Never invent a URL, a source, or a license. If there
-    are no candidates, answer in text only.
+    The result lists a ready-to-paste two-line Markdown block per
+    candidate (image line + attribution). Paste at most one block
+    exactly. When image storage is on, the image path points at Jarvis
+    (/images/...) and must not be turned into https://images/.... The
+    attribution still names the original page. Never invent a URL, a
+    source, or a license. If there are no candidates, answer in text only.
 
     Parameters:
     - query: what the image should depict
