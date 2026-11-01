@@ -53,6 +53,14 @@ _STORED_IMAGE_URL = re.compile(
     r"(?:https?://[^/\s)]+)?/images/(?P<id>[0-9a-f]{64})",
     re.IGNORECASE,
 )
+# Models sometimes turn "/images/{id}" into "https://images/{id}" (host=images).
+# Allow a slightly short hex so a truncated id can be recovered from disk.
+_MANGLED_IMAGES_HOST_URL = re.compile(
+    r"https?://images/(?P<id>[0-9a-f]{32,64})(?![0-9a-f])",
+    re.IGNORECASE,
+)
+_HEX_ID = re.compile(r"^[0-9a-f]{64}$")
+_HEX_PREFIX = re.compile(r"^[0-9a-f]{32,63}$")
 
 
 @dataclass(frozen=True)
@@ -126,12 +134,68 @@ def origin_for_api(scheme: str | None, hostname: str | None, port: int) -> str:
     return f"{(scheme or '').strip() or 'http'}://{host}:{port}"
 
 
+def resolve_stored_image_id(candidate: str) -> str | None:
+    """
+    Return a full stored-image id when ``candidate`` is exact or a unique prefix.
+
+    Args:
+        candidate: Hex string from a markdown URL (32–64 chars).
+
+    Returns:
+        Lowercase 64-char id, or None when unknown / ambiguous.
+    """
+    cleaned = (candidate or "").strip().lower()
+    if _HEX_ID.fullmatch(cleaned):
+        return cleaned
+    if not _HEX_PREFIX.fullmatch(cleaned):
+        return None
+    root = images_dir()
+    if not root.is_dir():
+        return None
+    matches: list[str] = []
+    for meta_path in root.glob("*.json"):
+        stem = meta_path.stem.lower()
+        if _HEX_ID.fullmatch(stem) and stem.startswith(cleaned):
+            matches.append(stem)
+            if len(matches) > 1:
+                return None
+    return matches[0] if matches else None
+
+
+def normalize_stored_image_urls(text: str) -> str:
+    """
+    Fix model-mangled stored-image URLs before absolutizing.
+
+    Turns ``https://images/{id}`` / ``http://images/{id}`` (host literally
+    ``images``) back into ``/images/{id}``. A truncated hex id is expanded
+    when exactly one stored file matches that prefix.
+
+    Args:
+        text: Chat text that may contain a mangled stored image URL.
+
+    Returns:
+        Text with recoverable mangled URLs normalized to ``/images/{id}``.
+    """
+    if not text:
+        return text
+
+    def _replace(match: re.Match[str]) -> str:
+        resolved = resolve_stored_image_id(match.group("id"))
+        if resolved is None:
+            return match.group(0)
+        return public_image_url(resolved)
+
+    return _MANGLED_IMAGES_HOST_URL.sub(_replace, text)
+
+
 def absolutize_stored_image_urls(text: str, origin: str) -> str:
     """
     Point stored-image paths at ``origin``.
 
-    Root-relative ``/images/{id}`` links and older absolute links to that
-    path are rewritten. Other URLs are left as they are.
+    First repairs mangled ``https://images/{id}`` hosts into root-relative
+    ``/images/{id}`` paths. Then root-relative ``/images/{id}`` links and
+    older absolute links to that path are rewritten. Other URLs are left
+    as they are.
 
     Args:
         text: Chat text that may contain a stored image.
@@ -140,6 +204,7 @@ def absolutize_stored_image_urls(text: str, origin: str) -> str:
     Returns:
         Text with stored image URLs made absolute for ``origin``.
     """
+    text = normalize_stored_image_urls(text)
     base = (origin or "").strip().rstrip("/")
     if not base or not text:
         return text

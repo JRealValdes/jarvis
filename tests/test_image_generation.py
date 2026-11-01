@@ -173,8 +173,9 @@ def test_empty_prompt_does_not_spend_the_turn(monkeypatch: pytest.MonkeyPatch):
     follow = generate_image_tool.invoke({"prompt": "a red square"})
     assert "description" in text.lower()
     assert calls == ["a red square"]
-    assert "/images/abc" in follow
-    assert "Attribution: Generated image" in follow
+    assert "![short alt](/images/abc)" in follow
+    assert "Generated image" in follow
+    assert "https://images/" not in follow
     assert "License:" not in follow
 
 

@@ -195,10 +195,14 @@ def test_image_tool_lists_exact_urls_and_one_image_cap(monkeypatch):
         ],
     )
     text = web_image_search_tool.invoke({"query": "The Starry Night"})
-    assert "https://upload.wikimedia.org/starry.jpg" in text
+    assert "![short alt](https://upload.wikimedia.org/starry.jpg)" in text
     assert "at most 1 image" in text
     assert "Never invent" in text
-    assert "Attribution: The Starry Night · [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Starry.jpg)" in text
+    assert "do not add https://" in text.lower()
+    assert (
+        "The Starry Night · [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Starry.jpg)"
+        in text
+    )
     assert "License:" not in text
 
 
@@ -216,8 +220,8 @@ def test_image_tool_says_source_unknown_when_metadata_is_missing(monkeypatch):
         ],
     )
     text = web_image_search_tool.invoke({"query": "a photo"})
-    assert "https://cdn.example/photo.jpg" in text
-    assert "Attribution: Source unknown" in text
+    assert "![short alt](https://cdn.example/photo.jpg)" in text
+    assert "Source unknown" in text
     assert "License:" not in text
 
 
@@ -375,11 +379,9 @@ def test_storage_on_embeds_the_jarvis_url(monkeypatch):
     )
     text = web_image_search_tool.invoke({"query": "a cathedral"})
     assert stored == ["https://cdn.example/best.jpg"]
-    assert "/images/abc123" in text
+    assert "![short alt](/images/abc123)" in text
     assert "https://cdn.example/best.jpg" not in text
-    assert (
-        "Attribution: Best · [Example](https://cdn.example/best)" in text
-    )
+    assert "Best · [Example](https://cdn.example/best)" in text
     assert "License:" not in text
 
 

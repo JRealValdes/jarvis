@@ -49,7 +49,8 @@ def test_build_background_prompt_valid_user():
     assert "short bullets" in text
     assert "web_image_search_tool" in text
     assert "Never invent" in text
-    assert "at most one image" in text
+    assert "at most one candidate" in text
+    assert "https://images/" in text
     assert "generate_image_tool" not in text
     assert "cannot create new images" in text
     assert "current_date_time_tool" in text

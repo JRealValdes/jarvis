@@ -121,6 +121,64 @@ def test_absolutize_uses_the_caller_origin():
     assert absolutize_stored_image_urls(text, "") == text
 
 
+def test_normalize_repairs_mangled_images_host():
+    from jarvis.infrastructure.images.store import (
+        absolutize_stored_image_urls,
+        normalize_stored_image_urls,
+    )
+
+    image_id = "cd" * 32
+    mangled = (
+        f"Here ![rdj](https://images/{image_id})\n"
+        f"and ![gen](http://images/{image_id})"
+    )
+    fixed = normalize_stored_image_urls(mangled)
+    assert f"![rdj](/images/{image_id})" in fixed
+    assert f"![gen](/images/{image_id})" in fixed
+    assert "https://images/" not in fixed
+    assert "http://images/" not in fixed
+
+    absolute = absolutize_stored_image_urls(mangled, "http://192.168.68.54:8000")
+    assert absolute.count(f"http://192.168.68.54:8000/images/{image_id}") == 2
+    assert "https://images/" not in absolute
+
+
+def test_normalize_recovers_truncated_id_from_store(image_root):
+    from jarvis.infrastructure.images.store import (
+        absolutize_stored_image_urls,
+        normalize_stored_image_urls,
+    )
+
+    stored = store_image_bytes(PNG, kind=GENERATED_KIND, now=NOW)
+    assert stored is not None
+    truncated = stored.image_id[:-1]
+    mangled = f"![hero](https://images/{truncated})"
+    assert normalize_stored_image_urls(mangled) == (
+        f"![hero](/images/{stored.image_id})"
+    )
+    absolute = absolutize_stored_image_urls(
+        mangled, "http://192.168.68.54:8000/"
+    )
+    assert absolute == (
+        f"![hero](http://192.168.68.54:8000/images/{stored.image_id})"
+    )
+
+
+def test_normalize_leaves_unknown_truncated_id(image_root):
+    from jarvis.infrastructure.images.store import normalize_stored_image_urls
+
+    unknown = "ab" * 31 + "a"  # 63 hex chars, no file on disk
+    mangled = f"![x](https://images/{unknown})"
+    assert normalize_stored_image_urls(mangled) == mangled
+
+
+def test_normalize_leaves_unrelated_hosts():
+    from jarvis.infrastructure.images.store import normalize_stored_image_urls
+
+    text = "See https://images.unsplash.com/photo.jpg and https://cdn.example/images/ab"
+    assert normalize_stored_image_urls(text) == text
+
+
 def test_zero_ttl_is_kept_forever(image_root, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr("jarvis.core.config.WEB_IMAGE_TTL_DAYS", 0)
     stored = store_image_bytes(PNG, kind=WEB_KIND, now=NOW)
@@ -320,3 +378,35 @@ def test_ask_rewrites_stored_images_to_the_request_host():
     body = response.json()["response"][0]
     assert body.count(f"http://testserver/images/{image_id}") == 2
     assert "tailffe700" not in body
+
+
+def test_ask_rewrites_mangled_images_host_to_the_request_host():
+    image_id = "ef" * 32
+    fake = AsyncMock(
+        return_value=[
+            f"Look ![one](https://images/{image_id})\n*Generated image*"
+        ]
+    )
+    token = jwt.encode(
+        {
+            "sub": "pytest",
+            "real_name": "Pytest",
+            "jarvis_name": "Sir",
+            "is_female": False,
+            "admin": True,
+            "exp": 9999999999,
+        },
+        os.environ["JWT_SECRET_KEY"],
+        algorithm=JWT_ALGORITHM,
+    )
+    with patch("jarvis.api.services.chat_service.ask_jarvis", fake):
+        response = TestClient(app).post(
+            "/ask",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"message": "show me"},
+        )
+    assert response.status_code == 200
+    body = response.json()["response"][0]
+    assert f"http://testserver/images/{image_id}" in body
+    assert "https://images/" not in body
+    assert "*Generated image*" in body

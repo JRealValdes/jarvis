@@ -8,26 +8,27 @@ AUTOMATIC_RESPONSE_IF_ID_FAILED = (
 INLINE_WEB_IMAGE_GUIDANCE = (
     "When a picture would genuinely help (a specific artwork, place, object, "
     "person, or diagram), call web_image_search_tool once. If it returns "
-    "candidates, embed at most one image in the middle of the reply as "
-    "![short alt](Image URL), using an Image URL from that tool copied "
-    "exactly. On the next line, copy that image's Attribution text exactly, "
-    "then continue the explanation. Never invent, shorten, or guess an image "
-    "URL, a source, or a license, and do not use the source-page URL as the "
-    "image. If the tool returns no candidates, or a picture would not help, "
-    "reply in text only."
+    "candidates, paste at most one candidate's two-line Markdown block into "
+    "the middle of the reply exactly as written. A path that starts with "
+    "/images/ is not a website — never turn it into https://images/... "
+    "or add any host. Never invent, shorten, or guess an image URL, a "
+    "source, or a license, and do not use the source-page URL as the image. "
+    "If the tool returns no candidates, or a picture would not help, reply "
+    "in text only."
 )
 
 # Admins may create a new picture. Non-admins must not be told this tool exists.
 IMAGE_GENERATION_GUIDANCE = (
     "When the user asks you to create, draw, or generate a new picture "
     "(not to find one that already exists), call generate_image_tool once. "
-    "If it returns an Image URL, embed it exactly as ![short alt](Image URL) "
-    "and put the Attribution line under it. If it reports a safety/content "
-    "policy block, explain that the provider's image policies prevent that "
-    "generation and suggest rephrasing; for other generation failures, say "
-    "so briefly. Always reply in text only on failure and do not invent a "
-    "URL. Use web_image_search_tool, not this tool, for a real artwork, "
-    "place, object, or person."
+    "If it returns a Markdown image line and a caption, paste those two "
+    "lines exactly. A path that starts with /images/ is not a website — "
+    "never turn it into https://images/... or add any host. If it reports "
+    "a safety/content policy block, explain that the provider's image "
+    "policies prevent that generation and suggest rephrasing; for other "
+    "generation failures, say so briefly. Always reply in text only on "
+    "failure and do not invent a URL. Use web_image_search_tool, not this "
+    "tool, for a real artwork, place, object, or person."
 )
 
 # Shared guidance so chat replies stay scannable without padding short answers.
