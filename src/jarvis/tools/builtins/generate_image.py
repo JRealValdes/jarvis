@@ -34,11 +34,13 @@ def generate_image_tool(prompt: str = "") -> str:
     """
     Create a new image for an admin and return a URL to embed.
 
-    Call once when the user asks you to draw, create, or generate a picture.
-    Do not call it to find a real artwork, place, or photo that already
-    exists; use web_image_search_tool for those. Non-admins cannot use this
-    tool. Paste the returned Markdown image line and caption exactly. Never
-    invent a URL or turn /images/... into https://images/....
+    Call once when the user asks you to draw, create, or generate a brand-new
+    picture from text with no attached photo that must be preserved. When the
+    user attached image(s) and wants those photos edited or composed, use
+    edit_image_tool instead. Do not call it to find a real artwork, place, or
+    photo that already exists; use web_image_search_tool for those. Non-admins
+    cannot use this tool. Paste the returned Markdown image line and caption
+    exactly. Never invent a URL or turn /images/... into https://images/....
 
     Parameters:
     - prompt: what the new image should show

@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 
 SOURCE_UNKNOWN = "Source unknown"
 GENERATED_IMAGE_CAPTION = "Generated image"
+EDITED_IMAGE_CAPTION = "Edited image"
 
 
 def _plain(value: str) -> str:
