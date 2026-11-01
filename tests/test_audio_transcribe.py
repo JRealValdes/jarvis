@@ -19,6 +19,8 @@ from jarvis.infrastructure.audio import (
 from jarvis.infrastructure.audio.transcribe import (
     validate_audio_filename,
     validate_audio_size,
+    validate_content_type,
+    whisper_upload_filename,
 )
 
 
@@ -51,6 +53,19 @@ def test_validate_audio_filename_accepts_wav() -> None:
     assert validate_audio_filename("note.WAV") == "note.WAV"
 
 
+def test_validate_audio_filename_accepts_opus() -> None:
+    assert validate_audio_filename("wa-note.OPUS") == "wa-note.OPUS"
+
+
+def test_whisper_upload_filename_maps_opus_to_ogg() -> None:
+    assert whisper_upload_filename("wa-note.opus") == "wa-note.ogg"
+    assert whisper_upload_filename("clip.wav") == "clip.wav"
+
+
+def test_validate_content_type_accepts_audio_opus() -> None:
+    validate_content_type("audio/opus")
+
+
 def test_validate_audio_size_empty() -> None:
     with pytest.raises(AudioTranscriptionError) as exc:
         validate_audio_size(0)
@@ -73,6 +88,26 @@ def test_transcribe_audio_bytes_happy_path() -> None:
         text = transcribe_audio_bytes(b"fake-audio", filename="clip.wav")
     assert text == "hello world"
     fake.audio.transcriptions.create.assert_called_once()
+    file_arg = fake.audio.transcriptions.create.call_args.kwargs["file"]
+    assert file_arg[0].endswith(".wav")
+
+
+def test_transcribe_audio_bytes_maps_opus_filename_for_whisper() -> None:
+    fake = MagicMock()
+    fake.audio.transcriptions.create.return_value = MagicMock(text="whatsapp note")
+    with patch(
+        "jarvis.infrastructure.audio.transcribe.OpenAI",
+        return_value=fake,
+    ):
+        text = transcribe_audio_bytes(
+            b"fake-opus",
+            filename="PTT-2024.opus",
+            content_type="audio/opus",
+        )
+    assert text == "whatsapp note"
+    file_arg = fake.audio.transcriptions.create.call_args.kwargs["file"]
+    assert file_arg[0].endswith(".ogg")
+    assert not file_arg[0].endswith(".opus")
 
 
 def test_transcribe_requires_auth() -> None:

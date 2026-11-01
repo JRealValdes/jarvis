@@ -135,7 +135,7 @@ Authenticated the same way as `/ask` (`Authorization: Bearer <JWT>`). Remote / A
 | **Body** | `multipart/form-data` with part `file` (audio bytes) |
 | **Response** | `{ "text": "<transcription>" }` |
 | **Max size** | 25 MiB (OpenAI Whisper upload limit) |
-| **Formats** | `.flac`, `.m4a`, `.mp3`, `.mp4`, `.mpeg`, `.mpga`, `.oga`, `.ogg`, `.wav`, `.webm` |
+| **Formats** | `.flac`, `.m4a`, `.mp3`, `.mp4`, `.mpeg`, `.mpga`, `.oga`, `.ogg`, `.opus` (WhatsApp-style Ogg Opus; sent to Whisper as `.ogg`), `.wav`, `.webm` |
 | **Client policy** | Max **2** audio attachments per chat turn (enforced in the app; each file is one `/transcribe` call) |
 
 Errors: `400` empty/unsupported; `413` too large; `502` Whisper failure; `401`/`403` without a valid JWT. Mic → prompt and attach-audio → context both use this endpoint; the client chooses how to apply `text`. Local app mode calls Whisper on-device and skips this route.

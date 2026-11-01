@@ -23,6 +23,7 @@ SUPPORTED_AUDIO_EXTENSIONS: frozenset[str] = frozenset(
         ".mpga",
         ".oga",
         ".ogg",
+        ".opus",
         ".wav",
         ".webm",
     }
@@ -36,6 +37,7 @@ SUPPORTED_AUDIO_CONTENT_TYPES: frozenset[str] = frozenset(
         "audio/mpeg",
         "audio/mp3",
         "audio/ogg",
+        "audio/opus",
         "audio/wav",
         "audio/wave",
         "audio/x-wav",
@@ -44,6 +46,11 @@ SUPPORTED_AUDIO_CONTENT_TYPES: frozenset[str] = frozenset(
         "video/webm",
     }
 )
+
+# Whisper documents ogg, not opus. WhatsApp voice notes are Ogg Opus saved as .opus.
+WHISPER_EXTENSION_ALIASES: dict[str, str] = {
+    ".opus": ".ogg",
+}
 
 
 class AudioTranscriptionError(Exception):
@@ -57,6 +64,26 @@ class AudioTranscriptionError(Exception):
 
 def _extension_for(filename: str) -> str:
     return Path(filename).suffix.lower()
+
+
+def whisper_upload_filename(filename: str) -> str:
+    """
+    Return the basename Whisper should see for an accepted audio file.
+
+    Maps extensions Whisper does not list (e.g. ``.opus``) to a documented
+    container extension when the bytes are typically compatible (Ogg Opus).
+
+    Args:
+        filename: Original basename or path name (extension already validated).
+
+    Returns:
+        Basename with a Whisper-recognized suffix.
+    """
+    name = Path(filename).name
+    mapped = WHISPER_EXTENSION_ALIASES.get(_extension_for(name))
+    if mapped is None:
+        return name
+    return f"{Path(name).stem}{mapped}"
 
 
 def validate_audio_filename(filename: str | None) -> str:
@@ -156,11 +183,12 @@ def transcribe_audio_path(file_path: str | Path) -> str:
     validate_audio_filename(path.name)
     size = path.stat().st_size
     validate_audio_size(size)
+    upload_name = whisper_upload_filename(path.name)
     try:
         with path.open("rb") as audio_file:
             transcription = OpenAI().audio.transcriptions.create(
                 model=WHISPER_MODEL,
-                file=audio_file,
+                file=(upload_name, audio_file),
             )
         return transcription.text
     except AudioTranscriptionError:
