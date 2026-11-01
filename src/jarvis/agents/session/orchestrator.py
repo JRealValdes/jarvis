@@ -37,6 +37,10 @@ from jarvis.infrastructure.images import (
     build_human_message,
     normalize_image_attachments,
 )
+from jarvis.infrastructure.images.edit import (
+    clear_edit_reference_images,
+    set_edit_reference_images,
+)
 from jarvis.infrastructure.images.generate import (
     reset_generation_budget,
     set_generation_allowed,
@@ -282,18 +286,24 @@ class JarvisSession:
         ]
         return result if result else ["I'm sorry, sir. I have no response for your request."]
 
-    async def _run_model(self, messages: list) -> list[str]:
+    async def _run_model(
+        self,
+        messages: list,
+        images: list[dict[str, str]] | None = None,
+    ) -> list[str]:
         """
         Await the agent and extract assistant replies from the state.
 
         Args:
             messages: Messages to send to the graph.
+            images: Normalized attachments for this turn (edit tool references).
 
         Returns:
             List of response strings (never empty on success path).
         """
         reset_vision_check_budget()
         reset_generation_budget()
+        set_edit_reference_images(images)
         user = self.user or {}
         set_generation_allowed(bool(user.get("admin")))
         try:
@@ -310,6 +320,8 @@ class JarvisSession:
                 "Please try again in a moment. "
                 f"({type(exc).__name__})"
             ]
+        finally:
+            clear_edit_reference_images()
 
     async def handle_turn(
         self,
@@ -344,7 +356,8 @@ class JarvisSession:
         if direct is not None and self._chat_state == ChatState.JARVIS_WELCOME_MESSAGE:
             self._chat_state = ChatState.STARTING_CHAT
             model_replies = await self._run_model(
-                self._messages_for_model(prompt, attachments)
+                self._messages_for_model(prompt, attachments),
+                images=attachments,
             )
             return [*direct, *model_replies]
         if direct is not None:
@@ -352,7 +365,10 @@ class JarvisSession:
                 *direct,
                 "I can look at images after we start the conversation. Please send them again.",
             ]
-        return await self._run_model(self._messages_for_model(prompt, attachments))
+        return await self._run_model(
+            self._messages_for_model(prompt, attachments),
+            images=attachments,
+        )
 
 
 def _session_for(

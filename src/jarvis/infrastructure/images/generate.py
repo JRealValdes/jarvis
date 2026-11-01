@@ -24,6 +24,11 @@ from jarvis.infrastructure.images.store import (
 logger = logging.getLogger(__name__)
 
 GENERATION_TOOL_NAME = "generate_image_tool"
+# Keep in sync with ``edit.EDIT_TOOL_NAME`` (string literal avoids a cycle).
+EDIT_TOOL_NAME = "edit_image_tool"
+ADMIN_IMAGE_TOOL_NAMES: frozenset[str] = frozenset(
+    {GENERATION_TOOL_NAME, EDIT_TOOL_NAME}
+)
 MAX_GENERATIONS_PER_TURN = 1
 MAX_PROMPT_CHARS = 4_000
 
@@ -174,20 +179,20 @@ def reserve_generation() -> bool:
 
 def visible_tools(tools: list[Any]) -> list[Any]:
     """
-    Drop image generation unless the current turn is an admin.
+    Drop admin image tools unless the current turn is an admin.
 
     Args:
         tools: Tools that would otherwise be bound to the model.
 
     Returns:
-        The same list, without ``generate_image_tool`` for non-admins.
+        The same list, without generate/edit image tools for non-admins.
     """
     if generation_allowed():
         return list(tools)
     return [
         tool
         for tool in tools
-        if getattr(tool, "name", None) != GENERATION_TOOL_NAME
+        if getattr(tool, "name", None) not in ADMIN_IMAGE_TOOL_NAMES
     ]
 
 
@@ -228,32 +233,22 @@ def generate_image_bytes(prompt: str, *, client: Any | None = None) -> bytes:
             n=1,
         )
     except openai.BadRequestError as exc:
-        code = _provider_error_code(exc)
-        logger.warning(
-            "Image generation refused (code=%s): %s", code or "unknown", exc
-        )
-        if _is_policy_refusal(exc):
-            raise ImageGenerationError(_POLICY_REFUSAL_MESSAGE) from exc
-        raise ImageGenerationError(_GENERIC_REFUSAL_MESSAGE) from exc
+        raise map_images_api_bad_request(exc) from exc
     except openai.OpenAIError as exc:
         logger.warning("Image generation failed: %s", exc)
         raise ImageGenerationError(_PROVIDER_FAILURE_MESSAGE) from exc
-    data = _first_b64(response)
-    if not data:
-        raise ImageGenerationError(
+    return decode_images_api_b64(
+        response,
+        empty_message=(
             f"Image generation returned no image. {_TEXT_ONLY_NO_URL}"
-        )
-    try:
-        decoded = base64.b64decode(data, validate=True)
-    except Exception as exc:
-        raise ImageGenerationError(
+        ),
+        unreadable_message=(
             f"Image generation returned unreadable data. {_TEXT_ONLY_NO_URL}"
-        ) from exc
-    if not decoded:
-        raise ImageGenerationError(
+        ),
+        empty_bytes_message=(
             f"Image generation returned an empty image. {_TEXT_ONLY_NO_URL}"
-        )
-    return decoded
+        ),
+    )
 
 
 def generate_stored_image(
@@ -281,7 +276,16 @@ def generate_stored_image(
     return store_image_bytes(data, kind=GENERATED_KIND, source_url=None, now=now)
 
 
-def _first_b64(response: Any) -> str:
+def first_images_api_b64(response: Any) -> str:
+    """
+    Return the first ``b64_json`` payload from an Images API response.
+
+    Args:
+        response: ``ImagesResponse`` (or test double) from generate/edit.
+
+    Returns:
+        Base64 text, or empty when missing.
+    """
     items = getattr(response, "data", None) or []
     if not items:
         return ""
@@ -290,3 +294,56 @@ def _first_b64(response: Any) -> str:
     if text.startswith("data:") and "," in text:
         text = text.split(",", 1)[1]
     return text
+
+
+def decode_images_api_b64(
+    response: Any,
+    *,
+    empty_message: str,
+    unreadable_message: str,
+    empty_bytes_message: str,
+) -> bytes:
+    """
+    Decode the first image from an Images API response.
+
+    Args:
+        response: Provider response with ``data[0].b64_json``.
+        empty_message: Error when no b64 payload is present.
+        unreadable_message: Error when base64 cannot be decoded.
+        empty_bytes_message: Error when decoded bytes are empty.
+
+    Returns:
+        Decoded image bytes.
+
+    Raises:
+        ImageGenerationError: When the payload is missing or unusable.
+    """
+    data = first_images_api_b64(response)
+    if not data:
+        raise ImageGenerationError(empty_message)
+    try:
+        decoded = base64.b64decode(data, validate=True)
+    except Exception as exc:
+        raise ImageGenerationError(unreadable_message) from exc
+    if not decoded:
+        raise ImageGenerationError(empty_bytes_message)
+    return decoded
+
+
+def map_images_api_bad_request(exc: openai.BadRequestError) -> ImageGenerationError:
+    """
+    Map an Images API ``BadRequestError`` to a chat-facing error.
+
+    Args:
+        exc: Provider bad-request exception.
+
+    Returns:
+        ``ImageGenerationError`` with policy or generic refusal text.
+    """
+    code = _provider_error_code(exc)
+    logger.warning(
+        "Images API refused (code=%s): %s", code or "unknown", exc
+    )
+    if _is_policy_refusal(exc):
+        return ImageGenerationError(_POLICY_REFUSAL_MESSAGE)
+    return ImageGenerationError(_GENERIC_REFUSAL_MESSAGE)

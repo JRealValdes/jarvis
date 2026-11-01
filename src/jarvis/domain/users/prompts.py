@@ -17,18 +17,25 @@ INLINE_WEB_IMAGE_GUIDANCE = (
     "in text only."
 )
 
-# Admins may create a new picture. Non-admins must not be told this tool exists.
+# Admins may create or edit pictures. Non-admins must not be told these tools exist.
 IMAGE_GENERATION_GUIDANCE = (
-    "When the user asks you to create, draw, or generate a new picture "
-    "(not to find one that already exists), call generate_image_tool once. "
-    "If it returns a Markdown image line and a caption, paste those two "
-    "lines exactly. A path that starts with /images/ is not a website — "
-    "never turn it into https://images/... or add any host. If it reports "
-    "a safety/content policy block, explain that the provider's image "
-    "policies prevent that generation and suggest rephrasing; for other "
-    "generation failures, say so briefly. Always reply in text only on "
-    "failure and do not invent a URL. Use web_image_search_tool, not this "
-    "tool, for a real artwork, place, object, or person."
+    "When the user asks you to create, draw, or generate a brand-new picture "
+    "from text (not to find one that already exists, and not to edit an "
+    "attached photo), call generate_image_tool once. When the user attached "
+    "one or more images and asks you to edit, change, restyle, modernize, "
+    "open eyes, place a person from one photo into another, or otherwise "
+    "modify those photos while keeping them as the base, call "
+    "edit_image_tool once with a clear edit prompt—the attached images are "
+    "already available to that tool. Prefer edit_image_tool over "
+    "generate_image_tool whenever the result should stay faithful to an "
+    "attached photo. If either tool returns a Markdown image line and a "
+    "caption, paste those two lines exactly. A path that starts with "
+    "/images/ is not a website — never turn it into https://images/... "
+    "or add any host. If it reports a safety/content policy block, explain "
+    "that the provider's image policies prevent that request and suggest "
+    "rephrasing; for other failures, say so briefly. Always reply in text "
+    "only on failure and do not invent a URL. Use web_image_search_tool, "
+    "not these tools, for a real artwork, place, object, or person."
 )
 
 # Shared guidance so chat replies stay scannable without padding short answers.

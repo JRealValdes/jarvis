@@ -67,6 +67,7 @@ def test_build_background_prompt_admin_may_generate():
         {"jarvis_name": "Sir", "is_female": False, "admin": True},
     )
     assert "generate_image_tool" in text
+    assert "edit_image_tool" in text
     assert "cannot create new images" not in text
     assert "safety/content policy" in text
 
@@ -77,6 +78,7 @@ def test_build_background_prompt_intruder():
     assert MARKDOWN_REPLY_GUIDANCE in text
     assert "web_image_search_tool" not in text
     assert "generate_image_tool" not in text
+    assert "edit_image_tool" not in text
 
 
 def test_find_user_by_prompt_no_pattern():
