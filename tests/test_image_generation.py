@@ -133,6 +133,30 @@ def test_provider_refusal_stays_text_only(monkeypatch: pytest.MonkeyPatch):
     assert "http" not in text
 
 
+def test_content_policy_violation_explains_safety_rules(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    images = _Images()
+    images.error = openai.BadRequestError(
+        "Your request was rejected as a result of our safety system.",
+        response=SimpleNamespace(status_code=400, headers={}, request=None),
+        body={
+            "code": "content_policy_violation",
+            "message": "Your request was rejected as a result of our safety system.",
+        },
+    )
+    monkeypatch.setattr(
+        "jarvis.infrastructure.images.generate.openai.OpenAI",
+        lambda: _Client(images),
+    )
+    set_generation_allowed(True)
+    text = generate_image_tool.invoke({"prompt": "something disallowed"})
+    assert "safety/content policy" in text.lower()
+    assert "rephras" in text.lower()
+    assert "http" not in text
+    assert "There was an error processing" not in text
+
+
 def test_empty_prompt_does_not_spend_the_turn(monkeypatch: pytest.MonkeyPatch):
     calls: list[str] = []
 

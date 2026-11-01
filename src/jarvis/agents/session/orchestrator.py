@@ -299,8 +299,17 @@ class JarvisSession:
         try:
             response = await self.agent.invoke(**self._build_agent_kwargs(messages))
             return self._replies_from_state(response)
-        except Exception as e:
-            return [f"There was an error processing your request, sir. Error: {e}"]
+        except Exception as exc:
+            logger.exception(
+                "Unexpected failure during model turn (thread=%s)", self.thread_id
+            )
+            # Last resort when the graph aborts outside handled tool errors.
+            # Keep this a clear chat reply; do not dump raw exception text.
+            return [
+                "I ran into an unexpected problem processing that request. "
+                "Please try again in a moment. "
+                f"({type(exc).__name__})"
+            ]
 
     async def handle_turn(
         self,

@@ -10,6 +10,7 @@ from langgraph.prebuilt import ToolNode, tools_condition
 
 from jarvis.infrastructure.images import prepare_messages_for_model
 from jarvis.infrastructure.images.generate import visible_tools
+from jarvis.tools.errors import handle_tool_node_error
 
 
 class AgentState(TypedDict):
@@ -45,7 +46,10 @@ def compile_tool_agent(
         return {"messages": [llm_with_tools.invoke(visible)]}
 
     graph_builder.add_node("chatbot", chatbot)
-    graph_builder.add_node("tools", ToolNode(tools=tools))
+    graph_builder.add_node(
+        "tools",
+        ToolNode(tools=tools, handle_tool_errors=handle_tool_node_error),
+    )
     graph_builder.add_conditional_edges("chatbot", tools_condition)
     graph_builder.add_edge("tools", "chatbot")
     graph_builder.set_entry_point("chatbot")

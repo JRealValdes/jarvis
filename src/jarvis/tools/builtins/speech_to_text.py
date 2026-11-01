@@ -23,6 +23,10 @@ def speech_to_text_tool(
     """
     Transcribe an audio file (.mp3, .wav, etc.) with OpenAI Whisper.
 
+    Direct callers (e.g. Gradio) still see ``ToolException``. Inside the
+    agent graph, ``ToolNode`` converts that raise into a tool error message
+    so the chatbot can explain the failure.
+
     Args:
         file_path: Path to the audio file on disk.
         run_manager: Optional LangChain callback manager.
