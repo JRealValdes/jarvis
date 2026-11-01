@@ -261,21 +261,40 @@ GENERATED_IMAGE_TTL_DAYS: int = _env_non_negative_int(
 IMAGE_GENERATION_MODEL: str = _env_image_model(
     "JARVIS_IMAGE_MODEL", "gpt-image-1-mini"
 )
-"""OpenAI image model for admin generation. DALL·E model ids are rejected."""
+"""OpenAI image model for admin text-to-image generation. DALL·E ids rejected."""
 
 IMAGE_GENERATION_QUALITY: str = _env_choice(
     "JARVIS_IMAGE_QUALITY",
     "low",
     frozenset({"low", "medium", "high", "auto"}),
 )
-"""Quality sent to the Images API. ``low`` is the cheaper default."""
+"""Quality for text-to-image generation. ``low`` is the cheaper default."""
 
 IMAGE_GENERATION_SIZE: str = _env_choice(
     "JARVIS_IMAGE_SIZE",
     "1024x1024",
     frozenset({"1024x1024", "1024x1536", "1536x1024", "auto"}),
 )
-"""Pixel size sent to the Images API."""
+"""Pixel size for text-to-image generation."""
+
+IMAGE_EDIT_MODEL: str = _env_image_model(
+    "JARVIS_IMAGE_EDIT_MODEL", "gpt-image-2"
+)
+"""OpenAI image model for admin edits (faithful to attachments)."""
+
+IMAGE_EDIT_QUALITY: str = _env_choice(
+    "JARVIS_IMAGE_EDIT_QUALITY",
+    "high",
+    frozenset({"low", "medium", "high", "auto"}),
+)
+"""Quality for image edits. ``high`` favours fidelity over cost."""
+
+IMAGE_EDIT_SIZE: str = _env_choice(
+    "JARVIS_IMAGE_EDIT_SIZE",
+    "1024x1024",
+    frozenset({"1024x1024", "1024x1536", "1536x1024", "auto"}),
+)
+"""Pixel size for image edits."""
 
 API_PORT: int = _env_int("API_PORT", 8000)
 """HTTP port for the FastAPI server."""

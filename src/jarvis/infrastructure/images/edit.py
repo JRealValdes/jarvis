@@ -38,6 +38,7 @@ __all__ = [
     "EditReferenceImage",
     "clear_edit_reference_images",
     "edit_image_bytes",
+    "edit_input_fidelity_for_model",
     "edit_mask_image",
     "edit_reference_images",
     "edit_stored_image",
@@ -161,6 +162,30 @@ def _as_openai_file(
     return (f"{prefix}_{index}.{ext}", ref.data, ref.media_type)
 
 
+def edit_input_fidelity_for_model(model: str) -> str | None:
+    """
+    Return ``input_fidelity`` for models that support it, else ``None``.
+
+    ``gpt-image-2`` already preserves inputs at high fidelity — omit the
+    parameter. ``gpt-image-1.5`` / ``gpt-image-1`` accept ``high``. Mini
+    only supports ``low``, so we omit rather than force a weak setting.
+
+    Args:
+        model: OpenAI image model id.
+
+    Returns:
+        ``\"high\"`` when useful, otherwise ``None`` (do not send the field).
+    """
+    lowered = (model or "").strip().lower()
+    if not lowered or lowered.startswith("gpt-image-2"):
+        return None
+    if "mini" in lowered:
+        return None
+    if lowered.startswith("gpt-image-1.5") or lowered.startswith("gpt-image-1"):
+        return "high"
+    return None
+
+
 def edit_image_bytes(
     prompt: str,
     images: list[EditReferenceImage] | tuple[EditReferenceImage, ...],
@@ -193,23 +218,26 @@ def edit_image_bytes(
     if not refs:
         raise ValueError("At least one reference image is required.")
     from jarvis.core.config import (
-        IMAGE_GENERATION_MODEL,
-        IMAGE_GENERATION_QUALITY,
-        IMAGE_GENERATION_SIZE,
+        IMAGE_EDIT_MODEL,
+        IMAGE_EDIT_QUALITY,
+        IMAGE_EDIT_SIZE,
     )
 
     api = client or openai.OpenAI()
     files = [_as_openai_file(ref, index=i, prefix="image") for i, ref in enumerate(refs)]
     image_arg: Any = files[0] if len(files) == 1 else files
     kwargs: dict[str, Any] = {
-        "model": IMAGE_GENERATION_MODEL,
+        "model": IMAGE_EDIT_MODEL,
         "image": image_arg,
         "prompt": cleaned,
-        "size": IMAGE_GENERATION_SIZE,
-        "quality": IMAGE_GENERATION_QUALITY,
+        "size": IMAGE_EDIT_SIZE,
+        "quality": IMAGE_EDIT_QUALITY,
         "output_format": "png",
         "n": 1,
     }
+    fidelity = edit_input_fidelity_for_model(IMAGE_EDIT_MODEL)
+    if fidelity is not None:
+        kwargs["input_fidelity"] = fidelity
     if mask is not None:
         kwargs["mask"] = _as_openai_file(mask, index=0, prefix="mask")
     try:
