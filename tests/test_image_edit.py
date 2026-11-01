@@ -17,6 +17,7 @@ from jarvis.infrastructure.images.edit import (
     EditReferenceImage,
     clear_edit_reference_images,
     edit_image_bytes,
+    edit_input_fidelity_for_model,
     edit_reference_images,
     edit_stored_image,
     set_edit_reference_images,
@@ -157,10 +158,11 @@ def test_admin_edits_one_png_and_shares_budget_with_generate(
     second = edit_image_tool.invoke({"prompt": "open the eyes"})
     third = generate_image_tool.invoke({"prompt": "a red square"})
     assert len(images.edit_calls) == 1
-    assert images.edit_calls[0]["model"] == "gpt-image-1-mini"
-    assert images.edit_calls[0]["quality"] == "low"
+    assert images.edit_calls[0]["model"] == "gpt-image-2"
+    assert images.edit_calls[0]["quality"] == "high"
     assert images.edit_calls[0]["size"] == "1024x1024"
     assert images.edit_calls[0]["n"] == 1
+    assert "input_fidelity" not in images.edit_calls[0]
     assert images.edit_calls[0]["prompt"] == "modernize the furniture"
     image_arg = images.edit_calls[0]["image"]
     assert isinstance(image_arg, tuple)
@@ -291,6 +293,40 @@ def test_edit_image_bytes_rejects_empty_images_and_long_prompt():
             [EditReferenceImage("image/png", PNG)],
             client=_Client(_Images()),
         )
+
+
+def test_edit_input_fidelity_for_model_matrix():
+    assert edit_input_fidelity_for_model("gpt-image-2") is None
+    assert edit_input_fidelity_for_model("gpt-image-2.5-sunburst") is None
+    assert edit_input_fidelity_for_model("gpt-image-1-mini") is None
+    assert edit_input_fidelity_for_model("gpt-image-1.5") == "high"
+    assert edit_input_fidelity_for_model("gpt-image-1") == "high"
+
+
+def test_edit_uses_high_input_fidelity_for_image_1_5(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    images = _Images()
+    monkeypatch.setattr(
+        "jarvis.infrastructure.images.edit.openai.OpenAI",
+        lambda: _Client(images),
+    )
+    monkeypatch.setattr(
+        "jarvis.core.config.IMAGE_EDIT_MODEL",
+        "gpt-image-1.5",
+    )
+    monkeypatch.setattr(
+        "jarvis.core.config.IMAGE_EDIT_QUALITY",
+        "high",
+    )
+    edit_image_bytes(
+        "open the eyes",
+        [EditReferenceImage("image/png", PNG)],
+        client=_Client(images),
+    )
+    assert images.edit_calls[0]["model"] == "gpt-image-1.5"
+    assert images.edit_calls[0]["input_fidelity"] == "high"
+    assert images.edit_calls[0]["quality"] == "high"
 
 
 def test_run_model_binds_and_clears_edit_attachments():

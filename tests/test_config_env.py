@@ -25,6 +25,9 @@ def _restore_config_module(monkeypatch: pytest.MonkeyPatch):
         "JARVIS_IMAGE_MODEL",
         "JARVIS_IMAGE_QUALITY",
         "JARVIS_IMAGE_SIZE",
+        "JARVIS_IMAGE_EDIT_MODEL",
+        "JARVIS_IMAGE_EDIT_QUALITY",
+        "JARVIS_IMAGE_EDIT_SIZE",
         "JARVIS_DEFAULT_MODEL",
         "JARVIS_LOCAL_THREAD_ID",
         "JARVIS_IDENTIFICATION_FAILED_PROTOCOL",
@@ -46,6 +49,9 @@ def _restore_config_module(monkeypatch: pytest.MonkeyPatch):
         "JARVIS_IMAGE_MODEL",
         "JARVIS_IMAGE_QUALITY",
         "JARVIS_IMAGE_SIZE",
+        "JARVIS_IMAGE_EDIT_MODEL",
+        "JARVIS_IMAGE_EDIT_QUALITY",
+        "JARVIS_IMAGE_EDIT_SIZE",
         "JARVIS_DEFAULT_MODEL",
         "JARVIS_LOCAL_THREAD_ID",
         "JARVIS_IDENTIFICATION_FAILED_PROTOCOL",
@@ -87,6 +93,9 @@ def test_config_defaults_when_unset():
     assert config.IMAGE_GENERATION_MODEL == "gpt-image-1-mini"
     assert config.IMAGE_GENERATION_QUALITY == "low"
     assert config.IMAGE_GENERATION_SIZE == "1024x1024"
+    assert config.IMAGE_EDIT_MODEL == "gpt-image-2"
+    assert config.IMAGE_EDIT_QUALITY == "high"
+    assert config.IMAGE_EDIT_SIZE == "1024x1024"
     assert config.API_PORT == 8000
 
 
@@ -146,6 +155,17 @@ def test_image_generation_settings_from_env(monkeypatch: pytest.MonkeyPatch):
     assert config.IMAGE_GENERATION_MODEL == "gpt-image-1"
     assert config.IMAGE_GENERATION_QUALITY == "medium"
     assert config.IMAGE_GENERATION_SIZE == "1024x1536"
+
+
+def test_image_edit_settings_from_env(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("JARVIS_IMAGE_EDIT_MODEL", "gpt-image-1.5")
+    monkeypatch.setenv("JARVIS_IMAGE_EDIT_QUALITY", "medium")
+    monkeypatch.setenv("JARVIS_IMAGE_EDIT_SIZE", "1536x1024")
+    config = _reload_config()
+    assert config.IMAGE_EDIT_MODEL == "gpt-image-1.5"
+    assert config.IMAGE_EDIT_QUALITY == "medium"
+    assert config.IMAGE_EDIT_SIZE == "1536x1024"
+    assert config.IMAGE_GENERATION_MODEL == "gpt-image-1-mini"
 
 
 def test_image_generation_rejects_dalle_and_unknown_quality(
