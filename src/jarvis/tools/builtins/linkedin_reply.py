@@ -25,6 +25,12 @@ from jarvis.infrastructure.users.linkedin_reply_examples import (
 )
 from jarvis.infrastructure.users.message_language import resolve_reply_language
 
+# Stable fence language so clients can detect copyable draft blocks.
+PROPOSED_REPLY_FENCE_LANGUAGE = "text"
+_PROPOSED_REPLY_HEADING = "## Proposed reply"
+_OPEN_FENCE = f"```{PROPOSED_REPLY_FENCE_LANGUAGE}"
+_CLOSE_FENCE = "```"
+
 _DRAFT_SYSTEM_PROMPT = """\
 You help the user draft a LinkedIn (or recruiter) reply.
 Use the job preferences when present. Be honest about fit.
@@ -54,16 +60,68 @@ Respond in English with exactly these markdown sections:
 One of: interested / maybe / decline. Brief reasons vs the preferences.
 
 ## Proposed reply
-A copy-paste-ready message body only (no quotes wrapping the whole reply).
-Write it entirely in the required reply language from the hard constraints.
-Match professional tone from reply_style and the sample replies (style only).
-The proposed reply must satisfy the hard avoid constraints.
+Put ONLY the copy-paste-ready message body inside a Markdown fenced code
+block labeled text (opening line ```text, then the body, then a closing ```).
+Do not put the Fit assessment or Next step inside that fence. Do not wrap
+the whole response in one fence. No quotes wrapping the whole reply.
+Write the body entirely in the required reply language from the hard
+constraints. Match professional tone from reply_style and the sample replies
+(style only). The proposed reply must satisfy the hard avoid constraints.
 
 ## Next step
 Remind the agent: show this draft to the user and ask only whether they
 want to adjust anything. Do not ask if it is ready to send. Do not offer
 to send it. The user copies the reply and sends it themselves on LinkedIn.
 """
+
+
+def wrap_proposed_reply_in_text_fence(draft: str) -> str:
+    """
+    Ensure the Proposed reply body sits in a Markdown ``text`` fenced block.
+
+    Leaves other sections untouched. If that section is already wrapped in a
+    fenced code block (with or without a language tag), normalizes it to the
+    stable ``text`` label. When the heading is missing, returns ``draft``
+    unchanged.
+
+    Args:
+        draft: Structured draft text from the drafting model.
+
+    Returns:
+        Draft text with the proposed reply body fenced for copy-paste clients.
+    """
+    heading = _PROPOSED_REPLY_HEADING
+    start = draft.find(heading)
+    if start < 0:
+        return draft
+
+    body_start = start + len(heading)
+    rest = draft[body_start:]
+    next_heading = rest.find("\n## ")
+    if next_heading < 0:
+        body = rest
+        suffix = ""
+    else:
+        body = rest[:next_heading]
+        suffix = rest[next_heading:]
+
+    inner = body.strip("\n")
+    if inner.startswith("```"):
+        first_nl = inner.find("\n")
+        if first_nl >= 0 and inner.rstrip().endswith("```"):
+            after_open = inner[first_nl + 1 :]
+            close_at = after_open.rstrip().rfind("```")
+            if close_at >= 0:
+                inner = after_open[:close_at].rstrip("\n")
+            else:
+                inner = after_open
+
+    inner = inner.strip("\n")
+    fenced = f"{_OPEN_FENCE}\n{inner}\n{_CLOSE_FENCE}"
+    prefix = draft[:body_start]
+    if not prefix.endswith("\n"):
+        prefix = f"{prefix}\n"
+    return f"{prefix}\n{fenced}{suffix}"
 
 
 def generate_linkedin_reply_draft(
@@ -91,7 +149,8 @@ def generate_linkedin_reply_draft(
             returns the model text. Defaults to a ChatOpenAI completion.
 
     Returns:
-        Structured draft text for the agent to show the user.
+        Structured draft text for the agent to show the user. The Proposed
+        reply body is always wrapped in a ``text`` Markdown fence.
     """
     language = resolve_reply_language(
         message_context,
@@ -128,8 +187,10 @@ def generate_linkedin_reply_draft(
         )
         response = llm.invoke(messages)
         content = response.content
-        return content if isinstance(content, str) else str(content)
-    return complete(messages)
+        raw = content if isinstance(content, str) else str(content)
+    else:
+        raw = complete(messages)
+    return wrap_proposed_reply_in_text_fence(raw)
 
 
 @tool
@@ -208,20 +269,26 @@ def draft_linkedin_reply_tool(
             else " (detected from message_context)"
         )
         language_status = f"Reply language: {language}{override_note}."
-        draft = generate_linkedin_reply_draft(
-            message_context,
-            user_notes,
-            preferences,
-            reply_examples=example_entries,
-            reply_language=language,
+        draft = wrap_proposed_reply_in_text_fence(
+            generate_linkedin_reply_draft(
+                message_context,
+                user_notes,
+                preferences,
+                reply_examples=example_entries,
+                reply_language=language,
+            )
         )
         return (
             f"{prefs_status}\n{examples_status}\n{language_status}\n\n{draft}\n\n"
             "---\n"
             "DRAFT ONLY — Jarvis cannot send LinkedIn messages. Present the "
-            "Proposed reply for the user to copy-paste. Ask only whether they "
-            "want to adjust anything. Do not ask if it is ready to send, do "
-            "not claim it was sent, and do not save it as a style example "
+            "Proposed reply to the user with the message body inside a "
+            "Markdown fenced code block labeled text "
+            f"({_OPEN_FENCE} … {_CLOSE_FENCE}) — keep Fit assessment, "
+            "intro/outro, and 'want adjustments?' outside that fence; do not "
+            "wrap the entire assistant turn in one fence. Ask only whether "
+            "they want to adjust anything. Do not ask if it is ready to send, "
+            "do not claim it was sent, and do not save it as a style example "
             "unless the user explicitly asks."
         )
     except Exception as exc:

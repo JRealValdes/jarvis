@@ -40,6 +40,9 @@ def test_build_background_prompt_valid_user():
     assert "adjust" in text.lower()
     assert "ready to send" in text.lower()
     assert "do not call draft_linkedin_reply_tool again" in text.lower()
+    assert "```text" in text
+    assert "outside that fence" in text.lower()
+    assert "entire assistant turn" in text.lower()
     assert "approved wording" in text.lower()
     assert "stored in english" in text.lower()
     assert "reply in the language of the user's latest message" in text.lower()
