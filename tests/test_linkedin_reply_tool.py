@@ -1,9 +1,54 @@
 """Tests for LinkedIn reply drafting tool helpers."""
 
 from jarvis.tools.builtins.linkedin_reply import (
+    PROPOSED_REPLY_FENCE_LANGUAGE,
     draft_linkedin_reply_tool,
     generate_linkedin_reply_draft,
+    wrap_proposed_reply_in_text_fence,
 )
+
+
+def test_wrap_proposed_reply_in_text_fence_wraps_unfenced_body():
+    draft = (
+        "## Fit assessment\ninterested\n\n"
+        "## Proposed reply\nThanks for reaching out.\n\nBest,\nJavier\n\n"
+        "## Next step\nAsk only about adjustments."
+    )
+    result = wrap_proposed_reply_in_text_fence(draft)
+    assert "## Fit assessment\ninterested" in result
+    assert f"## Proposed reply\n\n```{PROPOSED_REPLY_FENCE_LANGUAGE}\n" in result
+    assert "Thanks for reaching out.\n\nBest,\nJavier\n```" in result
+    assert result.endswith("## Next step\nAsk only about adjustments.")
+    # Narrative sections stay outside the single fence.
+    assert result.index("## Fit assessment") < result.index("```text")
+    assert result.index("```\n## Next step") > result.index("```text")
+
+
+def test_wrap_proposed_reply_in_text_fence_normalizes_existing_fence():
+    draft = (
+        "## Fit assessment\nmaybe\n\n"
+        "## Proposed reply\n\n```\nHello already fenced.\n```\n\n"
+        "## Next step\nAsk only about adjustments."
+    )
+    result = wrap_proposed_reply_in_text_fence(draft)
+    assert result.count("```") == 2
+    assert f"```{PROPOSED_REPLY_FENCE_LANGUAGE}\nHello already fenced.\n```" in result
+
+
+def test_wrap_proposed_reply_in_text_fence_idempotent():
+    draft = (
+        "## Fit assessment\nmaybe\n\n"
+        "## Proposed reply\n\n```text\nHi there.\n```\n\n"
+        "## Next step\nAsk only about adjustments."
+    )
+    once = wrap_proposed_reply_in_text_fence(draft)
+    twice = wrap_proposed_reply_in_text_fence(once)
+    assert once == twice
+
+
+def test_wrap_proposed_reply_in_text_fence_missing_heading():
+    raw = "No structured sections here."
+    assert wrap_proposed_reply_in_text_fence(raw) == raw
 
 
 def test_generate_linkedin_reply_draft_uses_complete_callable():
@@ -32,6 +77,8 @@ def test_generate_linkedin_reply_draft_uses_complete_callable():
         assert "cannot send linkedin messages" in system.lower()
         assert "## Next step" in system
         assert "ready to send" in system.lower()
+        assert "```text" in system
+        assert "fenced code" in system.lower()
         return (
             "## Fit assessment\ninterested — remote fits.\n\n"
             "## Proposed reply\nThanks for reaching out.\n\n"
@@ -52,6 +99,7 @@ def test_generate_linkedin_reply_draft_uses_complete_callable():
     )
     assert "## Fit assessment" in result
     assert "## Proposed reply" in result
+    assert f"```{PROPOSED_REPLY_FENCE_LANGUAGE}\nThanks for reaching out.\n```" in result
     assert "## Next step" in result
 
 
@@ -181,6 +229,9 @@ def test_draft_tool_missing_prefs_and_mocked_llm(monkeypatch, tmp_path):
     assert "adjust anything" in result.lower()
     assert "ready to send" in result.lower()
     assert "## Proposed reply" in result
+    assert f"```{PROPOSED_REPLY_FENCE_LANGUAGE}\nHello.\n```" in result
+    assert "fenced code block labeled text" in result.lower()
+    assert "entire assistant turn" in result.lower()
 
 
 def test_draft_tool_loads_prefs(monkeypatch, tmp_path):
