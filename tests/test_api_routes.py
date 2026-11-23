@@ -25,6 +25,8 @@ def test_app_has_documented_routes():
     expected = {
         "/token",
         "/ask",
+        "/ask-async",
+        "/jobs/{job_id}",
         "/tasks",
         "/tasks/{task_id}",
         "/tasks/{task_id}/runs",

@@ -29,6 +29,7 @@ SECRET_GROUPS: dict[str, tuple[str, ...]] = {
     "users-db": ("data/users.db",),
     "tasks-db": ("data/tasks.db",),
     "devices-db": ("data/devices.db",),
+    "jobs-db": ("data/jobs.db",),
     "mcp": ("data/mcp/server_config.json",),
 }
 
@@ -51,6 +52,7 @@ GROUP_POLICY: dict[str, SyncPolicy] = {
     "users-db": "push",
     "tasks-db": "sync",
     "devices-db": "sync",
+    "jobs-db": "sync",
     "mcp": "push",
     "google": "push",
     "user-prefs": "sync",
