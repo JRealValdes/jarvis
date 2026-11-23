@@ -156,7 +156,7 @@ def test_add_tool_description_requires_explicit_user_request():
 
 
 def test_example_tools_registered():
-    from jarvis.tools import local_tools
+    from jarvis.tools.registry import local_tools
 
     names = {getattr(t, "name", None) for t in local_tools}
     assert "show_linkedin_reply_examples_tool" in names

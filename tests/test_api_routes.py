@@ -25,6 +25,10 @@ def test_app_has_documented_routes():
     expected = {
         "/token",
         "/ask",
+        "/tasks",
+        "/tasks/{task_id}",
+        "/tasks/{task_id}/runs",
+        "/tasks/{task_id}/run",
         "/transcribe",
         "/reset-session",
         "/admin/reset-global-memory",

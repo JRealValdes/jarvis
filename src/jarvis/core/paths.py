@@ -25,6 +25,7 @@ JARVIS_PACKAGE_DIR: Path = Path(__file__).resolve().parent.parent
 DATA_DIR: Path = PROJECT_ROOT / "data"
 IMAGES_DIR: Path = DATA_DIR / "images"
 USERS_DB_PATH: Path = DATA_DIR / "users.db"
+TASKS_DB_PATH: Path = DATA_DIR / "tasks.db"
 USERS_DATA_DIR: Path = DATA_DIR / "users"
 GOOGLE_CREDENTIALS_DIR: Path = DATA_DIR / "google"
 MCP_DIR: Path = JARVIS_PACKAGE_DIR / "mcp"

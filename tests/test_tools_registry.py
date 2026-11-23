@@ -4,7 +4,7 @@ import importlib
 import inspect
 import pkgutil
 
-from jarvis.tools import local_tools
+from jarvis.tools.registry import local_tools
 from jarvis.tools.builtins import BUILTIN_TOOLS
 
 
@@ -22,6 +22,7 @@ def test_local_tools_follow_the_declared_list():
         "show_linkedin_reply_examples_tool",
         "add_linkedin_reply_example_tool",
         "transcribe_audio",
+        "edit_image_tool",
         "generate_image_tool",
         "web_image_search_tool",
         "web_search_tool",

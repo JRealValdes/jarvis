@@ -332,7 +332,7 @@ def test_draft_tool_description_is_copy_paste_only():
 
 
 def test_tool_registered_in_local_tools():
-    from jarvis.tools import local_tools
+    from jarvis.tools.registry import local_tools
 
     names = {getattr(t, "name", None) for t in local_tools}
     assert "draft_linkedin_reply_tool" in names

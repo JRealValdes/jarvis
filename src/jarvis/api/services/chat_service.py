@@ -11,8 +11,14 @@ from jarvis.agents.session import (
 from jarvis.api.errors import ForbiddenError
 from jarvis.api.schemas.chat import AskInput, ThreadIdPayload
 from jarvis.core.enums import ModelEnum
+from jarvis.domain.tasks.thread_ids import (
+    is_task_chat_thread,
+    is_task_run_thread,
+    parse_task_id_from_thread,
+)
 from jarvis.infrastructure.images import ImageAttachmentError, VisionNotSupportedError
 from jarvis.infrastructure.images.store import absolutize_stored_image_urls
+from jarvis.infrastructure.persistence.tasks.repository import get_task_for_owner
 
 
 class ChatService:
@@ -32,12 +38,15 @@ class ChatService:
 
         Raises:
             HTTPException: 400 when the turn is empty or an image is rejected.
+            ForbiddenError: If the user cannot access the requested thread.
         """
         message = input_data.message or ""
         if not message.strip() and not input_data.images:
             raise HTTPException(status_code=400, detail="Message cannot be empty.")
         model_enum = ModelEnum[input_data.model_name]
-        thread_id = input_data.thread_id or user["real_name"]
+        thread_id = self._resolve_thread_id(
+            input_data.thread_id, user, action="ask"
+        )
         images = [item.model_dump() for item in input_data.images]
         try:
             answer = await ask_jarvis(
@@ -122,36 +131,69 @@ class ChatService:
                 messages.append(item)
         return {"thread_id": thread_id, "messages": messages}
 
+    def _owns_task_thread(self, thread_id: str, user: dict) -> bool:
+        """
+        Return True when ``thread_id`` is a task chat owned by ``user``.
+
+        Scratch ``task-run:`` threads are never client-accessible.
+
+        Args:
+            thread_id: Candidate thread.
+            user: Decoded JWT claims.
+
+        Returns:
+            True when the user may access this task chat thread.
+        """
+        if is_task_run_thread(thread_id):
+            return False
+        if not is_task_chat_thread(thread_id):
+            return False
+        task_id = parse_task_id_from_thread(thread_id)
+        if not task_id:
+            return False
+        return get_task_for_owner(task_id, user["real_name"]) is not None
+
     def _resolve_thread_id(
         self, thread_id: str | None, user: dict, *, action: str
     ) -> str:
         """
-        Resolve thread_id and enforce admin permissions for foreign threads.
+        Resolve thread_id and enforce ownership for foreign threads.
+
+        Owners may use their main chat (``real_name``) and their periodic
+        task chat threads (``task:{id}``). Admins may access any thread.
+        Clients cannot reset task chats (schedule lifecycle owns resets).
 
         Args:
             thread_id: Requested thread or None.
             user: Decoded JWT claims.
-            action: ``reset`` or ``read`` (only affects the error message).
+            action: ``ask``, ``reset``, or ``read`` (affects error copy / rules).
 
         Returns:
             Effective thread_id.
 
         Raises:
-            ForbiddenError: If a non-admin accesses another thread.
+            ForbiddenError: If the user cannot access the thread.
         """
-        if thread_id:
-            if not user.get("admin", False):
-                if action == "reset":
-                    detail = (
-                        "You do not have permission to reset other users' memory."
-                    )
-                else:
-                    detail = (
-                        "You do not have permission to view other users' history."
-                    )
-                raise ForbiddenError(detail)
+        if not thread_id:
+            return user["real_name"]
+        if thread_id == user["real_name"]:
             return thread_id
-        return user["real_name"]
+        if user.get("admin", False):
+            return thread_id
+        if self._owns_task_thread(thread_id, user):
+            if action == "reset":
+                raise ForbiddenError(
+                    "Task conversations reset on the next scheduled run; "
+                    "manual reset is not allowed."
+                )
+            return thread_id
+        if action == "reset":
+            detail = "You do not have permission to reset other users' memory."
+        elif action == "ask":
+            detail = "You do not have permission to use this conversation thread."
+        else:
+            detail = "You do not have permission to view other users' history."
+        raise ForbiddenError(detail)
 
 
 chat_service = ChatService()

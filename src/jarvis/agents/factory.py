@@ -6,7 +6,7 @@ from jarvis.agents.protocol import JarvisAgent
 from jarvis.core.config import USE_MCP
 from jarvis.core.enums import ModelEnum
 from jarvis.core.openai_models import is_openai_chat_model
-from jarvis.tools import local_tools
+from jarvis.tools.registry import local_tools
 
 
 def build_agent(model_used: ModelEnum) -> JarvisAgent:
