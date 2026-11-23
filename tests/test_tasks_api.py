@@ -87,3 +87,21 @@ def test_tasks_crud_and_list(tmp_path: Path, monkeypatch):
     deleted = client.delete(f"/tasks/{task_id}", headers=headers)
     assert deleted.status_code == 200
     assert client.get(f"/tasks/{task_id}", headers=headers).status_code == 404
+
+
+def test_devices_register(tmp_path: Path, monkeypatch):
+    import jarvis.infrastructure.persistence.devices.repository as devices_repo
+
+    db = tmp_path / "devices.db"
+    monkeypatch.setattr(devices_repo, "DB_PATH", str(db))
+    monkeypatch.setattr(devices_repo, "DEVICES_DB_PATH", db)
+
+    client = TestClient(app)
+    headers = {"Authorization": f"Bearer {_user_token()}"}
+    response = client.post(
+        "/devices/register",
+        headers=headers,
+        json={"token": "abc123", "platform": "android"},
+    )
+    assert response.status_code == 200
+    assert response.json()["device"]["token"] == "abc123"
