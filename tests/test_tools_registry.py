@@ -27,6 +27,11 @@ def test_local_tools_follow_the_declared_list():
         "web_image_search_tool",
         "web_search_tool",
         "weather_tool",
+        "list_periodic_tasks_tool",
+        "create_periodic_task_tool",
+        "update_periodic_task_tool",
+        "delete_periodic_task_tool",
+        "run_periodic_task_now_tool",
     ]
 
 

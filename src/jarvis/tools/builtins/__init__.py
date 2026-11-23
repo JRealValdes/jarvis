@@ -27,6 +27,13 @@ from jarvis.tools.builtins.edit_image import edit_image_tool
 from jarvis.tools.builtins.generate_image import generate_image_tool
 from jarvis.tools.builtins.speech_to_text import speech_to_text_tool
 from jarvis.tools.builtins.weather import weather_tool
+from jarvis.tools.builtins.periodic_tasks import (
+    create_periodic_task_tool,
+    delete_periodic_task_tool,
+    list_periodic_tasks_tool,
+    run_periodic_task_now_tool,
+    update_periodic_task_tool,
+)
 from jarvis.tools.builtins.web_image_search import web_image_search_tool
 from jarvis.tools.builtins.web_search import web_search_tool
 
@@ -47,4 +54,9 @@ BUILTIN_TOOLS: list[BaseTool] = [
     web_image_search_tool,
     web_search_tool,
     weather_tool,
+    list_periodic_tasks_tool,
+    create_periodic_task_tool,
+    update_periodic_task_tool,
+    delete_periodic_task_tool,
+    run_periodic_task_now_tool,
 ]
