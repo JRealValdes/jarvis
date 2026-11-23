@@ -13,7 +13,7 @@ from jarvis.agents.checkpointer import (
 from jarvis.agents.graph import compile_tool_agent
 from jarvis.core.enums import ModelEnum
 from jarvis.core.openai_models import resolve_openai_chat_model_id
-from jarvis.tools import local_tools
+from jarvis.tools.registry import local_tools
 
 
 class _CheckpointMemory:

@@ -171,7 +171,7 @@ def test_save_tool_replace_all(tmp_path, monkeypatch):
 
 
 def test_preference_tools_registered():
-    from jarvis.tools import local_tools
+    from jarvis.tools.registry import local_tools
 
     names = {getattr(t, "name", None) for t in local_tools}
     assert "show_job_preferences_tool" in names

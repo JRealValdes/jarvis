@@ -1,5 +1,5 @@
-"""FastAPI routers by domain (auth, chat, admin)."""
+"""FastAPI routers by domain (auth, chat, tasks, admin)."""
 
-from jarvis.api.routers import admin, auth, chat, images
+from jarvis.api.routers import admin, auth, chat, images, tasks
 
-__all__ = ["admin", "auth", "chat", "images"]
+__all__ = ["admin", "auth", "chat", "images", "tasks"]

@@ -20,7 +20,12 @@ from jarvis.api.errors import ForbiddenError
 from jarvis.core.logging_config import configure_logging
 
 configure_logging()
-from jarvis.api.routers import admin, auth, chat, images
+from jarvis.api.routers import admin, auth, chat, images, tasks
+from jarvis.infrastructure.persistence.tasks.repository import init_tasks_db
+from jarvis.infrastructure.tasks.scheduler import (
+    start_task_scheduler,
+    stop_task_scheduler,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,17 +33,20 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def _lifespan(_application: FastAPI) -> AsyncIterator[None]:
     """
-    Open the MCP tool session for the process and close it on shutdown.
+    Open MCP, init the tasks store, and start the periodic task scheduler.
 
     Args:
         _application: FastAPI instance (unused; required by the lifespan hook).
     """
     _purge_expired_images()
+    init_tasks_db()
     if USE_MCP:
         await get_mcp_tool_session().connect()
+    start_task_scheduler()
     try:
         yield
     finally:
+        await stop_task_scheduler()
         await invalidate_agents_cache()
         await get_mcp_tool_session().close()
 
@@ -65,6 +73,7 @@ def create_app() -> FastAPI:
 
     application.include_router(auth.router)
     application.include_router(chat.router)
+    application.include_router(tasks.router)
     application.include_router(admin.router)
     application.include_router(images.router)
     return application
