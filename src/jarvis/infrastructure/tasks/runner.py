@@ -193,6 +193,7 @@ async def execute_task_run(
             model,
             run_thread,
             user_info=user_info,
+            skip_welcome=True,
         )
         report = "\n\n".join(
             part for part in fragments if isinstance(part, str) and part.strip()

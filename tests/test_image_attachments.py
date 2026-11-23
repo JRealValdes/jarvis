@@ -166,10 +166,9 @@ def test_welcome_turn_still_sends_images_to_the_model() -> None:
     session = JarvisSession(ModelEnum.GPT_4O_MINI, "welcome-images", user_info=user)
     captured: dict = {}
 
-    async def _fake(messages: list) -> list[str]:
+    async def _fake(messages: list, images=None) -> list[str]:
         captured["messages"] = messages
         return ["a red square"]
-
     session._run_model = _fake  # type: ignore[method-assign]
     replies = asyncio.run(session.handle_turn("look", images=_png()))
     assert replies[0] == get_welcome_message(user)

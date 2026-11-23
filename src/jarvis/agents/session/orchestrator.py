@@ -234,6 +234,8 @@ class JarvisSession:
         self,
         prompt: str,
         images: list[dict[str, str]] | None = None,
+        *,
+        include_welcome: bool = True,
     ) -> list:
         """
         Build the LangChain messages for a model turn.
@@ -241,6 +243,8 @@ class JarvisSession:
         Args:
             prompt: User message.
             images: Normalized image attachments for this turn.
+            include_welcome: When False (machine / scheduled turns), omit the
+                interactive welcome ``AIMessage`` from the starting context.
 
         Returns:
             Messages for ``STARTING_CHAT`` (with system context) or a single human turn.
@@ -252,11 +256,41 @@ class JarvisSession:
                     content=build_background_prompt(self.valid_user, self.user)
                 )
             ]
-            if self.valid_user:
+            if self.valid_user and include_welcome:
                 messages.append(AIMessage(content=get_welcome_message(self.user)))
             messages.append(human)
             return messages
         return [human]
+
+    async def _run_noninteractive_turn(
+        self,
+        prompt: str,
+        images: list[dict[str, str]] | None = None,
+    ) -> list[str]:
+        """
+        Run one turn without the interactive welcome short-circuit.
+
+        Used by scheduled task runs: a fresh authenticated session would
+        otherwise return only ``get_welcome_message`` and never call the model.
+
+        Args:
+            prompt: Machine / task prompt.
+            images: Normalized image attachments for this turn.
+
+        Returns:
+            Model reply strings.
+        """
+        attachments = list(images or [])
+        # Jump straight to the first model turn with system context.
+        self._chat_state = ChatState.STARTING_CHAT
+        replies = await self._run_model(
+            self._messages_for_model(
+                prompt, attachments, include_welcome=False
+            ),
+            images=attachments,
+        )
+        self._chat_state = ChatState.INITIALIZED
+        return replies
 
     def _replies_from_state(self, response: dict) -> list[str]:
         """
@@ -327,6 +361,8 @@ class JarvisSession:
         self,
         prompt: str,
         images: list[dict[str, str]] | None = None,
+        *,
+        skip_welcome: bool = False,
     ) -> list[str]:
         """
         Run one conversation turn for this session.
@@ -338,6 +374,8 @@ class JarvisSession:
         Args:
             prompt: User message.
             images: Normalized image attachments for this turn.
+            skip_welcome: When True, bypass the interactive welcome short-circuit
+                and invoke the model (for scheduled / machine turns).
 
         Returns:
             List of response strings for the user.
@@ -350,6 +388,8 @@ class JarvisSession:
             raise VisionNotSupportedError(
                 "The selected model does not support images. Use GPT_4O_MINI."
             )
+        if skip_welcome:
+            return await self._run_noninteractive_turn(prompt, attachments)
         direct = self._direct_reply(prompt)
         if direct is not None and not attachments:
             return direct
@@ -442,6 +482,8 @@ async def ask_jarvis(
     thread_id: str = LOCAL_THREAD_ID,
     user_info: dict | None = None,
     images: list | None = None,
+    *,
+    skip_welcome: bool = False,
 ) -> list[str]:
     """
     Public entry point to send a message to Jarvis.
@@ -455,6 +497,7 @@ async def ask_jarvis(
         thread_id: Thread / session identifier.
         user_info: Authenticated user dict (API); None in CLI without JWT.
         images: Optional image attachments (``media_type`` + ``data_base64``).
+        skip_welcome: Bypass interactive welcome (scheduled task runs).
 
     Returns:
         List of response text fragments for the user.
@@ -466,5 +509,5 @@ async def ask_jarvis(
     await _ensure_mcp_ready()
     normalized = normalize_image_attachments(images)
     return await _session_for(model, thread_id, user_info).handle_turn(
-        prompt, normalized
+        prompt, normalized, skip_welcome=skip_welcome
     )
