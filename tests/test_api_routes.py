@@ -29,6 +29,8 @@ def test_app_has_documented_routes():
         "/tasks/{task_id}",
         "/tasks/{task_id}/runs",
         "/tasks/{task_id}/run",
+        "/devices/register",
+        "/devices/unregister",
         "/transcribe",
         "/reset-session",
         "/admin/reset-global-memory",

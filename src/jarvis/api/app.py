@@ -20,7 +20,8 @@ from jarvis.api.errors import ForbiddenError
 from jarvis.core.logging_config import configure_logging
 
 configure_logging()
-from jarvis.api.routers import admin, auth, chat, images, tasks
+from jarvis.api.routers import admin, auth, chat, devices, images, tasks
+from jarvis.infrastructure.persistence.devices.repository import init_devices_db
 from jarvis.infrastructure.persistence.tasks.repository import init_tasks_db
 from jarvis.infrastructure.tasks.scheduler import (
     start_task_scheduler,
@@ -40,6 +41,7 @@ async def _lifespan(_application: FastAPI) -> AsyncIterator[None]:
     """
     _purge_expired_images()
     init_tasks_db()
+    init_devices_db()
     if USE_MCP:
         await get_mcp_tool_session().connect()
     start_task_scheduler()
@@ -74,6 +76,7 @@ def create_app() -> FastAPI:
     application.include_router(auth.router)
     application.include_router(chat.router)
     application.include_router(tasks.router)
+    application.include_router(devices.router)
     application.include_router(admin.router)
     application.include_router(images.router)
     return application
